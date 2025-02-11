@@ -8,7 +8,7 @@ public class GraphSearch {
 
     public static Action[][] search(State initialState, Frontier frontier)
     {
-        boolean outputFixedSolution = true;
+        boolean outputFixedSolution = false;
 
         if (outputFixedSolution) {
             //Part 1:
@@ -17,10 +17,29 @@ public class GraphSearch {
 
             return new Action[][] {
                 {Action.MoveS},
+                {Action.MoveS},
+                {Action.MoveE},
+                {Action.MoveE},
+                {Action.MoveE},
+                {Action.MoveE},
+                {Action.MoveE},
+                {Action.MoveE},
+                {Action.MoveE},
+                {Action.MoveE},
+                {Action.MoveE},
+                {Action.MoveE},
+                {Action.MoveS},
+                {Action.MoveS},
+            };
+
+            /* 
+            return new Action[][] {
+                {Action.MoveS},
                 {Action.MoveE},
                 {Action.MoveE},
                 {Action.MoveS},
             };
+            */
         } else {
             //Part 2:
             //Now try to implement the Graph-Search algorithm from R&N figure 3.7
@@ -43,6 +62,20 @@ public class GraphSearch {
             HashSet<State> expanded = new HashSet<>();
 
             while (true) {
+                if (frontier.isEmpty())
+                    return null;
+
+                State s = frontier.pop();
+
+                if (s.isGoalState())
+                    return s.extractPlan();
+
+                expanded.add(s);
+
+                for (State t : s.getExpandedStates()) {
+                    if (!frontier.contains(t) && !expanded.contains(t))
+                        frontier.add(t);
+                }
 
                 //Print a status message every 10000 iteration
                 if (++iterations % 10000 == 0) {
