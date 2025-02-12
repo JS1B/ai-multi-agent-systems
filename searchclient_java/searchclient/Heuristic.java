@@ -5,14 +5,18 @@ import java.util.Comparator;
 public abstract class Heuristic
         implements Comparator<State>
 {
+    // Choose h function here
+    //private CustomH heur = new HZero(); 
+    private CustomH heur = new HGoalCount();
+
     public Heuristic(State initialState)
     {
-        // Here's a chance to pre-process the static parts of the level.
+        heur.init(initialState);
     }
 
     public int h(State s)
     {
-        return 0;
+        return heur.h(s);
     }
 
     public abstract int f(State s);

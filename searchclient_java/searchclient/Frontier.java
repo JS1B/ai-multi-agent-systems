@@ -117,7 +117,7 @@ class FrontierBestFirst
     public FrontierBestFirst(Heuristic h)
     {
         this.heuristic = h;
-        this.queue = new PriorityQueue<>(Comparator.comparingInt(heuristic::f));
+        this.queue = new PriorityQueue<>(Comparator.comparingInt(heuristic::f)); // f is evaluated multiple times per state - this can be optimized
     }
 
     @Override
