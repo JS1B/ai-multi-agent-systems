@@ -21,6 +21,12 @@ class HZero implements CustomH {
     {
         return 0;
     }
+    
+    @Override
+    public String toString()
+    {
+        return "HZero";
+    }
 }
 
 class HGoalCount implements CustomH {
@@ -72,6 +78,12 @@ class HGoalCount implements CustomH {
         }
 
         return sum;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "HGoalCount";
     }
 }
 

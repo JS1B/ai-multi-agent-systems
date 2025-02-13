@@ -143,10 +143,10 @@ public class SearchClient
         State initialState = SearchClient.parseLevel(serverMessages);
 
         // Select search strategy.
-        Frontier frontier;
-        if (args.length > 0)
+        Frontier frontier = new FrontierBFS(); // Default
+        for (int i = 0; i < args.length; i++)
         {
-            switch (args[0].toLowerCase(Locale.ROOT))
+            switch (args[i].toLowerCase(Locale.ROOT))
             {
                 case "-bfs":
                     frontier = new FrontierBFS();
@@ -159,11 +159,11 @@ public class SearchClient
                     break;
                 case "-wastar":
                     int w = 5;
-                    if (args.length > 1)
+                    if (i+1 < args.length)
                     {
                         try
                         {
-                            w = Integer.parseUnsignedInt(args[1]);
+                            w = Integer.parseUnsignedInt(args[++i]);
                         }
                         catch (NumberFormatException e)
                         {
@@ -175,13 +175,33 @@ public class SearchClient
                 case "-greedy":
                     frontier = new FrontierBestFirst(new HeuristicGreedy(initialState));
                     break;
+                case "-heur":
+                    // Specify heuristic function h to be used
+                    if (i+1 < args.length)
+                    {
+                        switch(args[++i].toLowerCase(Locale.ROOT))
+                        {
+                            case "zero":
+                                Heuristic.heur = new HZero();
+                                break;
+                            case "goalcount":
+                                Heuristic.heur = new HGoalCount();
+                                break;
+                            default:
+                                Heuristic.heur = new HZero();
+                                System.err.println("Defaulting to HZero heuristic.");
+                        }
+                    }
+                    
+                    break;
                 default:
                     frontier = new FrontierBFS();
                     System.err.println("Defaulting to BFS search. Use arguments -bfs, -dfs, -astar, -wastar, or " +
                                        "-greedy to set the search strategy.");
             }
         }
-        else
+        
+        if (args.length <= 0)
         {
             frontier = new FrontierBFS();
             System.err.println("Defaulting to BFS search. Use arguments -bfs, -dfs, -astar, -wastar, or -greedy to " +
