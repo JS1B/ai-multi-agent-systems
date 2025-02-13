@@ -104,6 +104,34 @@ public class State
                     this.agentRows[agent] += action.agentRowDelta;
                     this.agentCols[agent] += action.agentColDelta;
                     break;
+
+                case Push:
+                    {
+                        // Box is now where the agent will be in a moment
+                        int boxRow = this.agentRows[agent] + action.agentRowDelta;
+                        int boxCol = this.agentCols[agent] + action.agentColDelta;
+                        
+                        this.agentRows[agent] += action.agentRowDelta;
+                        this.agentCols[agent] += action.agentColDelta;
+                        
+                        this.boxes[boxRow + action.boxRowDelta][boxCol + action.boxColDelta] = this.boxes[boxRow][boxCol];
+                        this.boxes[boxRow][boxCol] = 0;
+                    }
+                    break;
+
+                case Pull:
+                    {
+                        // Box will be in a moment where the agent is now
+                        int boxRow = this.agentRows[agent] - action.boxRowDelta;
+                        int boxCol = this.agentCols[agent] - action.boxColDelta;
+                        
+                        this.agentRows[agent] += action.agentRowDelta;
+                        this.agentCols[agent] += action.agentColDelta;
+                        
+                        this.boxes[boxRow + action.boxRowDelta][boxCol + action.boxColDelta] = this.boxes[boxRow][boxCol];
+                        this.boxes[boxRow][boxCol] = 0;
+                    }
+                    break;
             }
         }
     }
@@ -220,6 +248,27 @@ public class State
                 destinationCol = agentCol + action.agentColDelta;
                 return this.cellIsFree(destinationRow, destinationCol);
 
+            case Push:
+                // Box is now where the agent will be in a moment
+                boxRow = this.agentRows[agent] + action.agentRowDelta;
+                boxCol = this.agentCols[agent] + action.agentColDelta;
+                box = this.boxes[boxRow][boxCol];
+
+                // Box is first, agent follows
+                destinationRow = boxRow + action.boxRowDelta;
+                destinationCol = boxCol + action.boxColDelta;
+                return box != 0 && this.agentColors[agent] == this.boxColors[box - 'A'] && this.cellIsFree(destinationRow, destinationCol);
+
+            case Pull:
+                // Box will be in a moment where the agent is now
+                boxRow = this.agentRows[agent] - action.boxRowDelta;
+                boxCol = this.agentCols[agent] - action.boxColDelta;
+                box = this.boxes[boxRow][boxCol];
+
+                // Agent is first, box follows
+                destinationRow = agentRow + action.agentRowDelta;
+                destinationCol = agentCol + action.agentColDelta;
+                return box != 0 && this.agentColors[agent] == this.boxColors[box - 'A'] && this.cellIsFree(destinationRow, destinationCol);
         }
 
         // Unreachable:
@@ -252,8 +301,35 @@ public class State
                 case Move:
                     destinationRows[agent] = agentRow + action.agentRowDelta;
                     destinationCols[agent] = agentCol + action.agentColDelta;
+
                     boxRows[agent] = agentRow; // Distinct dummy value
                     boxCols[agent] = agentCol; // Distinct dummy value
+                    break;
+
+                case Push:
+                    // Box is now where the agent will be in a moment
+                    boxRow = this.agentRows[agent] + action.agentRowDelta;
+                    boxCol = this.agentCols[agent] + action.agentColDelta;
+
+                    destinationRows[agent] = boxRow + action.boxRowDelta;
+                    destinationCols[agent] = boxCol + action.boxColDelta;
+
+                    boxRows[agent] = boxRow;
+                    boxCols[agent] = boxCol;
+                    //boxRows[agent] = agentRow; // This might be correct as this is the cell that is freed
+                    //boxCols[agent] = agentCol; // This might be correct as this is the cell that is freed
+                    break;
+
+                case Pull:
+                    // Box will be in a moment where the agent is now
+                    boxRow = this.agentRows[agent] - action.boxRowDelta;
+                    boxCol = this.agentCols[agent] - action.boxColDelta;
+
+                    destinationRows[agent] = agentRow + action.agentRowDelta;
+                    destinationCols[agent] = agentCol + action.agentColDelta;
+
+                    boxRows[agent] = boxRow;
+                    boxCols[agent] = boxCol;
                     break;
            }
         }
