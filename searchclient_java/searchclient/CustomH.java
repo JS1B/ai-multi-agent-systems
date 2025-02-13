@@ -55,7 +55,7 @@ class HGoalCount implements CustomH {
 
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {   
-                if (State.goals[r][c] != 0) // IDK why but they use null (value 0) instead of space (value 32) as blank
+                if (State.goals[r][c] != 0 && State.goals[r][c] >= '0' && State.goals[r][c] <= '9') // IDK why but they use null (value 0) instead of space (value 32) as blank
                 {
                     int g = State.goals[r][c];
                     //System.err.format("r = %d, c = %d, State.goals[r][c] = %c, g = %d\n", r, c, State.goals[r][c], g);
