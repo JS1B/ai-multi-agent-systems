@@ -6,11 +6,12 @@ public abstract class Heuristic
         implements Comparator<State>
 {
     // Choose h function here
-    //private CustomH heur = new HZero(); 
-    private CustomH heur = new HGoalCount();
+    public static CustomH heur;
 
     public Heuristic(State initialState)
     {
+        if (heur == null)
+            System.err.println("Error: set heuristic with -heur parameter before setting frontier!");
         heur.init(initialState);
     }
 
@@ -25,6 +26,11 @@ public abstract class Heuristic
     public int compare(State s1, State s2)
     {
         return this.f(s1) - this.f(s2);
+    }
+
+    public String hString()
+    {
+        return String.format("(h = %s)", heur.toString());
     }
 }
 
@@ -45,7 +51,7 @@ class HeuristicAStar
     @Override
     public String toString()
     {
-        return "A* evaluation";
+        return String.format("A* evaluation " + hString());
     }
 }
 
@@ -69,7 +75,7 @@ class HeuristicWeightedAStar
     @Override
     public String toString()
     {
-        return String.format("WA*(%d) evaluation", this.w);
+        return String.format("WA*(%d) evaluation " + hString(), this.w);
     }
 }
 
@@ -90,6 +96,6 @@ class HeuristicGreedy
     @Override
     public String toString()
     {
-        return "greedy evaluation";
+        return "greedy evaluation" + hString();
     }
 }
