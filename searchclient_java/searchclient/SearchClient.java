@@ -187,6 +187,9 @@ public class SearchClient
                             case "goalcount":
                                 Heuristic.heur = new HGoalCount();
                                 break;
+                            case "boxgoalcount":
+                                Heuristic.heur = new HBoxGoalCount();
+                                break;
                             default:
                                 Heuristic.heur = new HZero();
                                 System.err.println("Defaulting to HZero heuristic.");
