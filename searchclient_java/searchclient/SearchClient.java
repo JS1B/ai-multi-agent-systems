@@ -11,6 +11,8 @@ import java.util.Locale;
 
 public class SearchClient
 {
+    public static boolean benchmark_logs = false;
+
     public static State parseLevel(BufferedReader serverMessages)
     throws IOException
     {
@@ -148,6 +150,9 @@ public class SearchClient
         {
             switch (args[i].toLowerCase(Locale.ROOT))
             {
+                case "-benchmark":
+                    benchmark_logs = true;
+                    break;
                 case "-bfs":
                     frontier = new FrontierBFS();
                     break;

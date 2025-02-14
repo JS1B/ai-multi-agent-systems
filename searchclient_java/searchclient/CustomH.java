@@ -40,7 +40,7 @@ class HGoalCount implements CustomH {
         int rows = State.goals.length;
         int cols = State.goals[0].length;
 
-        if (true) {
+        if (!SearchClient.benchmark_logs) {
             System.err.format("Printing State.goals[%d][%d] array:\n", rows, cols);
             for (int r = 0; r < rows; r++) {
                 for (int c = 0; c < cols; c++) {
@@ -101,7 +101,7 @@ class HBoxGoalCount implements CustomH {
         int rows = State.goals.length;
         int cols = State.goals[0].length;
 
-        if (true) {
+        if (!SearchClient.benchmark_logs) {
             System.err.format("Printing State.goals[%d][%d] array:\n", rows, cols);
             for (int r = 0; r < rows; r++) {
                 for (int c = 0; c < cols; c++) {

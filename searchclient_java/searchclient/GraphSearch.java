@@ -81,7 +81,7 @@ public class GraphSearch {
                 }
 
                 //Print a status message every 10000 iteration
-                if (++iterations % 10000 == 0) {
+                if (!SearchClient.benchmark_logs && ++iterations % 10000 == 0) {
                     printSearchStatus(expanded, frontier);
                 }
 
