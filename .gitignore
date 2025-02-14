@@ -1,3 +1,8 @@
-__pycache__/
 .vscode/
-*.class
+
+# Python
+__pycache__/
+
+# C++
+obj/
+# searchclient
