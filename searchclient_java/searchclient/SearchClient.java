@@ -6,7 +6,6 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Locale;
 
 public class SearchClient
@@ -189,7 +188,7 @@ public class SearchClient
                                 break;
                             case "custom":
                                 System.err.println("custom heuristic used");
-                                Heuristic.heur = new HSumDistances();
+                                Heuristic.heur = new HGoalCount().new HSumDistances();
                                 break;
                             default:
                                 Heuristic.heur = new HZero();

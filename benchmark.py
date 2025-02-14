@@ -1,0 +1,69 @@
+import os
+from argparse import ArgumentParser
+from collections import defaultdict
+
+
+def exc_template_factory():
+    return {
+        "level": list,
+        "strategy": list,
+        "heuristic": list,
+        "timeout": 180,
+        "display": "", # "-g -s 150"
+    }
+
+exc_dict = defaultdict(exc_template_factory)
+
+def run_command(command: str):
+    print(command)
+    os.system(command)
+
+def parse_command(exc: dict, output_dir: str):
+    for lvl in exc["level"]:
+        if not os.path.exists(f"levels/{lvl}.lvl"):
+            print(f"Level {lvl} does not exist, skipping")
+            continue
+
+        for strat in exc["strategy"]:
+            output_file = os.path.join(output_dir, f"{lvl}_{strat}.txt")
+            command = f"java -jar server.jar -l levels/{lvl}.lvl -c \"java -Xmx8g -jar searchclient_java/searchclient.jar -{strat}\" -t {exc['timeout']} {exc['display']} -o {output_file}"
+            run_command(command)
+
+def main():
+    exc_3 = exc_dict["exc_3"]
+    exc_3["level"] = ["MAPF00", "MAPF01", "MAPF02", "MAPF02C", "MAPF03", "MAPF03C", "MAPFslidingpuzzle", "MAPFreorder2", "BFSfriendly"]
+    exc_3["strategy"] = ["bfs", "dfs"]
+
+    exc_42 = exc_dict["exc_42"]
+    exc_42["level"] = [ "MAPF00", "MAPF01", "MAPF02", "MAPF02C", "MAPF03", "MAPF03C", "MAPFslidingpuzzle", "MAPFreorder2", "BFSfriendly"]
+    exc_42["strategy"] = ["greedy", "astar"]
+
+    exc_43 = exc_dict["exc_43"]
+    exc_43["level"] = ["MAPF00", "MAPF01", "MAPF02", "MAPF02C", "MAPF03", "MAPF03C", "MAPFslidingpuzzle", "MAPFreorder2", "BFSfriendly"]
+    exc_43["strategy"] = ["greedy", "astar", "heur custom"]
+
+    parser = ArgumentParser()
+    parser.add_argument("--exercise", type=str, default="all")
+    parser.add_argument("--output", type=str, default="results")
+    args = parser.parse_args()
+
+    if not os.path.exists(args.output):
+        os.makedirs(args.output)
+
+    build_command = f"./build_searchclient.sh"
+    run_command(build_command)
+
+    if args.exercise == "3":
+        parse_command(exc_3, args.output)
+    elif args.exercise == "42":
+        parse_command(exc_42, args.output)
+    elif args.exercise == "43":
+        parse_command(exc_43, args.output)
+    elif args.exercise == "all":
+        parse_command(exc_3, args.output)
+        parse_command(exc_42, args.output)
+        parse_command(exc_43, args.output)
+
+
+if __name__ == "__main__":
+    main()
