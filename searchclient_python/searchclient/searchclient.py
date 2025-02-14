@@ -106,7 +106,9 @@ class SearchClient:
     def main(args: argparse.Namespace) -> None:
         # Use stderr to print to the console.
         print(
-            "SearchClient initializing. I am sending this using the error output stream.", file=sys.stderr, flush=True
+            "Python SearchClient initializing. I am sending this using the error output stream.",
+            file=sys.stderr,
+            flush=True,
         )
 
         # Send client name to server.

@@ -130,7 +130,7 @@ public class SearchClient
     throws IOException
     {
         // Use stderr to print to the console.
-        System.err.println("SearchClient initializing. I am sending this using the error output stream.");
+        System.err.println("Java SearchClient initializing. I am sending this using the error output stream.");
 
         // Send client name to server.
         System.out.println("SearchClient");
