@@ -5,7 +5,7 @@ from collections import defaultdict
 
 BUILD_SCRIPT = {
     "linux": "./build_searchclient.sh",
-    "windows": f".\\build_searchclient.ps1",
+    "windows": ".\\build_searchclient.ps1",
 }
 
 def exc_template_factory():
@@ -20,6 +20,7 @@ def exc_template_factory():
 exc_dict = defaultdict(exc_template_factory)
 
 def run_command(command: str):
+    print()
     print(command)
     os.system(command)
 
@@ -31,13 +32,18 @@ def parse_command(exc: dict, output_dir: str):
 
         for strat in exc["strategy"]:
             output_file = os.path.join(output_dir, f"{lvl}_{strat}.txt")
-            command = f"java -jar server.jar -l levels/{lvl}.lvl -c \"java -Xmx8g -jar searchclient_java/searchclient.jar -{strat}\" -t {exc['timeout']} {exc['display']} -o {output_file}"
+            command = f"java -jar server.jar -l levels/{lvl}.lvl -c \"java -Xmx8g -jar searchclient_java/searchclient.jar -{strat} -benchmark\" -t {exc['timeout']} {exc['display']} -o {output_file}"
             run_command(command)
 
 def main():
     exc_3 = exc_dict["exc_3"]
     exc_3["level"] = ["MAPF00", "MAPF01", "MAPF02", "MAPF02C", "MAPF03", "MAPF03C", "MAPFslidingpuzzle", "MAPFreorder2", "BFSfriendly"]
     exc_3["strategy"] = ["bfs", "dfs"]
+
+    exc_3_long = exc_dict["exc_3"]
+    exc_3_long["level"] = ["MAPF03", "MAPF03C", "MAPFreorder2"]
+    exc_3_long["strategy"] = ["bfs", "dfs"]
+    exc_3_long["timeout"] = 3600
 
     exc_42 = exc_dict["exc_42"]
     exc_42["level"] = [ "MAPF00", "MAPF01", "MAPF02", "MAPF02C", "MAPF03", "MAPF03C", "MAPFslidingpuzzle", "MAPFreorder2", "BFSfriendly"]
@@ -61,7 +67,7 @@ def main():
         run_command(BUILD_SCRIPT["linux"])
 
     if args.exercise == "3":
-        parse_command(exc_3, args.output)
+        parse_command(exc_3_long, args.output)
     elif args.exercise == "42":
         parse_command(exc_42, args.output)
     elif args.exercise == "43":
