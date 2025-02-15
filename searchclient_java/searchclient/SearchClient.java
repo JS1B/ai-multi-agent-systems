@@ -193,8 +193,13 @@ public class SearchClient
                                 break;
                             case "boxgoalcount":
                                 Heuristic.heur = new HBoxGoalCount();
+                                break;
                             case "custom":
                                 Heuristic.heur = new HSumDistances();
+                                break;
+                            case "boxcustom":
+                                Heuristic.heur = new HSumDistancesBox();
+                                System.err.println("box");
                                 break;
                             default:
                                 Heuristic.heur = new HZero();
