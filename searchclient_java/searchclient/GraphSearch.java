@@ -1,7 +1,5 @@
 package searchclient;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 
 public class GraphSearch {
@@ -62,8 +60,10 @@ public class GraphSearch {
             HashSet<State> expanded = new HashSet<>();
 
             while (true) {
-                if (frontier.isEmpty())
+                if (frontier.isEmpty()) {
+                    printSearchStatus(expanded, frontier);
                     return null;
+                }
 
                 State s = frontier.pop();
 
@@ -80,7 +80,7 @@ public class GraphSearch {
                         frontier.add(t);
                 }
 
-                //Print a status message every 10000 iteration
+                //Print a status message every 100000 iteration
                 if (!SearchClient.benchmark_logs && ++iterations % 10000 == 0) {
                     printSearchStatus(expanded, frontier);
                 }
