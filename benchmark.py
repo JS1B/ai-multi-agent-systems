@@ -3,6 +3,11 @@ from argparse import ArgumentParser
 from collections import defaultdict
 
 
+BUILD_SCRIPT = {
+    "linux": "./build_searchclient.sh",
+    "windows": f".\\build_searchclient.ps1",
+}
+
 def exc_template_factory():
     return {
         "level": list,
@@ -50,8 +55,10 @@ def main():
     if not os.path.exists(args.output):
         os.makedirs(args.output)
 
-    build_command = f"./build_searchclient.sh"
-    run_command(build_command)
+    if os.name == "nt":
+        run_command(BUILD_SCRIPT["windows"])
+    else:
+        run_command(BUILD_SCRIPT["linux"])
 
     if args.exercise == "3":
         parse_command(exc_3, args.output)
