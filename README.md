@@ -1,5 +1,8 @@
 # AI and Multi-Agent Systems
 
+Prezka mordy
+[link](https://docs.google.com/presentation/d/181soPRH8DPw9JhZXqvjlQJYNIl39AJvE0wjCEwSXI_Y/edit?usp=sharing)
+
 ### Useful commands
 
 Bash
