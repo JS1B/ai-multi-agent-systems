@@ -26,23 +26,23 @@ Benchmark table for informed search
 
 | Level             | Eval   | Heuristic  | States Generated | Time to solve [s] | Solution length |
 | ----------------- | ------ | ---------- | ---------------- | ----------------- | --------------- |
-| MAPF00            | A*     | Goal Count |                  |                   |                 |
-| MAPF00            | Greedy | Goal Count |                  |                   |                 |
-| MAPF01            | A*     | Goal Count |                  |                   |                 |
-| MAPF01            | Greedy | Goal Count |                  |                   |                 |
-| MAPF02            | A*     | Goal Count |                  |                   |                 |
-| MAPF02            | Greedy | Goal Count |                  |                   |                 |
-| MAPF02C           | A*     | Goal Count |                  |                   |                 |
-| MAPF02C           | Greedy | Goal Count |                  |                   |                 |
-| MAPF03            | A*     | Goal Count |                  |                   |                 |
-| MAPF03            | Greedy | Goal Count |                  |                   |                 |
-| MAPF03C           | A*     | Goal Count |                  |                   |                 |
-| MAPF03C           | Greedy | Goal Count |                  |                   |                 |
-| MAPFslidingpuzzle | A*     | Goal Count |                  |                   |                 |
-| MAPFslidingpuzzle | Greedy | Goal Count |                  |                   |                 |
-| MAPFreorder2      | A*     | Goal Count |                  |                   |                 |
-| MAPFreorder2      | Greedy | Goal Count |                  |                   |                 |
-| BFSfriendly       | A*     | Goal Count |                  |                   |                 |
-| BFSfriendly       | Greedy | Goal Count |                  |                   |                 |
+| MAPF00            | A*     | Goal Count | 48               | 0.032             | 14              |
+| MAPF00            | Greedy | Goal Count | 45               | 0.028             | 16              |
+| MAPF01            | A*     | Goal Count | 2311             | 0.093             | 14              |
+| MAPF01            | Greedy | Goal Count | 1771             | 0.070             | 137             |
+| MAPF02            | A*     | Goal Count | 108206           | 5.726             | 14              |
+| MAPF02            | Greedy | Goal Count | 18451            | 0.135             | 206             |
+| MAPF02C           | A*     | Goal Count | 106051           | 6.673             | 14              |
+| MAPF02C           | Greedy | Goal Count | 5168             | 0.108             | 44              |
+| MAPF03            | A*     | Goal Count | -                | -                 | -               |
+| MAPF03            | Greedy | Goal Count | 156727           | 0.578             | 364             |
+| MAPF03C           | A*     | Goal Count | -                | -                 | -               |
+| MAPF03C           | Greedy | Goal Count | 129608           | 2.362             | 55              |
+| MAPFslidingpuzzle | A*     | Goal Count | 104391           | 1.183             | 28              |
+| MAPFslidingpuzzle | Greedy | Goal Count | 962              | 0.077             | 46              |
+| MAPFreorder2      | A*     | Goal Count | -                | -                 | -               |
+| MAPFreorder2      | Greedy | Goal Count | -                | -                 | -               |
+| BFSfriendly       | A*     | Goal Count | 2                | 0.049             | 1               |
+| BFSfriendly       | Greedy | Goal Count | 2                | 0.054             | 1               |
 
 
