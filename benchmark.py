@@ -13,7 +13,7 @@ def exc_template_factory():
         "level": list,
         "strategy": list,
         "heuristic": list,
-        "timeout": 180,
+        "timeout": 3600,
         "display": "", # "-g -s 150"
     }
 
@@ -31,26 +31,23 @@ def parse_command(exc: dict, output_dir: str):
             continue
 
         for strat in exc["strategy"]:
-            output_file = os.path.join(output_dir, f"{lvl}_{strat}.txt")
-            command = f"java -jar server.jar -l levels/{lvl}.lvl -c \"java -Xmx8g -jar searchclient_java/searchclient.jar -{strat} -benchmark\" -t {exc['timeout']} {exc['display']} -o {output_file}"
-            run_command(command)
+            for heur in exc["heuristic"]:
+                output_file: str = os.path.join(output_dir, f"{lvl}_{strat}_{heur}.txt")
+                command = f"java -jar server.jar -l levels/{lvl}.lvl -c \"java -Xmx8g -jar searchclient_java/searchclient.jar -benchmark -heur {heur} -{strat}\" -t {exc['timeout']} {exc['display']} -o {output_file}"
+                run_command(command)
 
 def main():
     exc_3 = exc_dict["exc_3"]
-    exc_3["level"] = ["MAPF00", "MAPF01", "MAPF02", "MAPF02C", "MAPF03", "MAPF03C", "MAPFslidingpuzzle", "MAPFreorder2", "BFSfriendly"]
+    exc_3["level"] = ["MAPF00", "MAPF01", "MAPF02", "MAPF02C", "MAPF03", "MAPF03C", "MAPFslidingpuzzle", "MAPFreorder2", "BFSFriendly"]
     exc_3["strategy"] = ["bfs", "dfs"]
 
-    exc_3_long = exc_dict["exc_3"]
-    exc_3_long["level"] = ["MAPF03", "MAPF03C", "MAPFreorder2"]
-    exc_3_long["strategy"] = ["bfs", "dfs"]
-    exc_3_long["timeout"] = 3600
-
     exc_42 = exc_dict["exc_42"]
-    exc_42["level"] = [ "MAPF00", "MAPF01", "MAPF02", "MAPF02C", "MAPF03", "MAPF03C", "MAPFslidingpuzzle", "MAPFreorder2", "BFSfriendly"]
+    exc_42["level"] = [ "MAPF00", "MAPF01", "MAPF02", "MAPF02C", "MAPF03", "MAPF03C", "MAPFslidingpuzzle", "MAPFreorder2", "BFSFriendly"]
     exc_42["strategy"] = ["greedy", "astar"]
+    exc_42["heuristic"] = ["goalcount"]
 
     exc_43 = exc_dict["exc_43"]
-    exc_43["level"] = ["MAPF00", "MAPF01", "MAPF02", "MAPF02C", "MAPF03", "MAPF03C", "MAPFslidingpuzzle", "MAPFreorder2", "BFSfriendly"]
+    exc_43["level"] = ["MAPF00", "MAPF01", "MAPF02", "MAPF02C", "MAPF03", "MAPF03C", "MAPFslidingpuzzle", "MAPFreorder2", "BFSFriendly"]
     exc_43["strategy"] = ["greedy", "astar", "heur custom"]
 
     parser = ArgumentParser()
@@ -67,7 +64,7 @@ def main():
         run_command(BUILD_SCRIPT["linux"])
 
     if args.exercise == "3":
-        parse_command(exc_3_long, args.output)
+        parse_command(exc_3, args.output)
     elif args.exercise == "42":
         parse_command(exc_42, args.output)
     elif args.exercise == "43":
