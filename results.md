@@ -12,14 +12,14 @@ Benchmark table for uninformed search
 | MAPF02C           | DFS      | 207              | 1.532             | 3538            |
 | MAPF03            | BFS      | 5063873          | 1937.427          | 14              |
 | MAPF03            | DFS      | 128511           | 0.646             | 608             |
-| MAPF03C           | BFS      | -                | -                 | -               |
+| MAPF03C           | BFS      | 5084159          | 1989.211          | 14              |
 | MAPF03C           | DFS      | 4230326          | 37.628            | 52998           |
 | MAPFslidingpuzzle | BFS      | 181289           | 2.144             | 28              |
 | MAPFslidingpuzzle | DFS      | 163454           | 5.127             | 57558           |
-| MAPFreorder2      | BFS      | -                | -                 | -               |
+| MAPFreorder2      | BFS      | 3603599          | 228.271           | 38              |
 | MAPFreorder2      | DFS      | 3595945          | 62.780            | 78862           |
-| BFSfriendly       | BFS      | -                | -                 | -               |
-| BFSfriendly       | DFS      | -                | -                 | -               |
+| BFSfriendly       | BFS      | 2                | 0.027             | 1               |
+| BFSfriendly       | DFS      | 1003             | 0.070             | 1               |
 
 
 Benchmark table for informed search
