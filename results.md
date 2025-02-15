@@ -34,15 +34,14 @@ Benchmark table for informed search
 | MAPF02            | Greedy | Goal Count | 18451            | 0.135             | 206             |
 | MAPF02C           | A*     | Goal Count | 106051           | 6.673             | 14              |
 | MAPF02C           | Greedy | Goal Count | 5168             | 0.108             | 44              |
-| MAPF03            | A*     | Goal Count | -                | -                 | -               |
+| MAPF03            | A*     | Goal Count | 4755791          | 2176.890          | 14              |
 | MAPF03            | Greedy | Goal Count | 156727           | 0.578             | 364             |
-| MAPF03C           | A*     | Goal Count | -                | -                 | -               |
+| MAPF03C           | A*     | Goal Count | -                | >1800             | -               |
 | MAPF03C           | Greedy | Goal Count | 129608           | 2.362             | 55              |
 | MAPFslidingpuzzle | A*     | Goal Count | 104391           | 1.183             | 28              |
 | MAPFslidingpuzzle | Greedy | Goal Count | 962              | 0.077             | 46              |
-| MAPFreorder2      | A*     | Goal Count | -                | -                 | -               |
-| MAPFreorder2      | Greedy | Goal Count | -                | -                 | -               |
+| MAPFreorder2      | A*     | Goal Count | 3600155          | 224.614           | 40              |
+| MAPFreorder2      | Greedy | Goal Count | 1583879          | 47.398            | 389             |
 | BFSfriendly       | A*     | Goal Count | 2                | 0.049             | 1               |
 | BFSfriendly       | Greedy | Goal Count | 2                | 0.054             | 1               |
-
 
