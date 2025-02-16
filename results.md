@@ -45,3 +45,26 @@ Benchmark table for informed search - exc 4.2
 | BFSfriendly       | A*     | Goal Count | 2                | 0.049             | 1               |
 | BFSfriendly       | Greedy | Goal Count | 2                | 0.054             | 1               |
 
+Benchmark table for custom function - exc 6.2
+
+| Level             | Eval   | Heuristic   | States Generated | Time to solve [s] | Solution length |
+| ----------------- | ------ | ----------- | ---------------- | ----------------- | --------------- |
+| MAPF00            | A*     | Box Custom  | 37               | 0.051             | 14              |
+| MAPF00            | Greedy | Box Custom  | 29               | 0.048             | 14              |
+| MAPF01            | A*     | Box Custom  | 742              | 0.066             | 14              |
+| MAPF01            | Greedy | Box Custom  | 187              | 0.059             | 14              |
+| MAPF02            | A*     | Box Custom  | 11035            | 0.168             | 14              |
+| MAPF02            | Greedy | Box Custom  | 988              | 0.060             | 14              |
+| MAPF02C           | A*     | Box Custom  | 723              | 0.040             | 15              |
+| MAPF02C           | Greedy | Box Custom  | 723              | 0.059             | 15              |
+| MAPF03            | A*     | Box Custom  | 135894           | 1.071             | 14              |
+| MAPF03            | Greedy | Box Custom  | 3561             | 0.055             | 14              |
+| MAPF03C           | A*     | Box Custom  | 2995             | 0.070             | 16              |
+| MAPF03C           | Greedy | Box Custom  | 2995             | 0.052             | 16              |
+| MAPFslidingpuzzle | A*     | Box Custom  | 3190             | 0.094             | 28              |
+| MAPFslidingpuzzle | Greedy | Box Custom  | 311              | 0.068             | 58              |
+| MAPFreorder2      | A*     | Box Custom  | 1945739          | 58.986            | 51              |
+| MAPFreorder2      | Greedy | Box Custom  | 1813567          | 58.555            | 175             |
+| BFSfriendly       | A*     | Box Custom  | 2                | 0.027             | 1               |
+| BFSfriendly       | Greedy | Box Custom  | 2                | 0.031             | 1               |
+
