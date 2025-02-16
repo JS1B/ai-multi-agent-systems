@@ -232,7 +232,7 @@ class HSumDistances implements CustomH {
 
     @Override
     public int h(State s) {
-        int totalDistance = 0;
+        long totalDistance = 0;
         for (Map.Entry<Integer, SimpleEntry<Integer, Integer>> entry : agentGoals.entrySet()) {
             int agent = entry.getKey();
             SimpleEntry<Integer, Integer> goal = entry.getValue();
@@ -249,8 +249,12 @@ class HSumDistances implements CustomH {
                     totalDistance += (distance == -1) ? Integer.MAX_VALUE / 2 : distance;
                 }
             }
+            if (totalDistance > Integer.MAX_VALUE) {
+                return Integer.MAX_VALUE;  // Early return if overflow would occur
+            }
         }
-        return totalDistance;
+        return (int)Math.min(totalDistance, Integer.MAX_VALUE);
+
     }
 
     @Override
@@ -349,7 +353,7 @@ class HSumDistancesBox implements CustomH {
 
     @Override
     public int h(State s) {
-        int totalDistance = 0;
+        long totalDistance = 0;
 
         // Sum agent distances
         for (Map.Entry<Integer, SimpleEntry<Integer, Integer>> entry : agentGoals.entrySet()) {
@@ -367,6 +371,9 @@ class HSumDistancesBox implements CustomH {
                     int distance = distances[currentRow][currentCol];
                     totalDistance += (distance == -1) ? Integer.MAX_VALUE / 2 : distance;
                 }
+            }
+            if (totalDistance > Integer.MAX_VALUE) {
+                return Integer.MAX_VALUE;  // Early return if overflow would occur
             }
         }
 
@@ -398,9 +405,14 @@ class HSumDistancesBox implements CustomH {
             if (!found) {
                 totalDistance += Integer.MAX_VALUE / 2;
             }
+            if (totalDistance > Integer.MAX_VALUE) {
+                return Integer.MAX_VALUE;  // Early return if overflow would occur
+            }
+    
         }
 
-        return totalDistance;
+        
+        return (int)Math.min(totalDistance, Integer.MAX_VALUE);
     }
 
     @Override
