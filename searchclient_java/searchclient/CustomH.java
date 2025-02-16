@@ -420,3 +420,160 @@ class HSumDistancesBox implements CustomH {
         return "HSumDistancesBox";
     }
 }
+
+class HSumDistancesBox2 implements CustomH {
+    private Map<Integer, SimpleEntry<Integer, Integer>> agentGoals = new HashMap<>();
+    private Map<Integer, int[][]> distanceMaps = new HashMap<>();
+    private Map<Character, SimpleEntry<Integer, Integer>> boxGoals = new HashMap<>();
+    private Map<Character, int[][]> boxDistanceMaps = new HashMap<>();
+
+    @Override
+    public void init(State initialState) {
+        int numAgents = initialState.agentRows.length;
+        int rows = State.goals.length;
+        int cols = State.goals[0].length;
+
+        // Map each agent to their goal position
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                char goalChar = (char) State.goals[r][c];
+                if (goalChar >= '0' && goalChar <= '9') {
+                    int agent = goalChar - '0';
+                    if (agent < numAgents) {
+                        agentGoals.put(agent, new SimpleEntry<>(r, c));
+                    }
+                }
+            }
+        }
+
+        // Precompute BFS distances for each agent's goal
+        for (Map.Entry<Integer, SimpleEntry<Integer, Integer>> entry : agentGoals.entrySet()) {
+            int agent = entry.getKey();
+            SimpleEntry<Integer, Integer> goal = entry.getValue();
+            int[][] distances = computeBFSDistanceMap(goal.getKey(), goal.getValue());
+            distanceMaps.put(agent, distances);
+        }
+
+        // Map each box to its goal position
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                char goalChar = (char) State.goals[r][c];
+                if (goalChar >= 'A' && goalChar <= 'Z') {
+                    boxGoals.put(goalChar, new SimpleEntry<>(r, c));
+                }
+            }
+        }
+
+        // Precompute BFS distances for each box's goal
+        for (Map.Entry<Character, SimpleEntry<Integer, Integer>> entry : boxGoals.entrySet()) {
+            char boxChar = entry.getKey();
+            SimpleEntry<Integer, Integer> goal = entry.getValue();
+            int[][] distances = computeBFSDistanceMap(goal.getKey(), goal.getValue());
+            boxDistanceMaps.put(boxChar, distances);
+        }
+    }
+
+    // BFS to compute shortest path distances from a goal cell to all other cells
+    private int[][] computeBFSDistanceMap(int goalRow, int goalCol) {
+        int rows = State.walls.length;
+        int cols = State.walls[0].length;
+        int[][] distances = new int[rows][cols];
+        for (int[] row : distances) Arrays.fill(row, -1); // -1 indicates unreachable
+
+        if (State.walls[goalRow][goalCol]) return distances; // Goal is in a wall (invalid)
+
+        Queue<SimpleEntry<Integer, Integer>> queue = new LinkedList<>();
+        distances[goalRow][goalCol] = 0;
+        queue.add(new SimpleEntry<>(goalRow, goalCol));
+
+        int[][] directions = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+
+        while (!queue.isEmpty()) {
+            SimpleEntry<Integer, Integer> cell = queue.poll();
+            int r = cell.getKey();
+            int c = cell.getValue();
+
+            for (int[] dir : directions) {
+                int newR = r + dir[0];
+                int newC = c + dir[1];
+                if (newR >= 0 && newR < rows && newC >= 0 && newC < cols) {
+                    if (!State.walls[newR][newC] && distances[newR][newC] == -1) {
+                        distances[newR][newC] = distances[r][c] + 1;
+                        queue.add(new SimpleEntry<>(newR, newC));
+                    }
+                }
+            }
+        }
+
+        return distances;
+    }
+
+    @Override
+    public int h(State s) {
+        long totalDistance = 0;
+
+        // Sum agent distances
+        for (Map.Entry<Integer, SimpleEntry<Integer, Integer>> entry : agentGoals.entrySet()) {
+            int agent = entry.getKey();
+            SimpleEntry<Integer, Integer> goal = entry.getValue();
+            int currentRow = s.agentRows[agent];
+            int currentCol = s.agentCols[agent];
+
+            if (currentRow != goal.getKey() || currentCol != goal.getValue()) {
+                int[][] distances = distanceMaps.get(agent);
+                if (currentRow < 0 || currentRow >= distances.length || 
+                    currentCol < 0 || currentCol >= distances[0].length) {
+                    totalDistance += Integer.MAX_VALUE / 2; // Invalid position
+                } else {
+                    int distance = distances[currentRow][currentCol];
+                    totalDistance += (distance == -1) ? Integer.MAX_VALUE / 2 : distance;
+                }
+            }
+            if (totalDistance > Integer.MAX_VALUE) {
+                return Integer.MAX_VALUE;  // Early return if overflow would occur
+            }
+        }
+
+        // Sum box distances
+        for (Map.Entry<Character, SimpleEntry<Integer, Integer>> entry : boxGoals.entrySet()) {
+            char boxChar = entry.getKey();
+            SimpleEntry<Integer, Integer> goal = entry.getValue();
+            int goalRow = goal.getKey();
+            int goalCol = goal.getValue();
+
+            boolean found = false;
+            // Search for the current position of the box
+            for (int r = 0; r < s.boxes.length; r++) {
+                for (int c = 0; c < s.boxes[r].length; c++) {
+                    if (s.boxes[r][c] == boxChar) {
+                        int[][] distances = boxDistanceMaps.get(boxChar);
+                        if (r < 0 || r >= distances.length || c < 0 || c >= distances[0].length) {
+                            totalDistance += Integer.MAX_VALUE / 2;
+                        } else {
+                            int distance = distances[r][c];
+                            totalDistance += (distance == -1) ? Integer.MAX_VALUE / 2 : 5 * distance;
+                        }
+                        found = true;
+                        break; // Assuming each box character is unique
+                    }
+                }
+                if (found) break;
+            }
+            if (!found) {
+                totalDistance += Integer.MAX_VALUE / 2;
+            }
+            if (totalDistance > Integer.MAX_VALUE) {
+                return Integer.MAX_VALUE;  // Early return if overflow would occur
+            }
+    
+        }
+
+        
+        return (int)Math.min(totalDistance, Integer.MAX_VALUE);
+    }
+
+    @Override
+    public String toString() {
+        return "HSumDistancesBox2";
+    }
+}
