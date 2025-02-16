@@ -199,11 +199,14 @@ public class SearchClient
                                 break;
                             case "boxcustom":
                                 Heuristic.heur = new HSumDistancesBox();
-                                System.err.println("box");
+                                break;
+                            case "boxcustom2":
+                                Heuristic.heur = new HSumDistancesBox2();
                                 break;
                             default:
                                 Heuristic.heur = new HZero();
                                 System.err.println("Defaulting to HZero heuristic.");
+                                break;
                         }
                     }
                     
