@@ -1,4 +1,4 @@
-Benchmark table for uninformed search
+Benchmark table for uninformed search - exc 3
 
 | Level             | Strategy | States Generated | Time to solve [s] | Solution Length |
 | ----------------- | -------- | ---------------- | ----------------- | --------------- |
@@ -22,7 +22,7 @@ Benchmark table for uninformed search
 | BFSfriendly       | DFS      | 1003             | 0.070             | 1               |
 
 
-Benchmark table for informed search
+Benchmark table for informed search - exc 4.2
 
 | Level             | Eval   | Heuristic  | States Generated | Time to solve [s] | Solution length |
 | ----------------- | ------ | ---------- | ---------------- | ----------------- | --------------- |
@@ -36,7 +36,7 @@ Benchmark table for informed search
 | MAPF02C           | Greedy | Goal Count | 5168             | 0.108             | 44              |
 | MAPF03            | A*     | Goal Count | 4755791          | 2176.890          | 14              |
 | MAPF03            | Greedy | Goal Count | 156727           | 0.578             | 364             |
-| MAPF03C           | A*     | Goal Count | -                | >1800             | -               |
+| MAPF03C           | A*     | Goal Count | 4755791          | 2543.181          | 14              |
 | MAPF03C           | Greedy | Goal Count | 129608           | 2.362             | 55              |
 | MAPFslidingpuzzle | A*     | Goal Count | 104391           | 1.183             | 28              |
 | MAPFslidingpuzzle | Greedy | Goal Count | 962              | 0.077             | 46              |

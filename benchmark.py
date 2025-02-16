@@ -10,9 +10,9 @@ BUILD_SCRIPT = {
 
 def exc_template_factory():
     return {
-        "level": list,
-        "strategy": list,
-        "heuristic": list,
+        "level": list[str],
+        "strategy": list[str],
+        "heuristic": list[str],
         "timeout": 3600,
         "display": "", # "-g -s 150"
     }
@@ -24,7 +24,7 @@ def run_command(command: str):
     print(command)
     os.system(command)
 
-def parse_command(exc: dict, output_dir: str):
+def form_command_and_run(exc: dict, output_dir: str):
     for lvl in exc["level"]:
         if not os.path.exists(f"levels/{lvl}.lvl"):
             print(f"Level {lvl} does not exist, skipping")
@@ -45,10 +45,23 @@ def main():
     exc_42["level"] = [ "MAPF00", "MAPF01", "MAPF02", "MAPF02C", "MAPF03", "MAPF03C", "MAPFslidingpuzzle", "MAPFreorder2", "BFSFriendly"]
     exc_42["strategy"] = ["greedy", "astar"]
     exc_42["heuristic"] = ["goalcount"]
-
+    
     exc_43 = exc_dict["exc_43"]
     exc_43["level"] = ["MAPF00", "MAPF01", "MAPF02", "MAPF02C", "MAPF03", "MAPF03C", "MAPFslidingpuzzle", "MAPFreorder2", "BFSFriendly"]
-    exc_43["strategy"] = ["greedy", "astar", "heur custom"]
+    exc_43["strategy"] = ["greedy", "astar"]
+    exc_43["heuristic"] = ["goalcount"]
+
+    exc_61 = exc_dict["exc_61"]
+    exc_61["level"] = ["SAFirefly", "SACrunch"]
+    exc_61["strategy"] = ["greedy", "bfs", "dfs"]
+    exc_61["heuristic"] = ["goalcount"]
+    exc_61["timeout"] = 100
+
+    exc_62 = exc_dict["exc_62"]
+    exc_62["level"] = ["MAPF00", "MAPF01", "MAPF02", "MAPF02C", "MAPF03", "MAPF03C", "MAPFslidingpuzzle", "MAPFreorder2", "BFSFriendly"]
+    exc_62["strategy"] = ["greedy", "astar"]
+    exc_62["heuristic"] = ["boxcustom"]
+    exc_62["timeout"] = 100
 
     parser = ArgumentParser()
     parser.add_argument("--exercise", type=str, default="all")
@@ -64,15 +77,21 @@ def main():
         run_command(BUILD_SCRIPT["linux"])
 
     if args.exercise == "3":
-        parse_command(exc_3, args.output)
+        form_command_and_run(exc_3, args.output)
     elif args.exercise == "42":
-        parse_command(exc_42, args.output)
+        form_command_and_run(exc_42, args.output)
     elif args.exercise == "43":
-        parse_command(exc_43, args.output)
+        form_command_and_run(exc_43, args.output)
+    elif args.exercise == "61":
+        form_command_and_run(exc_61, args.output)
+    elif args.exercise == "62":
+        form_command_and_run(exc_62, args.output)
     elif args.exercise == "all":
-        parse_command(exc_3, args.output)
-        parse_command(exc_42, args.output)
-        parse_command(exc_43, args.output)
+        form_command_and_run(exc_3, args.output)
+        form_command_and_run(exc_42, args.output)
+        form_command_and_run(exc_43, args.output)
+        form_command_and_run(exc_61, args.output)
+        form_command_and_run(exc_62, args.output)
 
 
 if __name__ == "__main__":
