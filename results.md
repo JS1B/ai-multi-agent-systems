@@ -87,7 +87,7 @@ Benchmark table for custom function - exc 5.3
 | Level     | Strategy | States Generated | Time to solve [s] | Solution length |
 | --------- | -------- | ---------------- | ----------------- | --------------- |
 | SAFirefly | BFS      | 1920105          | 10.306            | 60              |
-| SAFirefly | DFS      | 2321546          | 47.564            | 1474392         |
+| SAFirefly | DFS      | 2321546          | 7.564             | 1474392         |
 | SACrunch  | BFS      | 9284096          | 47.605            | 98              |
 | SACrunch  | DFS      | 3380266          | 37.813            | 1110820         |
 
@@ -115,3 +115,48 @@ Benchmark table for custom function - exc 6.2
 | BFSfriendly       | A*     | Box Custom | 2                | 0.027             | 1               |
 | BFSfriendly       | Greedy | Box Custom | 2                | 0.031             | 1               |
 
+
+Benchmark table for extension - exc 7
+
+| Level      | Eval   | Heuristic      | States Generated | Time to solve [s] | Solution length |
+| ---------- | ------ | -------------- | ---------------- | ----------------- | --------------- |
+| MAPF03C    | Greedy | Goal Count     | 129608           | 2.309             | 55              |
+| MAPF03C    | Greedy | Box Goal Count | 129608           | 2.731             | 55              |
+| MAPF03C    | Greedy | Custom         | 2995             | 0.074             | 16              |
+| MAPF03C    | Greedy | Box Custom     | 2995             | 0.083             | 16              |
+| MAPF03C    | Greedy | Box Custom 2   | 2995             | 0.081             | 16              |
+| MAPF03C    | A*     | Goal Count     | -                | >1000             | -               |
+| MAPF03C    | A*     | Box Goal Count | -                | >1000             | -               |
+| MAPF03C    | A*     | Custom         | 2995             | 0.070             | 16              |
+| MAPF03C    | A*     | Box Custom     | 2995             | 0.081             | 16              |
+| MAPF03C    | A*     | Box Custom 2   | 2995             | 0.073             | 16              |
+| MAcustom01 | Greedy | Goal Count     | 40185            | 0.378             | 87              |
+| MAcustom01 | Greedy | Box Goal Count | 4388             | 0.138             | 50              |
+| MAcustom01 | Greedy | Custom         | 162474           | 2.066             | 45              |
+| MACustom01 | Greedy | Box Custom     | 3202             | 0.106             | 94              |
+| MAcustom01 | Greedy | Box Custom 2   | 437              | 0.058             | 20              |
+| MAcustom01 | A*     | Goal Count     | 255021           | 3.989             | 20              |
+| MAcustom01 | A*     | Box Goal Count | 254991           | 4.716             | 20              |
+| MAcustom01 | A*     | Custom         | 250213           | 4.144             | 25              |
+| MAcustom01 | A*     | Box Custom     | 107886           | 1.489             | 24              |
+| MAcustom01 | A*     | Box Custom 2   | 437              | 0.051             | 20              |
+| MAcustom02 | Greedy | Goal Count     | 3560857          | 16.659            | 129             |
+| MAcustom02 | Greedy | Box Goal Count | 7402             | 0.168             | 60              |
+| MAcustom02 | Greedy | Custom         | 13162311         | 170.299           | 314             |
+| MAcustom02 | Greedy | Box Custom     | 407394           | 4.388             | 167             |
+| MAcustom02 | Greedy | Box Custom 2   | 155267           | 2.086             | 122             |
+| MAcustom02 | A*     | Goal Count     | -                | >1000             | -               |
+| MAcustom02 | A*     | Box Goal Count | -                | >1000             | -               |
+| MAcustom02 | A*     | Custom         | -                | >1000             | -               |
+| MAcustom02 | A*     | Box Custom     | 11991448         | 201.638           | 30              |
+| MAcustom02 | A*     | Box Custom 2   | 807235           | 11.082            | 37              |
+| MAcustom03 | Greedy | Goal Count     | -                | >1000             | -               |
+| MAcustom03 | Greedy | Box Goal Count | 24830            | 0.308             | 74              |
+| MAcustom03 | Greedy | Custom         | -                | >1000             | -               |
+| MAcustom03 | Greedy | Box Custom     | -                | >1000             | -               |
+| MAcustom03 | Greedy | Box Custom 2   | -                | >1000             | -               |
+| MAcustom03 | A*     | Goal Count     | -                | >1000             | -               |
+| MAcustom03 | A*     | Box Goal Count | -                | >1000             | -               |
+| MAcustom03 | A*     | Custom         | -                | >1000             | -               |
+| MAcustom03 | A*     | Box Custom     | -                | >1000             | -               |
+| MAcustom03 | A*     | Box Custom 2   | -                | >1000             | -               |

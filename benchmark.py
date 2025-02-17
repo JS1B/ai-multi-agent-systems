@@ -32,8 +32,8 @@ def form_command_and_run(exc: dict, output_dir: str):
 
         for strat in exc["strategy"]:
             for heur in exc["heuristic"]:
-                output_file: str = os.path.join(output_dir, f"{lvl}_{strat}_{heur}.txt")
-                command = f"java -jar server.jar -l levels/{lvl}.lvl -c \"java -Xmx8g -jar searchclient_java/searchclient.jar -benchmark -heur {heur} -{strat}\" -t {exc['timeout']} {exc['display']} -o {output_file}"
+                # output_file: str = os.path.join(output_dir, f"{lvl}_{strat}_{heur}2.txt")
+                command = f"java -jar server.jar -l levels/{lvl}.lvl -c \"java -Xmx8g -jar searchclient_java/searchclient.jar -benchmark -heur {heur} -{strat}\" -t {exc['timeout']} {exc['display']}"
                 run_command(command)
 
 def main():
@@ -48,8 +48,16 @@ def main():
     
     exc_43 = exc_dict["exc_43"]
     exc_43["level"] = ["MAPF00", "MAPF01", "MAPF02", "MAPF02C", "MAPF03", "MAPF03C", "MAPFslidingpuzzle", "MAPFreorder2", "BFSFriendly"]
-    exc_43["strategy"] = ["greedy", "astar"]
-    exc_43["heuristic"] = ["goalcount"]
+    exc_43["strategy"] = ["astar", "greedy"]
+    exc_43["heuristic"] = ["custom"]
+
+    exc_52 = exc_dict["exc_52"]
+    exc_52["level"] = ["SAD1", "SAD2", "SAD3"]
+    exc_52["strategy"] = ["bfs", "dfs"]
+
+    exc_53 = exc_dict["exc_53"]
+    exc_53["level"] = ["SAFirefly", "SACrunch"]
+    exc_53["strategy"] = ["bfs", "dfs"]
 
     exc_61 = exc_dict["exc_61"]
     exc_61["level"] = ["SAFirefly", "SACrunch"]
@@ -62,6 +70,12 @@ def main():
     exc_62["strategy"] = ["greedy", "astar"]
     exc_62["heuristic"] = ["boxcustom"]
     exc_62["timeout"] = 100
+
+    ext_7 = exc_dict["ext_7"]
+    ext_7["level"] = ["MAPF03C", "MAcustom01", "MAcustom02", "MAcustom03"]
+    ext_7["strategy"] = ["greedy", "astar"]
+    ext_7["heuristic"] = ["goalcount", "boxgoalcount", "custom", "boxcustom", "boxcustom2"]
+    ext_7["timeout"] = 1000
 
     parser = ArgumentParser()
     parser.add_argument("--exercise", type=str, default="all")
@@ -82,16 +96,25 @@ def main():
         form_command_and_run(exc_42, args.output)
     elif args.exercise == "43":
         form_command_and_run(exc_43, args.output)
+    elif args.exercise == "52":
+        form_command_and_run(exc_52, args.output)
+    elif args.exercise == "53":
+        form_command_and_run(exc_53, args.output)
     elif args.exercise == "61":
         form_command_and_run(exc_61, args.output)
     elif args.exercise == "62":
         form_command_and_run(exc_62, args.output)
+    elif args.exercise == "7":
+        form_command_and_run(ext_7, args.output)
     elif args.exercise == "all":
         form_command_and_run(exc_3, args.output)
         form_command_and_run(exc_42, args.output)
         form_command_and_run(exc_43, args.output)
+        form_command_and_run(exc_52, args.output)
+        form_command_and_run(exc_53, args.output)
         form_command_and_run(exc_61, args.output)
         form_command_and_run(exc_62, args.output)
+        form_command_and_run(ext_7, args.output)
 
 
 if __name__ == "__main__":
