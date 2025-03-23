@@ -7,6 +7,7 @@ use rand::seq::SliceRandom;
 use rand::SeedableRng;
 use std::fmt;
 use std::hash::{Hash, Hasher};
+use std::collections::hash_map::DefaultHasher;
 
 /// Level holds immutable board data.
 /// This data is read from input once and then passed as a reference to every State.
@@ -22,6 +23,7 @@ pub struct Level {
 /// a pointer to its parent state (for extracting a plan),
 /// the joint action that led here, and the cost (g).
 /// Each State also has a reference to the immutable Level.
+// #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 #[derive(Clone)]
 pub struct State<'a> {
     pub level: &'a Level,
@@ -359,6 +361,16 @@ impl<'a> State<'a> {
         plan.reverse();
         plan
     }
+
+    pub fn calculate_hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.agent_rows.hash(&mut hasher);
+        self.agent_cols.hash(&mut hasher);
+        self.boxes.hash(&mut hasher);
+        self.parent.hash(&mut hasher);
+        self.g.hash(&mut hasher);
+        hasher.finish()
+    }
 }
 
 impl<'a> fmt::Display for State<'a> {
@@ -435,5 +447,3 @@ impl<'a> Hash for State<'a> {
         self.boxes.hash(state);
     }
 }
-
-fn main() {}
