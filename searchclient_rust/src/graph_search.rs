@@ -73,10 +73,7 @@ impl GraphSearch {
                     return None;
                 }
 
-                let s = match frontier.pop() {
-                    Some(state) => state,
-                    None => return None,
-                };
+                let s = frontier.pop()?;
 
                 if s.is_goal_state() {
                     Self::print_search_status(&expanded, &frontier, start_time);
