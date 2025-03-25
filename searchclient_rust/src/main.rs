@@ -9,7 +9,6 @@ mod state;
 use std::env;
 use std::io::{self, BufRead};
 use std::process;
-use std::time::Instant;
 
 use action::Action;
 use frontier::{Frontier, FrontierBFS, FrontierBestFirst, FrontierDFS, HeuristicEnum};
@@ -18,7 +17,6 @@ use heuristic::{
     HBoxGoalCount, HGoalCount, HSumDistances, HSumDistancesBox, HSumDistancesBox2, HZero,
     HeuristicAStar, HeuristicGreedy, HeuristicWeightedAStar,
 };
-use memory::Memory;
 use state::State;
 
 pub static mut BENCHMARK_LOGS: bool = false;
@@ -52,9 +50,9 @@ fn parse_level(reader: &mut impl BufRead) -> io::Result<State> {
 
         for entity in entities {
             let c = entity.trim().chars().next().unwrap();
-            if c >= '0' && c <= '9' {
+            if ('0'..='9').contains(&c) {
                 agent_colors[c as usize - '0' as usize] = color;
-            } else if c >= 'A' && c <= 'Z' {
+            } else if ('A'..='Z').contains(&c) {
                 box_colors[c as usize - 'A' as usize] = color;
             }
         }
@@ -89,11 +87,11 @@ fn parse_level(reader: &mut impl BufRead) -> io::Result<State> {
     for row in 0..num_rows {
         let line = &level_lines[row];
         for (col, c) in line.trim_end().chars().enumerate() {
-            if c >= '0' && c <= '9' {
+            if ('0'..='9').contains(&c) {
                 agent_rows[c as usize - '0' as usize] = row;
                 agent_cols[c as usize - '0' as usize] = col;
                 num_agents += 1;
-            } else if c >= 'A' && c <= 'Z' {
+            } else if ('A'..='Z').contains(&c) {
                 boxes[row][col] = c;
             } else if c == '+' {
                 walls[row][col] = true;
@@ -113,7 +111,7 @@ fn parse_level(reader: &mut impl BufRead) -> io::Result<State> {
     let mut row = 0;
     while !line.starts_with('#') {
         for (col, c) in line.trim_end().chars().enumerate() {
-            if (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') {
+            if ('0'..='9').contains(&c) || ('A'..='Z').contains(&c) {
                 goals[row][col] = c;
             }
         }

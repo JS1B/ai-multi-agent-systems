@@ -186,10 +186,10 @@ impl CustomH for HGoalCount {
         for row in 0..s.boxes.len() {
             for col in 0..s.boxes[row].len() {
                 let goal = s.goals[row][col];
-                if goal >= 'A' && goal <= 'Z' && s.boxes[row][col] != goal {
+                if ('A'..='Z').contains(&goal) && s.boxes[row][col] != goal {
                     count += 1;
                 }
-                if goal >= '0' && goal <= '9' {
+                if ('0'..='9').contains(&goal) {
                     let agent_idx = (goal as u8 - b'0') as usize;
                     if agent_idx >= s.agent_rows.len()
                         || s.agent_rows[agent_idx] != row
@@ -230,7 +230,7 @@ impl CustomH for HBoxGoalCount {
         for row in 0..s.boxes.len() {
             for col in 0..s.boxes[row].len() {
                 let goal = s.goals[row][col];
-                if goal >= 'A' && goal <= 'Z' && s.boxes[row][col] != goal {
+                if ('A'..='Z').contains(&goal) && s.boxes[row][col] != goal {
                     count += 1;
                 }
             }
@@ -315,7 +315,7 @@ impl CustomH for HSumDistancesBox {
         for row in 0..s.boxes.len() {
             for col in 0..s.boxes[row].len() {
                 let box_char = s.boxes[row][col];
-                if box_char >= 'A' && box_char <= 'Z' {
+                if ('A'..='Z').contains(&box_char) {
                     // Find the goal for this box
                     let mut goal_found = false;
                     for goal_row in 0..s.goals.len() {
@@ -365,7 +365,7 @@ impl CustomH for HSumDistancesBox2 {
         for row in 0..s.boxes.len() {
             for col in 0..s.boxes[row].len() {
                 let box_char = s.boxes[row][col];
-                if box_char >= 'A' && box_char <= 'Z' {
+                if ('A'..='Z').contains(&box_char) {
                     // Find the goal for this box
                     let mut goal_found = false;
                     for goal_row in 0..s.goals.len() {
@@ -397,7 +397,7 @@ impl CustomH for HSumDistancesBox2 {
             for row in 0..s.boxes.len() {
                 for col in 0..s.boxes[row].len() {
                     let box_char = s.boxes[row][col];
-                    if box_char >= 'A' && box_char <= 'Z' {
+                    if ('A'..='Z').contains(&box_char) {
                         let box_color = s.box_colors[(box_char as u8 - b'A') as usize];
                         if box_color == agent_color {
                             let distance = (agent_row as isize - row as isize).abs()

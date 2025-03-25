@@ -146,10 +146,10 @@ impl State {
         for row in 0..self.boxes.len() {
             for col in 0..self.boxes[row].len() {
                 let goal = self.goals[row][col];
-                if goal >= 'A' && goal <= 'Z' && self.boxes[row][col] != goal {
+                if ('A'..='Z').contains(&goal) && self.boxes[row][col] != goal {
                     return false;
                 }
-                if goal >= '0' && goal <= '9' {
+                if ('0'..='9').contains(&goal) {
                     let agent_idx = (goal as u8 - b'0') as usize;
                     if agent_idx >= self.agent_rows.len()
                         || self.agent_rows[agent_idx] != row

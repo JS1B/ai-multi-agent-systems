@@ -179,7 +179,7 @@ impl FrontierBestFirst {
 
 impl Frontier for FrontierBestFirst {
     fn add(&mut self, state: State) {
-        let priority = self.heuristic.f(&state) as isize;
+        let priority = self.heuristic.f(&state);
         self.queue.push(StateWithPriority {
             state: state.clone(),
             priority,
@@ -206,6 +206,6 @@ impl Frontier for FrontierBestFirst {
     }
 
     fn get_name(&self) -> String {
-        format!("best-first search using {}", self.heuristic.to_string())
+        format!("best-first search using {}", self.heuristic)
     }
 }
