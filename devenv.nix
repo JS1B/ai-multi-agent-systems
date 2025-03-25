@@ -18,7 +18,7 @@
   #   clippy.enable = true;
   # };
 
-  packages = lib.optionals pkgs.stdenv.isDarwin (with pkgs.darwin.apple_sdk; [
-    frameworks.Security
-  ]);
+  packages = [
+    pkgs.linuxPackages.perf
+  ];
 }
