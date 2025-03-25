@@ -18,3 +18,7 @@ If nix + devenv installed, for reproducible envinronment
 ```bash
 devenv shell
 ```
+To profile do this with this command (change what you run when needed):
+```bash
+java -jar server.jar -c "cargo flamegraph --manifest-path=searchclient_rust/Cargo.toml" -l "levels/warmup/MAsimple1.lvl" -g
+```
