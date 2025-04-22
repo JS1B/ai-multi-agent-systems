@@ -4,7 +4,7 @@ INCLUDES = -Iinclude
 
 SRC_DIR = src
 INC_DIR = include
-OBJ_DIR = obj
+OBJ_DIR = build
 
 SOURCES = $(wildcard $(SRC_DIR)/*.cpp)
 HEADERS = $(wildcard $(INC_DIR)/*.h)
