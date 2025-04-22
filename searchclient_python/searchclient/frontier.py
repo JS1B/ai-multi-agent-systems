@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from collections import deque
 
-from searchclient.heuristic import Heuristic
-from searchclient.state import State
+from heuristic import Heuristic
+from state import State
 
 
 class Frontier(ABC):

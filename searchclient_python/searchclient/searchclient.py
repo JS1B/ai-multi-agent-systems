@@ -3,12 +3,12 @@ import sys
 import time
 from typing import TextIO
 
-from searchclient import memory
-from searchclient.color import Color
-from searchclient.frontier import Frontier, FrontierBestFirst, FrontierBFS, FrontierDFS
-from searchclient.graphsearch import search
-from searchclient.heuristic import HeuristicAStar, HeuristicGreedy, HeuristicWeightedAStar
-from searchclient.state import State
+import memory
+from color import Color
+from frontier import Frontier, FrontierBestFirst, FrontierBFS, FrontierDFS
+from graphsearch import search
+from heuristic import HeuristicAStar, HeuristicGreedy, HeuristicWeightedAStar
+from state import State
 
 
 class SearchClient:

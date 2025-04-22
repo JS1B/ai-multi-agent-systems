@@ -1,8 +1,8 @@
 import random
 from typing import ClassVar
 
-from searchclient.action import Action, ActionType
-from searchclient.color import Color
+from action import Action, ActionType
+from color import Color
 
 
 class State:
