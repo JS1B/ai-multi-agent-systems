@@ -139,13 +139,13 @@ State parseLevel(std::istream &serverMessages)
 int main(int argc, char *argv[])
 {
     // Use stderr to print to the console.
-    std::cerr << "C++ SearchClient initializing. I am sending this using the error output stream." << std::endl;
+    fprintf(stderr, "C++ SearchClient initializing. I am sending this using the error output stream.\n");
 
     // Send client name to server.
-    std::cout << "SearchClient" << std::endl;
+    fprintf(stdout, "SearchClient\n");
 
     // We can also print comments to stdout by prefixing with a #.
-    std::cout << "#This is a comment." << std::endl;
+    fprintf(stdout, "#This is a comment.\n");
 
     // Parse command line arguments (e.g., for specifying search strategy)
     std::string strategy = "bfs";
@@ -182,7 +182,7 @@ int main(int argc, char *argv[])
             }
             catch (const std::invalid_argument &e)
             {
-                std::cerr << "Invalid weight for WA*: " << argv[2] << std::endl;
+                fprintf(stderr, "Invalid weight for WA*: %s\n", argv[2]);
                 return 1;
             }
         }
@@ -194,23 +194,23 @@ int main(int argc, char *argv[])
     }
     else
     {
-        std::cout << "Unknown strategy: " << strategy << std::endl;
+        fprintf(stderr, "Unknown strategy: %s\n", strategy.c_str());
         return 1;
     }
 
     // Search for a plan
-    std::cerr << "Starting " << frontier->getName() << "." << std::endl;
+    fprintf(stderr, "Starting %s.\n", frontier->getName().c_str());
     std::vector<std::vector<Action>> plan = search(initial_state, frontier);
 
     // Print plan to server
     if (plan.empty())
     {
-        std::cout << "Unable to solve level." << std::endl;
+        fprintf(stderr, "Unable to solve level.\n");
         return 0;
     }
     else
     {
-        std::cout << "Found solution of length " << plan.size() << "." << std::endl;
+        fprintf(stdout, "Found solution of length %zu.\n", plan.size());
         for (const auto &joint_action : plan)
         {
             std::vector<std::string> actionNames;
@@ -219,8 +219,8 @@ int main(int argc, char *argv[])
                 actionNames.push_back(action.name + "@" + action.name);
             }
             std::string s = utils::join(actionNames, "|");
-            std::cerr << "#" << s << std::endl;
-            std::cerr.flush();
+            fprintf(stdout, "%s\n", s.c_str());
+            fflush(stdout);
 
             // Read server's response to not fill up the stdin buffer and block the server.
             std::string response;
