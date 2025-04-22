@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from searchclient.state import State
+from state import State
 
 
 class Heuristic(ABC):

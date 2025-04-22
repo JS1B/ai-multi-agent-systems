@@ -1,10 +1,10 @@
 import sys
 import time
 
-from searchclient import memory
-from searchclient.action import Action
-from searchclient.frontier import Frontier
-from searchclient.state import State
+import memory
+from action import Action
+from frontier import Frontier
+from state import State
 
 start_time = time.perf_counter()
 
