@@ -1,60 +1,53 @@
-#include <iostream>
-#include <string>
-#include <vector>
-#include <sstream>
-#include <limits>
 #include <algorithm>
 #include <cctype>
+#include <iostream>
+#include <limits>
+#include <sstream>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
+#include "action.hpp"
+#include "color.hpp"
+#include "frontier.hpp"
+#include "graphsearch.hpp"
+#include "heuristic.hpp"
 #include "join.hpp"
-#include "state.h"
-#include "frontier.h"
-#include "graphsearch.h"
-#include "action.h"
-#include "color.h"
-#include "heuristic.h"
+#include "state.hpp"
 
-State parseLevel(std::istream &serverMessages)
-{
+State parseLevel(std::istream &serverMessages) {
     // Read domain (skip)
     std::string line;
-    getline(serverMessages, line); // #domain
-    getline(serverMessages, line); // hospital
+    getline(serverMessages, line);  // #domain
+    getline(serverMessages, line);  // hospital
 
     // Read level name (skip)
-    getline(serverMessages, line); // #levelname
-    getline(serverMessages, line); // <name>
+    getline(serverMessages, line);  // #levelname
+    getline(serverMessages, line);  // <name>
 
     // Read colors
-    getline(serverMessages, line); // #colors
-    std::vector<Color> agentColors(10, Color::None);
-    std::vector<Color> boxColors(26, Color::None);
+    getline(serverMessages, line);  // #colors
+    std::vector<Color> agentColors(10, Color::Brown);
+    std::vector<Color> boxColors(26, Color::Brown);
 
     getline(serverMessages, line);
-    while (line.find("#") == std::string::npos)
-    {
+    while (line.find("#") == std::string::npos) {
         std::stringstream ss(line);
         std::string colorStr, entitiesStr;
         getline(ss, colorStr, ':');
         getline(ss, entitiesStr);
 
-        Color color = colorFromString(colorStr);
+        Color color = from_string(colorStr);
 
         std::stringstream entitiesStream(entitiesStr);
         std::string entity;
-        while (getline(entitiesStream, entity, ','))
-        {
-            entity.erase(std::remove_if(entity.begin(), entity.end(), (int (*)(int))std::isspace), entity.end()); // Trim whitespace
-            if (entity.length() == 1)
-            {
+        while (getline(entitiesStream, entity, ',')) {
+            entity.erase(std::remove_if(entity.begin(), entity.end(), (int (*)(int))std::isspace), entity.end());  // Trim whitespace
+            if (entity.length() == 1) {
                 char c = entity[0];
-                if ('0' <= c && c <= '9')
-                {
+                if ('0' <= c && c <= '9') {
                     agentColors[c - '0'] = color;
-                }
-                else if ('A' <= c && c <= 'Z')
-                {
+                } else if ('A' <= c && c <= 'Z') {
                     boxColors[c - 'A'] = color;
                 }
             }
@@ -67,10 +60,9 @@ State parseLevel(std::istream &serverMessages)
     int numCols = 0;
     std::vector<std::string> levelLines;
 
-    getline(serverMessages, line); // #initial
+    getline(serverMessages, line);  // #initial
     getline(serverMessages, line);
-    while (line.find("#") == std::string::npos)
-    {
+    while (line.find("#") == std::string::npos) {
         levelLines.push_back(line);
         numCols = std::max(numCols, (int)line.length());
         numRows++;
@@ -83,24 +75,17 @@ State parseLevel(std::istream &serverMessages)
     std::vector<std::vector<bool>> walls(numRows, std::vector<bool>(numCols, false));
     std::vector<std::vector<char>> boxes(numRows, std::vector<char>(numCols, ' '));
 
-    for (int row = 0; row < numRows; ++row)
-    {
-        for (size_t col = 0; col < levelLines[row].length(); ++col)
-        {
+    for (int row = 0; row < numRows; ++row) {
+        for (size_t col = 0; col < levelLines[row].length(); ++col) {
             char c = levelLines[row][col];
-            if ('0' <= c && c <= '9')
-            {
+            if ('0' <= c && c <= '9') {
                 int agentNum = c - '0';
                 agentRows[agentNum] = row;
                 agentCols[agentNum] = col;
                 numAgents++;
-            }
-            else if ('A' <= c && c <= 'Z')
-            {
+            } else if ('A' <= c && c <= 'Z') {
                 boxes[row][col] = c;
-            }
-            else if (c == '+')
-            {
+            } else if (c == '+') {
                 walls[row][col] = true;
             }
         }
@@ -111,16 +96,13 @@ State parseLevel(std::istream &serverMessages)
 
     // Read goal state
     std::vector<std::vector<char>> goals(numRows, std::vector<char>(numCols, ' '));
-    getline(serverMessages, line); // #goal
+    getline(serverMessages, line);  // #goal
     getline(serverMessages, line);
     int row = 0;
-    while (line.find("#") == std::string::npos)
-    {
-        for (size_t col = 0; col < line.length(); ++col)
-        {
+    while (line.find("#") == std::string::npos) {
+        for (size_t col = 0; col < line.length(); ++col) {
             char c = line[col];
-            if (('0' <= c && c <= '9') || ('A' <= c && c <= 'Z'))
-            {
+            if (('0' <= c && c <= '9') || ('A' <= c && c <= 'Z')) {
                 goals[row][col] = c;
             }
         }
@@ -128,16 +110,10 @@ State parseLevel(std::istream &serverMessages)
         getline(serverMessages, line);
     }
 
-    State::agentColors = agentColors;
-    State::walls = walls;
-    State::boxColors = boxColors;
-    // State::goals = goals;
-
     return State(agentRows, agentCols, agentColors, walls, boxes, boxColors, goals);
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     // Use stderr to print to the console.
     fprintf(stderr, "C++ SearchClient initializing. I am sending this using the error output stream.\n");
 
@@ -149,8 +125,7 @@ int main(int argc, char *argv[])
 
     // Parse command line arguments (e.g., for specifying search strategy)
     std::string strategy = "bfs";
-    if (argc > 1)
-    {
+    if (argc > 1) {
         strategy = argv[1];
     }
 
@@ -159,41 +134,27 @@ int main(int argc, char *argv[])
 
     // Create frontier
     Frontier *frontier;
-    if (strategy == "bfs")
-    {
+    if (strategy == "bfs") {
         frontier = new FrontierBFS();
-    }
-    else if (strategy == "dfs")
-    {
-        frontier = new FrontierDFS();
-    }
-    else if (strategy == "astar")
-    {
-        frontier = new FrontierBestFirst(new HeuristicAStar(initial_state));
-    }
-    else if (strategy == "wastar")
-    {
-        int w = 5; // Default weight
-        if (argc > 2)
-        {
-            try
-            {
-                w = std::stoi(argv[2]);
-            }
-            catch (const std::invalid_argument &e)
-            {
-                fprintf(stderr, "Invalid weight for WA*: %s\n", argv[2]);
-                return 1;
-            }
-        }
-        frontier = new FrontierBestFirst(new HeuristicWeightedAStar(initial_state, w));
-    }
-    else if (strategy == "greedy")
-    {
-        frontier = new FrontierBestFirst(new HeuristicGreedy(initial_state));
-    }
-    else
-    {
+        // @todo: add other strategies
+        // } else if (strategy == "dfs") {
+        //     frontier = new FrontierDFS();
+        // } else if (strategy == "astar") {
+        //     frontier = new FrontierBestFirst(new HeuristicAStar(initial_state));
+        // } else if (strategy == "wastar") {
+        //     int w = 5;  // Default weight
+        //     if (argc > 2) {
+        //         try {
+        //             w = std::stoi(argv[2]);
+        //         } catch (const std::invalid_argument &e) {
+        //             fprintf(stderr, "Invalid weight for WA*: %s\n", argv[2]);
+        //             return 1;
+        //         }
+        //     }
+        //     frontier = new FrontierBestFirst(new HeuristicWeightedAStar(initial_state, w));
+        // } else if (strategy == "greedy") {
+        //     frontier = new FrontierBestFirst(new HeuristicGreedy(initial_state));
+    } else {
         fprintf(stderr, "Unknown strategy: %s\n", strategy.c_str());
         return 1;
     }
@@ -203,29 +164,25 @@ int main(int argc, char *argv[])
     std::vector<std::vector<Action>> plan = search(initial_state, frontier);
 
     // Print plan to server
-    if (plan.empty())
-    {
+    if (plan.empty()) {
         fprintf(stderr, "Unable to solve level.\n");
         return 0;
     }
-    else
-    {
-        fprintf(stdout, "Found solution of length %zu.\n", plan.size());
-        for (const auto &joint_action : plan)
-        {
-            std::vector<std::string> actionNames;
-            for (const auto &action : joint_action)
-            {
-                actionNames.push_back(action.name + "@" + action.name);
-            }
-            std::string s = utils::join(actionNames, "|");
-            fprintf(stdout, "%s\n", s.c_str());
-            fflush(stdout);
 
-            // Read server's response to not fill up the stdin buffer and block the server.
-            std::string response;
-            std::getline(std::cin, response);
+    fprintf(stdout, "Found solution of length %zu.\n", plan.size());
+    for (const auto &joint_action : plan) {
+        std::vector<std::string> actionNames;
+        for (const auto &action : joint_action) {
+            actionNames.push_back(action.name + "@" + action.name);
         }
+        std::string s = utils::join(actionNames, "|");
+
+        fprintf(stdout, "%s\n", s.c_str());
+        fflush(stdout);
+
+        // Read server's response to not fill up the stdin buffer and block the server.
+        std::string response;
+        getline(std::cin, response);
     }
 
     delete frontier;
