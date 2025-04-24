@@ -26,9 +26,9 @@ State parseLevel(std::istream &serverMessages) {
     getline(serverMessages, line);  // <name>
 
     // Read colors
-    getline(serverMessages, line);  // #colors
-    std::vector<Color> agentColors(10, Color::Brown);
-    std::vector<Color> boxColors(26, Color::Brown);
+    getline(serverMessages, line);                     // #colors
+    std::vector<Color> agentColors(10, Color::Brown);  // @todo no need to initialize with 10, can be dynamic // '0' - '9'
+    std::vector<Color> boxColors(26, Color::Brown);    // @todo no need to initialize with 26, can be dynamic // 'A' - 'Z'
 
     getline(serverMessages, line);
     while (line.find("#") == std::string::npos) {
@@ -39,6 +39,8 @@ State parseLevel(std::istream &serverMessages) {
 
         Color color = from_string(colorStr);
 
+        // @todo: this whole thing can be simplified
+        // Reads agents, colors with ids and box, colors with ids with unnormilized whitespaces
         std::stringstream entitiesStream(entitiesStr);
         std::string entity;
         while (getline(entitiesStream, entity, ',')) {
@@ -52,7 +54,7 @@ State parseLevel(std::istream &serverMessages) {
                 }
             }
         }
-        getline(serverMessages, line);
+        getline(serverMessages, line);  // next agent color or #initial
     }
 
     // Read initial state
@@ -60,7 +62,6 @@ State parseLevel(std::istream &serverMessages) {
     int numCols = 0;
     std::vector<std::string> levelLines;
 
-    getline(serverMessages, line);  // #initial
     getline(serverMessages, line);
     while (line.find("#") == std::string::npos) {
         levelLines.push_back(line);
