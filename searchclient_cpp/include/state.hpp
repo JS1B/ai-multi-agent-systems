@@ -25,9 +25,17 @@ class State {
     const State *parent;
     std::vector<Action> jointAction;
 
-    State(std::vector<int> agentRows, std::vector<int> agentCols, std::vector<Color> agentColors,
-          std::vector<std::vector<bool>> walls, std::vector<std::vector<char>> boxes, std::vector<Color> boxColors,
-          std::vector<std::vector<char>> goals) : agentRows(agentRows), agentCols(agentCols), agentColors(agentColors), walls(walls), boxes(boxes), boxColors(boxColors), goals(goals), parent(nullptr), g_(0) {};
+    State(std::vector<int> agentRows, std::vector<int> agentCols, std::vector<Color> agentColors, std::vector<std::vector<bool>> walls,
+          std::vector<std::vector<char>> boxes, std::vector<Color> boxColors, std::vector<std::vector<char>> goals)
+        : agentRows(agentRows),
+          agentCols(agentCols),
+          agentColors(agentColors),
+          walls(walls),
+          boxes(boxes),
+          boxColors(boxColors),
+          goals(goals),
+          parent(nullptr),
+          g_(0) {};
 
     inline int getG() const { return g_; }
 
@@ -91,14 +99,18 @@ class State {
             for (size_t col = 1; col < goals[row].size(); col++) {
                 char goal = goals[row][col];
                 if ('A' <= goal && goal <= 'Z' && boxes[row][col] != goal) return false;
-                if ('0' <= goal && goal <= '9' && !(size_t(agentRows[goal - '0']) == row && size_t(agentCols[goal - '0']) == col)) return false;
+                if ('0' <= goal && goal <= '9' && !(size_t(agentRows[goal - '0']) == row && size_t(agentCols[goal - '0']) == col))
+                    return false;
             }
         }
         return true;
     }
 
     bool operator==(const State &other) const {
-        if (agentRows.size() != other.agentRows.size() || agentCols.size() != other.agentCols.size() || boxes.size() != other.boxes.size()) {
+        if (this == &other) return true;
+
+        if (agentRows.size() != other.agentRows.size() || agentCols.size() != other.agentCols.size() ||
+            boxes.size() != other.boxes.size()) {
             return false;
         }
 
@@ -108,6 +120,18 @@ class State {
 
         for (size_t i = 0; i < boxes.size(); ++i) {
             if (boxes[i] != other.boxes[i]) {
+                return false;
+            }
+        }
+
+        for (size_t i = 0; i < walls.size(); ++i) {
+            if (walls[i] != other.walls[i]) {
+                return false;
+            }
+        }
+
+        for (size_t i = 0; i < goals.size(); ++i) {
+            if (goals[i] != other.goals[i]) {
                 return false;
             }
         }
@@ -163,14 +187,12 @@ class State {
     }
 
     bool isConflicting(const std::vector<Action> &jointAction) const {
-        int numAgents = agentRows.size();
+        size_t numAgents = agentRows.size();
 
-        std::vector<int> destinationRows(numAgents);
-        std::vector<int> destinationCols(numAgents);
-        std::vector<int> boxRows(numAgents);
-        std::vector<int> boxCols(numAgents);
+        int destinationRows[numAgents];
+        int destinationCols[numAgents];
 
-        for (int agent = 0; agent < numAgents; ++agent) {
+        for (size_t agent = 0; agent < numAgents; ++agent) {
             Action action = jointAction[agent];
             int agentRow = agentRows[agent];
             int agentCol = agentCols[agent];
@@ -183,20 +205,14 @@ class State {
                 case ActionType::Move:
                     destinationRows[agent] = agentRow + action.agentRowDelta;
                     destinationCols[agent] = agentCol + action.agentColDelta;
-
-                    boxRows[agent] = agentRow;
-                    boxCols[agent] = agentCol;
                     break;
 
                 case ActionType::Push:
                     boxRow = agentRow + action.boxRowDelta;
                     boxCol = agentCol + action.boxColDelta;
 
-                    destinationRows[agent] = agentRow + action.agentRowDelta;
-                    destinationCols[agent] = agentCol + action.agentColDelta;
-
-                    boxRows[agent] = boxRow;
-                    boxCols[agent] = boxCol;
+                    destinationRows[agent] = boxRow + action.agentRowDelta;
+                    destinationCols[agent] = boxCol + action.agentColDelta;
                     break;
 
                 case ActionType::Pull:
@@ -205,9 +221,6 @@ class State {
 
                     destinationRows[agent] = agentRow + action.agentRowDelta;
                     destinationCols[agent] = agentCol + action.agentColDelta;
-
-                    boxRows[agent] = boxRow;
-                    boxCols[agent] = boxCol;
                     break;
 
                 default:
@@ -216,10 +229,10 @@ class State {
             }
         }
 
-        for (int a1 = 0; a1 < numAgents; ++a1) {
+        for (size_t a1 = 0; a1 < numAgents; ++a1) {
             if (jointAction[a1].type == ActionType::NoOp) continue;
 
-            for (int a2 = a1 + 1; a2 < numAgents; ++a2) {
+            for (size_t a2 = a1 + 1; a2 < numAgents; ++a2) {
                 if (jointAction[a2].type == ActionType::NoOp) continue;
 
                 if (destinationRows[a1] == destinationRows[a2] && destinationCols[a1] == destinationCols[a2]) {
@@ -230,22 +243,37 @@ class State {
         return false;
     }
 
+    std::string toString() {
+        std::stringstream ss;
+        ss << "State(agentRows=";
+        for (size_t row = 0; row < walls.size(); row++) {
+            for (size_t col = 0; col < walls[row].size(); col++) {
+                if (boxes[row][col] > 0)
+                    ss << boxes[row][col];
+                else if (walls[row][col])
+                    ss << '+';
+                else if (agentAt(row, col) != 0)
+                    ss << agentAt(row, col);
+                else
+                    ss << ' ';
+            }
+            ss << '\n';
+        }
+        return ss.str();
+    }
+
    private:
     // Store the jointAction that led to this state
     State(const State &parent, std::vector<Action> jointAction)
-        : parent(&parent), g_(parent.g_ + 1), jointAction(std::move(jointAction)) {  // Store jointAction
-        // Copy parent state components needed for modification
-        agentRows = parent.agentRows;
-        agentCols = parent.agentCols;
-        walls = parent.walls;              // Walls don't change, shallow copy is fine
-        boxes = parent.boxes;              // Boxes will be modified, need a deep copy (vector copy does this)
-        boxColors = parent.boxColors;      // Colors don't change
-        goals = parent.goals;              // Goals don't change
-        agentColors = parent.agentColors;  // Agent colors don't change
-
+        : parent(&parent),
+          g_(parent.getG() + 1),
+          jointAction(std::move(jointAction)),
+          agentRows(std::move(parent.agentRows)),
+          agentCols(std::move(parent.agentCols)),
+          boxes(std::move(parent.boxes)) {
         // Apply the joint action to the copied state
-        int numAgents = agentRows.size();
-        for (int agent = 0; agent < numAgents; ++agent) {
+        size_t numAgents = agentRows.size();
+        for (size_t agent = 0; agent < numAgents; ++agent) {
             Action action = jointAction[agent];
             int agentRow = agentRows[agent];
             int agentCol = agentCols[agent];
@@ -290,9 +318,7 @@ class State {
 
     const int g_;
 
-    bool cellIsFree(int row, int col) const {
-        return !walls[row][col] && boxes[row][col] == 0 && agentAt(row, col) == 0;
-    }
+    bool cellIsFree(int row, int col) const { return !walls[row][col] && boxes[row][col] == 0 && agentAt(row, col) == 0; }
 
     char agentAt(int row, int col) const {
         for (size_t i = 0; i < agentRows.size(); i++) {

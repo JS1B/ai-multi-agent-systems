@@ -1,5 +1,6 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra -g -O2 -MMD -MP
+# @todo: -O0 is needed for debugging switch to -O2 or more
+CXXFLAGS = -std=c++17 -Wall -Wextra -g -O0 -MMD -MP
 INCLUDES = -Iinclude
 
 SRC_DIR = src
