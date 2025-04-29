@@ -247,10 +247,10 @@ class State {
 
     std::string toString() {
         std::stringstream ss;
-        ss << "State(agentRows=";
+        ss << "State(agentRows=\n";
         for (size_t row = 0; row < walls.size(); row++) {
             for (size_t col = 0; col < walls[row].size(); col++) {
-                if (boxes[row][col] > 0)
+                if (boxes[row][col] != ' ')
                     ss << boxes[row][col];
                 else if (walls[row][col])
                     ss << '+';
@@ -360,7 +360,7 @@ class State {
 
     int g_;  // cost of reaching this state
 
-    bool cellIsFree(int row, int col) const { return !walls[row][col] && boxes[row][col] == 0 && agentAt(row, col) == 0; }
+    bool cellIsFree(int row, int col) const { return !walls[row][col] && boxes[row][col] == ' ' && agentAt(row, col) == 0; }
 
     char agentAt(int row, int col) const {
         for (size_t i = 0; i < agentRows.size(); i++) {
