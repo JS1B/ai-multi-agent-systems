@@ -165,7 +165,7 @@ int main(int argc, char *argv[]) {
 
     // Search for a plan
     fprintf(stderr, "Starting %s.\n", frontier->getName().c_str());
-    std::vector<std::vector<Action>> plan = search(initial_state, frontier);
+    std::vector<std::vector<Action>> plan = search(&initial_state, frontier);
 
     // Print plan to server
     if (plan.empty()) {
