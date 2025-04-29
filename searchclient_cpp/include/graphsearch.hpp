@@ -20,10 +20,9 @@ void printSearchStatus(const set<State> &explored, Frontier *frontier) {
     auto now = chrono::high_resolution_clock::now();
     auto elapsed_time = chrono::duration<double>(now - start_time).count();
 
-    printf("#Expanded: %8zu, Frontier: %8zu, Generated: %8zu, Time: %.3f s\n",
-           explored.size(), frontier->size(), explored.size() + frontier->size(), elapsed_time);
-    printf("#[Alloc: %.2f MB, MaxAlloc: %.2f MB]\n",
-           Memory::getUsage(), Memory::maxUsage);
+    printf("#Expanded: %8zu, Frontier: %8zu, Generated: %8zu, Time: %.3f s\n", explored.size(), frontier->size(),
+           explored.size() + frontier->size(), elapsed_time);
+    printf("#[Alloc: %.2f MB, MaxAlloc: %.2f MB]\n", Memory::getUsage(), Memory::maxUsage);
 }
 
 std::vector<std::vector<Action>> search(State initial_state, Frontier *frontier) {
@@ -53,7 +52,7 @@ std::vector<std::vector<Action>> search(State initial_state, Frontier *frontier)
 
     while (true) {
         iterations++;
-        if (iterations % 10000 == 0) {
+        if (iterations % 1 == 0) {  // 10000
             printSearchStatus(explored, frontier);
         }
 

@@ -1,5 +1,5 @@
+// C++ related
 #include <algorithm>
-#include <cctype>
 #include <iostream>
 #include <limits>
 #include <sstream>
@@ -7,6 +7,10 @@
 #include <string>
 #include <vector>
 
+// C related
+#include <cctype>
+
+// Own code
 #include "action.hpp"
 #include "color.hpp"
 #include "frontier.hpp"
@@ -26,9 +30,9 @@ State parseLevel(std::istream &serverMessages) {
     getline(serverMessages, line);  // <name>
 
     // Read colors
-    getline(serverMessages, line);                     // #colors
-    std::vector<Color> agentColors(10, Color::Brown);  // @todo no need to initialize with 10, can be dynamic // '0' - '9'
-    std::vector<Color> boxColors(26, Color::Brown);    // @todo no need to initialize with 26, can be dynamic // 'A' - 'Z'
+    getline(serverMessages, line);                    // #colors
+    std::vector<Color> agentColors(0, Color::Brown);  // '0' - '9'
+    std::vector<Color> boxColors(0, Color::Brown);    // 'A' - 'Z'
 
     getline(serverMessages, line);
     while (line.find("#") == std::string::npos) {
@@ -48,9 +52,9 @@ State parseLevel(std::istream &serverMessages) {
             if (entity.length() == 1) {
                 char c = entity[0];
                 if ('0' <= c && c <= '9') {
-                    agentColors[c - '0'] = color;
+                    agentColors.push_back(color);
                 } else if ('A' <= c && c <= 'Z') {
-                    boxColors[c - 'A'] = color;
+                    boxColors.push_back(color);
                 }
             }
         }
@@ -71,8 +75,8 @@ State parseLevel(std::istream &serverMessages) {
     }
 
     int numAgents = 0;
-    std::vector<int> agentRows(10, -1);
-    std::vector<int> agentCols(10, -1);
+    std::vector<int> agentRows(0, -1);
+    std::vector<int> agentCols(0, -1);
     std::vector<std::vector<bool>> walls(numRows, std::vector<bool>(numCols, false));
     std::vector<std::vector<char>> boxes(numRows, std::vector<char>(numCols, ' '));
 
@@ -81,8 +85,8 @@ State parseLevel(std::istream &serverMessages) {
             char c = levelLines[row][col];
             if ('0' <= c && c <= '9') {
                 int agentNum = c - '0';
-                agentRows[agentNum] = row;
-                agentCols[agentNum] = col;
+                agentRows.push_back(row);
+                agentCols.push_back(col);
                 numAgents++;
             } else if ('A' <= c && c <= 'Z') {
                 boxes[row][col] = c;
@@ -97,8 +101,7 @@ State parseLevel(std::istream &serverMessages) {
 
     // Read goal state
     std::vector<std::vector<char>> goals(numRows, std::vector<char>(numCols, ' '));
-    getline(serverMessages, line);  // #goal
-    getline(serverMessages, line);
+    getline(serverMessages, line);  // first line of goal state
     int row = 0;
     while (line.find("#") == std::string::npos) {
         for (size_t col = 0; col < line.length(); ++col) {
