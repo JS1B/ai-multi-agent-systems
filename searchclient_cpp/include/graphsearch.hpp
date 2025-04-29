@@ -11,48 +11,27 @@
 #include "memory.hpp"
 #include "state.hpp"
 
-using namespace std;
-
 // Global start time
-static auto start_time = chrono::high_resolution_clock::now();
+static auto start_time = std::chrono::high_resolution_clock::now();
 
-void printSearchStatus(const set<State> &explored, Frontier *frontier) {
-    auto now = chrono::high_resolution_clock::now();
-    auto elapsed_time = chrono::duration<double>(now - start_time).count();
+void printSearchStatus(const std::set<State *> &explored, Frontier *frontier) {
+    auto now = std::chrono::high_resolution_clock::now();
+    auto elapsed_time = std::chrono::duration<double>(now - start_time).count();
 
     printf("#Expanded: %8zu, Frontier: %8zu, Generated: %8zu, Time: %.3f s\n", explored.size(), frontier->size(),
            explored.size() + frontier->size(), elapsed_time);
     printf("#[Alloc: %.2f MB, MaxAlloc: %.2f MB]\n", Memory::getUsage(), Memory::maxUsage);
 }
 
-std::vector<std::vector<Action>> search(State initial_state, Frontier *frontier) {
-    // bool output_fixed_solution = false;
-    // if (output_fixed_solution) {
-    //     return {
-    //         {Action::MoveS},
-    //         {Action::MoveS},
-    //         {Action::MoveE},
-    //         {Action::MoveE},
-    //         {Action::MoveE},
-    //         {Action::MoveE},
-    //         {Action::MoveE},
-    //         {Action::MoveE},
-    //         {Action::MoveE},
-    //         {Action::MoveE},
-    //         {Action::MoveE},
-    //         {Action::MoveE},
-    //         {Action::MoveS},
-    //         {Action::MoveS}};
-    // }
-
+std::vector<std::vector<Action>> search(State *initial_state, Frontier *frontier) {
     int iterations = 0;
 
     frontier->add(initial_state);
-    set<State> explored;
+    std::set<State *> explored;
 
     while (true) {
         iterations++;
-        if (iterations % 1 == 0) {  // 10000
+        if (iterations % 10000 == 0) {  // 10000
             printSearchStatus(explored, frontier);
         }
 
@@ -67,16 +46,16 @@ std::vector<std::vector<Action>> search(State initial_state, Frontier *frontier)
             return {};  // Return an empty plan to indicate failure
         }
 
-        State state = frontier->pop();
+        State *state = frontier->pop();
 
-        if (state.isGoalState()) {
+        if (state->isGoalState()) {
             printSearchStatus(explored, frontier);
-            return state.extractPlan();
+            return state->extractPlan();
         }
 
         explored.insert(state);
 
-        for (State child : state.getExpandedStates()) {
+        for (State *child : state->getExpandedStates()) {
             if (explored.find(child) == explored.end() && !frontier->contains(child)) {
                 frontier->add(child);
             }

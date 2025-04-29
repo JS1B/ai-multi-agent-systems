@@ -11,7 +11,7 @@
 
 class State {
    public:
-    State() = default;
+    State() = delete;
 
     std::vector<int> agentRows;
     std::vector<int> agentCols;
@@ -53,8 +53,8 @@ class State {
         return plan;
     }
 
-    std::vector<State> getExpandedStates() const {
-        std::vector<State> expandedStates;
+    std::vector<State *> getExpandedStates() const {
+        std::vector<State *> expandedStates;
 
         size_t numAgents = agentRows.size();
         std::vector<std::vector<Action>> applicableAction(numAgents);
@@ -72,13 +72,12 @@ class State {
 
         while (true) {
             std::vector<Action> currentJointAction;
-            currentJointAction.reserve(numAgents);
             for (size_t agent = 0; agent < numAgents; ++agent) {
                 currentJointAction.push_back(applicableAction[agent][actionsPermutation[agent]]);
             }
 
             if (!isConflicting(currentJointAction)) {
-                expandedStates.push_back(State(*this, currentJointAction));
+                expandedStates.push_back(new State(this, currentJointAction));
             }
 
             bool done = false;
@@ -265,18 +264,18 @@ class State {
     }
 
     struct hash {
-        size_t operator()(const State &s) const {
+        size_t operator()(const State *s) const {
             size_t seed = 0;
             // Combine hashes of agent rows
-            for (int row : s.agentRows) {
+            for (int row : s->agentRows) {
                 seed ^= std::hash<int>()(row) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
             }
             // Combine hashes of agent cols
-            for (int col : s.agentCols) {
+            for (int col : s->agentCols) {
                 seed ^= std::hash<int>()(col) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
             }
             // Combine hashes of boxes (vector of vectors)
-            for (const auto &rowVec : s.boxes) {
+            for (const auto &rowVec : s->boxes) {
                 for (char box : rowVec) {
                     seed ^= std::hash<char>()(box) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
                 }
@@ -288,17 +287,17 @@ class State {
    private:
     // Creates a new state from a parent state and a joint action performed in that state.
     // This constructor should copy the parent state's data, not move it.
-    State(const State &parent, std::vector<Action> jointAction)
-        : agentRows(parent.agentRows),          // Copy instead of move
-          agentCols(parent.agentCols),          // Copy instead of move
-          agentColors(parent.agentColors),      // Copy (was implicit before, making explicit)
-          walls(parent.walls),                  // Copy (was implicit before, making explicit)
-          boxes(parent.boxes),                  // Copy instead of move
-          boxColors(parent.boxColors),          // Copy (was implicit before, making explicit)
-          goals(parent.goals),                  // Copy (was implicit before, making explicit)
-          parent(&parent),                      // Store pointer to the parent
+    State(const State *parent, std::vector<Action> jointAction)
+        : agentRows(parent->agentRows),         // Copy instead of move
+          agentCols(parent->agentCols),         // Copy instead of move
+          agentColors(parent->agentColors),     // Copy (was implicit before, making explicit)
+          walls(parent->walls),                 // Copy (was implicit before, making explicit)
+          boxes(parent->boxes),                 // Copy instead of move
+          boxColors(parent->boxColors),         // Copy (was implicit before, making explicit)
+          goals(parent->goals),                 // Copy (was implicit before, making explicit)
+          parent(parent),                       // Store pointer to the parent
           jointAction(std::move(jointAction)),  // Move the joint action vector as it's unique to the child
-          g_(parent.getG() + 1) {
+          g_(parent->getG() + 1) {
         // The constructor body can remain empty if all initialization is done above.
 
         // Apply the joint action to the new state's data (agentRows, agentCols, boxes)
@@ -323,7 +322,7 @@ class State {
                         int boxDestinationRow = boxInitialRow + action.agentRowDelta;
                         int boxDestinationCol = boxInitialCol + action.agentColDelta;
                         boxes[boxDestinationRow][boxDestinationCol] = box;
-                        boxes[boxInitialRow][boxInitialCol] = 0;  // Clear the original box position
+                        boxes[boxInitialRow][boxInitialCol] = ' ';  // Clear the original box position
                     }
                     // Agent moves to the initial box position
                     agentRows[agent] = boxInitialRow;
@@ -340,7 +339,7 @@ class State {
                         int agentDestinationCol = agentCols[agent] + action.agentColDelta;
                         // Box moves to the agent's original position
                         boxes[agentRows[agent]][agentCols[agent]] = box;
-                        boxes[boxInitialRow][boxInitialCol] = 0;  // Clear the original box position
+                        boxes[boxInitialRow][boxInitialCol] = ' ';  // Clear the original box position
                         // Agent moves to its destination
                         agentRows[agent] = agentDestinationRow;
                         agentCols[agent] = agentDestinationCol;
