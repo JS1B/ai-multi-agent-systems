@@ -8,6 +8,7 @@ build/
 searchclient_cpp/searchclient
 
 # Java
+obj/
 searchclient_java/searchclient.jar
 
 results/
