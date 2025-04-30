@@ -32,7 +32,7 @@ class FrontierBFS : public Frontier {
 
    public:
     void add(State* state) override {
-        queue_.push_back(state);  // Add to the end
+        queue_.push_back(state);
         set_.insert(state);
     }
 
@@ -40,53 +40,51 @@ class FrontierBFS : public Frontier {
         if (isEmpty()) {
             throw std::runtime_error("Cannot pop from an empty BFS frontier.");
         }
-        State* state = queue_.front();  // Get from the front
+        State* state = queue_.front();
         queue_.pop_front();
         set_.erase(state);
-        return state;  // RVO might apply, otherwise returns a copy
+        return state;
     }
 
     bool isEmpty() const override { return queue_.empty(); }
 
     size_t size() const override { return queue_.size(); }
 
-    bool contains(State* state) const override {
-        return set_.count(state);  // Use count for unordered_set
-    }
+    bool contains(State* state) const override { return set_.count(state); }
 
     std::string getName() const override { return "breadth-first search"; }
 };
 
 // Depth-First Search Frontier
-// class FrontierDFS : public Frontier {
-//    private:
-//     std::deque<State*> queue_;  // Use deque as a stack (LIFO)
-//     std::unordered_set<State*, State::hash> set_;
+class FrontierDFS : public Frontier {
+   private:
+    std::deque<State*> queue_;
+    std::unordered_set<State*, State::hash> set_;
 
-//    public:
-//     void add(State* state) override {
-//         queue_.push_front(state);
-//         set_.insert(state);
-//     }
+   public:
+    void add(State* state) override {
+        queue_.push_front(state);
+        set_.insert(state);
+    }
 
-//     State* pop() override {
-//         if (isEmpty()) {
-//             throw std::runtime_error("Cannot pop from an empty DFS frontier.");
-//         }
-//         State* state = queue_.front();
-//         queue_.pop_front();
-//         set_.erase(state);
-//         return state;
-//     }
+    State* pop() override {
+        if (isEmpty()) {
+            throw std::runtime_error("Cannot pop from an empty DFS frontier.");
+        }
+        State* state = queue_.front();
+        queue_.pop_front();
+        set_.erase(state);
+        return state;
+    }
 
-//     bool isEmpty() const override { return queue_.empty(); }
+    bool isEmpty() const override { return queue_.empty(); }
 
-//     size_t size() const override { return queue_.size(); }
+    size_t size() const override { return queue_.size(); }
 
-//     bool contains(const State* state) const override { return set_.count(*state); }
+    bool contains(State* state) const override { return set_.count(state); }
 
-//     std::string getName() const override { return "depth-first search"; }
-// };
+    std::string getName() const override { return "depth-first search"; }
+};
 
 // @todo gpt below - completely untested
 // Best-First Search Frontier (A*, Greedy Best-First, Uniform Cost)
