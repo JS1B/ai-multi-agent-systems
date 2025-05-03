@@ -1,5 +1,13 @@
 # AI and Multi-Agent Systems
 
+## Dependencies
+
+This project uses `git submodules` for the FlameGraph library.
+
+```bash
+git submodule update --init
+```
+
 ### Useful commands
 
 Bash

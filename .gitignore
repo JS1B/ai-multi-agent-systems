@@ -6,6 +6,7 @@ __pycache__/
 # C++
 build/
 searchclient_cpp/searchclient
+searchclient_cpp/cpu_flamegraph.svg
 
 # Java
 searchclient_java/searchclient.jar

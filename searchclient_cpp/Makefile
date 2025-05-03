@@ -1,5 +1,6 @@
 CXX = g++
 # @todo: -O0 is needed for debugging switch to -O2 or more
+# @todo: 64bit?
 CXXFLAGS = -std=c++17 -Wall -Wextra -g -O0 -MMD -MP
 INCLUDES = -Iinclude
 
@@ -11,6 +12,17 @@ SOURCES = $(wildcard $(SRC_DIR)/*.cpp)
 HPP_HEADERS = $(wildcard $(INC_DIR)/*.hpp)
 OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 EXECUTABLE = searchclient
+
+# Flamegraph
+FLAMEGRAPH_DIR = ../lib/FlameGraph
+LEVEL_FILE = ../levels/warmup/MAPF00.lvl
+FLAMEGRAPH_SVG = cpu_flamegraph.svg
+PERF_FREQ = 99
+
+PERF_DATA_FILE = perf.data
+PERF_SCRIPT_OUT = out.perf
+FOLDED_OUT = out.folded 
+
 
 # Create if doesn't exist
 $(shell mkdir -p $(OBJ_DIR))
@@ -31,5 +43,25 @@ clean:
 
 run: $(EXECUTABLE)
 	./$(EXECUTABLE)
+
+flamegraph: $(EXECUTABLE)
+	@echo "--- Generating CPU Flame Graph ---"
+	@echo "Step 1: Recording performance data with perf..."
+	@echo "NOTE: This may require sudo privileges or adjusting /proc/sys/kernel/perf_event_paranoid."
+	@echo "Running: perf record -F $(PERF_FREQ) -g -- ./$(EXECUTABLE) < $(LEVEL_FILE)"
+	@# Run perf record. Add 'sudo' before 'perf' if needed.
+	perf record -F $(PERF_FREQ) -g -- ./$(EXECUTABLE) < $(LEVEL_FILE)
+	@echo "Step 2: Converting perf data to text format..."
+	perf script > $(PERF_SCRIPT_OUT)
+	@echo "Step 3: Collapsing stacks using FlameGraph scripts..."
+	@# Check if FlameGraph directory exists
+	@[ -d "$(FLAMEGRAPH_DIR)" ] || ( echo "Error: FlameGraph directory not found at $(FLAMEGRAPH_DIR)"; exit 1 )
+	cat $(PERF_SCRIPT_OUT) | $(FLAMEGRAPH_DIR)/stackcollapse-perf.pl > $(FOLDED_OUT)
+	@echo "Step 4: Generating SVG flame graph..."
+	cat $(FOLDED_OUT) | $(FLAMEGRAPH_DIR)/flamegraph.pl > $(FLAMEGRAPH_SVG)
+	@echo "--- Flame Graph generated: $(FLAMEGRAPH_SVG) ---"
+	@echo "Step 5: Cleaning up intermediate files..."
+	rm -f $(PERF_DATA_FILE) $(PERF_SCRIPT_OUT) $(FOLDED_OUT)
+	@echo "Done. Open $(FLAMEGRAPH_SVG) in a web browser."
 
 .PHONY: all clean run 
