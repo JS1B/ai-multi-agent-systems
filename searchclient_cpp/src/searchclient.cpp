@@ -16,9 +16,15 @@
 #include "frontier.hpp"
 #include "graphsearch.hpp"
 #include "heuristic.hpp"
-#include "join.hpp"
 #include "level.hpp"
 #include "state.hpp"
+#include "string_manip_helpers.hpp"
+
+/*
+For a text to be treated as a comment, it must be sent via:
+- stderr - all messages
+- stdout - starting with #
+*/
 
 // Map string to strategy
 std::unordered_map<std::string, Frontier *> strategy_map = {
@@ -28,14 +34,10 @@ std::unordered_map<std::string, Frontier *> strategy_map = {
 };
 
 int main(int argc, char *argv[]) {
-    // Use stderr to print to the console.
     fprintf(stderr, "C++ SearchClient initializing. I am sending this using the error output stream.\n");
 
     // Send client name to server.
     fprintf(stdout, "SearchClient\n");
-
-    // We can also print comments to stdout by prefixing with a #.
-    fprintf(stdout, "#This is a comment.\n");
 
     // Parse command line arguments (e.g., for specifying search strategy)
     std::string strategy = "dfs";
@@ -60,7 +62,7 @@ int main(int argc, char *argv[]) {
 
     // Search for a plan
     fprintf(stderr, "Starting %s.\n", frontier->getName().c_str());
-    std::vector<std::vector<Action>> plan = search(&initial_state, frontier);
+    std::vector<std::vector<const Action *>> plan = search(&initial_state, frontier);
 
     // Print plan to server
     if (plan.empty()) {
@@ -72,7 +74,7 @@ int main(int argc, char *argv[]) {
     for (const auto &joint_action : plan) {
         std::vector<std::string> actionNames;
         for (const auto &action : joint_action) {
-            actionNames.push_back(action.name + "@" + action.name);
+            actionNames.push_back(action->name + "@" + action->name);
         }
         std::string s = utils::join(actionNames, "|");
 

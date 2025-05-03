@@ -23,7 +23,7 @@ void printSearchStatus(const std::set<State *> &explored, Frontier *frontier) {
     printf("#[Alloc: %.2f MB, MaxAlloc: %.2f MB]\n", Memory::getUsage(), Memory::maxUsage);
 }
 
-std::vector<std::vector<Action>> search(State *initial_state, Frontier *frontier) {
+std::vector<std::vector<const Action *>> search(State *initial_state, Frontier *frontier) {
     int iterations = 0;
 
     frontier->add(initial_state);
