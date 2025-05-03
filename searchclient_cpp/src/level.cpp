@@ -6,12 +6,14 @@
 #include <string>
 #include <vector>
 
-#include "string_manip_helpers.hpp"
+#include "helpers.hpp"
 
 std::vector<std::vector<bool>> Level::walls;
 std::unordered_map<char, Goal> Level::goalsMap;
 
-Level::Level(std::istream &istream) { loadLevel(istream); }
+Level::Level(const std::string &domain, const std::string &name, const std::unordered_map<char, Agent> &agentsMap,
+             const std::unordered_map<char, Box> &boxesMap)
+    : agentsMap(agentsMap), boxesMap(boxesMap), domain_(domain), name_(name) {}
 
 std::string Level::toString() {
     std::stringstream ss;
@@ -19,19 +21,19 @@ std::string Level::toString() {
     return ss.str();
 }
 
-void Level::loadLevel(std::istream &serverMessages) {
+Level loadLevel(std::istream &serverMessages) {
     // Read domain (skip)
     std::string line;
     getline(serverMessages, line);  // #domain
     assert(line == "#domain");
     getline(serverMessages, line);  // hospital
-    domain_ = line;
+    const std::string domain = line;
 
     // Read level name (skip)
     getline(serverMessages, line);  // #levelname
     assert(line == "#levelname");
     getline(serverMessages, line);  // <name>
-    name_ = line;
+    const std::string name = line;
 
     // Read colors
     getline(serverMessages, line);  // #colors
@@ -90,6 +92,8 @@ void Level::loadLevel(std::istream &serverMessages) {
     const int numRows = levelLines.size();
     const int numCols = levelLines[0].length();
     std::vector<std::vector<bool>> walls(numRows, std::vector<bool>(numCols, false));
+    std::unordered_map<char, Agent> agentsMap;
+    std::unordered_map<char, Box> boxesMap;
 
     for (int row = 0; row < numRows; row++) {
         for (int col = 0; col < numCols; col++) {
@@ -123,5 +127,5 @@ void Level::loadLevel(std::istream &serverMessages) {
         }
     }
     Level::goalsMap = goalsMap;
-    // return State(agentRows, agentCols, agentColors, walls, boxes, boxColors, goals);
+    return Level(domain, name, agentsMap, boxesMap);
 }

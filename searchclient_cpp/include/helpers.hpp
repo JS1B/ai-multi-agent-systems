@@ -5,20 +5,20 @@
 #include <vector>
 
 namespace utils {
-std::string whitespaces = " \t\n\r\f\v";
+extern std::string whitespaces;
 
-std::string join(const std::vector<std::string> &strings, const std::string &separator) {
+inline std::string join(const std::vector<std::string> &strings, const std::string &separator) {
     std::string result;
-    for (size_t i = 0; i < strings.size(); i++) {
-        result += strings[i];
-        if (i < strings.size() - 1) {
+    for (const auto &str : strings) {
+        result += str;
+        if (str != strings.back()) {
             result += separator;
         }
     }
     return result;
 }
 
-std::string trim(const std::string &str) {
+inline std::string trim(const std::string &str) {
     size_t first = str.find_first_not_of(whitespaces);
     if (std::string::npos == first) {
         return str;  // String is all whitespace
@@ -27,7 +27,7 @@ std::string trim(const std::string &str) {
     return str.substr(first, (last - first + 1));
 }
 
-std::string normalizeWhitespace(const std::string &str) {
+inline std::string normalizeWhitespace(const std::string &str) {
     std::string result;
     for (char c : str) {
         if (!std::isspace(c)) {
@@ -37,10 +37,16 @@ std::string normalizeWhitespace(const std::string &str) {
     return result;
 }
 
-std::string toLower(const std::string &str) {
+inline std::string toLower(const std::string &str) {
     std::string lowerStr = str;
     std::transform(lowerStr.begin(), lowerStr.end(), lowerStr.begin(), ::tolower);
     return lowerStr;
+}
+
+template <class T>
+inline void hashCombine(std::size_t &seed, const T &v) {
+    std::hash<T> hasher;
+    seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 }
 
 }  // namespace utils

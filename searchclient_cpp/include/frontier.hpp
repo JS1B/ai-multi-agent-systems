@@ -1,8 +1,6 @@
 #pragma once
 
 #include <deque>
-#include <functional>  // For std::hash, std::function
-#include <memory>      // For std::unique_ptr
 #include <queue>
 #include <stdexcept>  // For std::runtime_error
 #include <string>
@@ -28,7 +26,7 @@ class Frontier {
 class FrontierBFS : public Frontier {
    private:
     std::deque<State*> queue_;
-    std::unordered_set<State*, State::hash> set_;
+    std::unordered_set<State*> set_;
 
    public:
     void add(State* state) override {
@@ -59,7 +57,7 @@ class FrontierBFS : public Frontier {
 class FrontierDFS : public Frontier {
    private:
     std::deque<State*> queue_;
-    std::unordered_set<State*, State::hash> set_;
+    std::unordered_set<State*> set_;
 
    public:
     void add(State* state) override {
@@ -91,7 +89,7 @@ class FrontierDFS : public Frontier {
 // class FrontierBestFirst : public Frontier {
 //    private:
 //     const Heuristic* heuristic_;  // Pointer to the heuristic, ownership managed externally
-//     std::unordered_set<State, State::hash> set_;
+//     std::unordered_set<State> set_;
 
 //     // Custom comparator for the priority queue
 //     // Compares states based on the heuristic's f() value

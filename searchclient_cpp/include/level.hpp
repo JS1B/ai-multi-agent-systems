@@ -22,31 +22,23 @@
 class Level {
    public:
     Level() = delete;
-    Level(std::istream &istream = std::cin);
+    Level(const std::string &domain, const std::string &name, const std::unordered_map<char, Agent> &agentsMap,
+          const std::unordered_map<char, Box> &boxesMap);
     Level(const Level &) = default;
     Level &operator=(const Level &) = default;
     ~Level() = default;
 
     static std::vector<std::vector<bool>> walls;
-
-    // std::vector<int> agentRows;
-    // std::vector<int> agentCols;
-    // std::vector<Color> agentColors;
-    // std::vector<Agent> agents;
-    std::unordered_map<char, Agent> agentsMap;
-
-    // std::vector<std::vector<char>> boxes;
-    // std::vector<Color> boxColors;
-    // std::vector<Box> boxes;
-    std::unordered_map<char, Box> boxesMap;
-
-    // std::vector<Goal> goals;
     static std::unordered_map<char, Goal> goalsMap;
+
+    std::unordered_map<char, Agent> agentsMap;
+    std::unordered_map<char, Box> boxesMap;
 
     std::string toString();
 
    private:
-    std::string domain_;
-    std::string name_;
-    void loadLevel(std::istream &serverMessages);
+    const std::string domain_;
+    const std::string name_;
 };
+
+Level loadLevel(std::istream &serverMessages);
