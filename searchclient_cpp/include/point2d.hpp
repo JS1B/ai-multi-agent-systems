@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include "helpers.hpp"
+
 class Point2D {
    public:
     Point2D() : x_(0), y_(0) {}
@@ -27,10 +29,23 @@ class Point2D {
     Point2D operator+(const Point2D &other) const { return Point2D(x_ + other.x_, y_ + other.y_); }
     Point2D operator-(const Point2D &other) const { return Point2D(x_ - other.x_, y_ - other.y_); }
 
-    int16_t x() const { return x_; }
-    int16_t y() const { return y_; }
+    inline int16_t x() const { return x_; }
+    inline int16_t y() const { return y_; }
 
    private:
     int16_t x_;
     int16_t y_;
 };
+
+namespace std {
+template <>
+struct hash<Point2D> {
+    size_t operator()(const Point2D &p) const {
+        size_t seed = 0;
+        // Combine hashes of x_ and y_
+        utils::hashCombine(seed, p.x());
+        utils::hashCombine(seed, p.y());
+        return seed;
+    }
+};
+}  // namespace std

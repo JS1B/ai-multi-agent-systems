@@ -15,10 +15,10 @@
 #include "color.hpp"
 #include "frontier.hpp"
 #include "graphsearch.hpp"
+#include "helpers.hpp"
 #include "heuristic.hpp"
 #include "level.hpp"
 #include "state.hpp"
-#include "string_manip_helpers.hpp"
 
 /*
 For a text to be treated as a comment, it must be sent via:
@@ -40,13 +40,13 @@ int main(int argc, char *argv[]) {
     fprintf(stdout, "SearchClient\n");
 
     // Parse command line arguments (e.g., for specifying search strategy)
-    std::string strategy = "dfs";
+    std::string strategy = "bfs";
     if (argc > 1) {
         strategy = std::string(argv[1]);
     }
 
     // Parse the level from stdin
-    Level level = Level(std::cin);
+    Level level = loadLevel(std::cin);
     fprintf(stderr, "Loaded %s\n", level.toString().c_str());
 
     State initial_state = State(level);
@@ -54,8 +54,8 @@ int main(int argc, char *argv[]) {
     // Create frontier
     Frontier *frontier;
     try {
-        frontier = strategy_map[strategy];
-    } catch (const std::invalid_argument &e) {
+        frontier = strategy_map.at(strategy);
+    } catch (const std::exception &e) {
         fprintf(stderr, "Unknown strategy: %s\n", strategy.c_str());
         return 1;
     }
