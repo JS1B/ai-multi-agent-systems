@@ -1,165 +1,31 @@
 # AI and Multi-Agent Systems
 
-Prezka mordy
-[link](https://docs.google.com/presentation/d/181soPRH8DPw9JhZXqvjlQJYNIl39AJvE0wjCEwSXI_Y/edit?usp=sharing)
+Presentation Link: [Course Introduction Slides](https://docs.google.com/presentation/d/181soPRH8DPw9JhZXqvjlQJYNIl39AJvE0wjCEwSXI_Y/edit?usp=sharing)
 
-### Useful commands
+This repository provides development environments and code for the AI Multi-Agent Systems course, focusing primarily on the C++ search client, but also including resources for other languages.
 
-Bash
-```bash
-javac searchclient/*.java && java -jar ../server.jar -l ../levels/MAPF00.lvl -c "java -Xmx8g searchclient.SearchClient -heur zero -bfs" -g -s 150 -t 180 
-```
+## Setup Options for C++ Development
 
-Powershell
-```powershell
-javac searchclient/*.java ; java -jar ../server.jar -l ../levels/MAPF00.lvl -c "java -Xmx8g searchclient.SearchClient -heur zero -bfs" -g -s 150 -t 180 
-```
+You can set up the C++ development environment using either Nix directly or Docker/Podman.
 
-## C/C++ Development Environment
+### 1. Using Nix Flakes (Recommended on Linux/macOS)
 
-This repository provides a consistent C/C++ development environment using Nix via Docker.
+This is the preferred method if you have Nix installed with Flakes support enabled on your host machine.
 
-### Quick Start (Docker)
-
-```bash
-# Build the Docker image
-docker build -t cpp-nix-dev .
-
-# Run the development environment with your code mounted
-# --privileged flag is needed for performance profiling
-docker run -it --privileged -v $(pwd):/code cpp-nix-dev
-```
-
-For Podman users (recommended):
-```bash
-# Build with Podman
-podman build -t cpp-nix-dev .
-
-# Run with Podman (note the :Z flag for SELinux contexts)
-podman run -it --privileged -v $(pwd):/code:Z cpp-nix-dev
-```
-
-### What's Included
-
-The development environment contains:
-- Clang tools
-- CMake
-- GDB
-- Google Test (gtest)
-- Flamegraph & perf (profiling)
-- And other tools defined in the flake.nix
-
-### Building and Running C++ Code
-
-Once inside the development environment, use the Makefile in the searchclient_cpp directory:
-
-```bash
-# Build the C++ client
-make -C searchclient_cpp
-
-# Run the executable
-make -C searchclient_cpp run
-
-# Clean build files
-make -C searchclient_cpp clean
-```
-
-### Profiling with Flamegraph
-
-The environment includes performance profiling tools. There are two ways to use them:
-
-#### 1. Using the Nix App (Recommended)
-
-The simplest way to profile your code is to use the built-in `profile-cpp` app:
-
-```bash
-# Profile with a specific level file (default algorithm: bfs)
-nix run .#profile-cpp -- levels/custom/custom00.lvl
-
-# Profile with a specific level file and algorithm
-nix run .#profile-cpp -- levels/custom/custom00.lvl bfs
-
-# Profile with a different algorithm
-nix run .#profile-cpp -- levels/MAPF00.lvl greedy
-```
-
-This automatically:
-- Builds the searchclient if needed
-- Sets up proper profiling parameters
-- Creates an optimized flamegraph
-- Cleans up temporary files
-- Saves the result to `searchclient_cpp/flamegraph.svg`
-
-#### 2. Manual Profiling
-
-For more control, you can run the profiling tools directly:
-
-```bash
-# Change to searchclient directory
-cd searchclient_cpp
-
-# Create input file
-cat ../levels/custom/custom00.lvl > input.txt
-
-# Option 1: Using flamegraph directly
-flamegraph --freq 999 --flamechart --min-width 0.1 -o flamegraph.svg -- ./searchclient bfs < input.txt
-
-# Option 2: Using perf and inferno separately
-perf record -F 99 -e cpu-clock -g -- ./searchclient bfs < input.txt
-perf script | inferno-flamegraph > flamegraph.svg
-```
-
-#### Troubleshooting Perf Permissions
-
-If you're getting permission errors with perf:
-
-1. For NixOS users: Import the module from this flake
-2. For Docker/Podman: Make sure to run with `--privileged`
-3. For other Linux: Set these sysctl parameters:
-   ```bash
-   sudo sysctl kernel.perf_event_paranoid=-1
-   sudo sysctl kernel.kptr_restrict=0
-   sudo sysctl kernel.perf_event_mlock_kb=65535
-   ```
-
-### For Nix Users
-
-If you have Nix installed locally, you can also use:
-
-```bash
-# Enable flakes if not already enabled
-nix --extra-experimental-features "nix-command flakes" develop
-
-# Or if flakes are already enabled
-nix develop
-```
-
-# AI Multi-Agent Systems - C++ Development Environment
-
-This repository provides a development environment for the C++ search client used in the AI Multi-Agent Systems course. It utilizes Nix Flakes for reproducibility and dependency management.
-
-## Setup Options
-
-You can set up the development environment using either Nix directly or Docker/Podman.
-
-### 1. Using Nix Flakes (Recommended)
-
-This is the preferred method if you have Nix installed with Flakes support enabled.
-
-1.  **Install Nix:** Follow the instructions at [https://nixos.org/download.html](https://nixos.org/download.html). Ensure you enable Flakes support.
+1.  **Install Nix:** Follow the instructions at [https://nixos.org/download.html](https://nixos.org/download.html). Ensure you enable Flakes support during or after installation.
 2.  **Enter the Environment:** Navigate to the project directory in your terminal and run:
     ```bash
     nix develop
     ```
-    This command downloads all necessary tools (compilers, libraries, debuggers, etc.) specified in `flake.nix` and starts a shell session with these tools available in the `PATH`. The `shellHook` in `flake.nix` will also run, potentially installing additional tools like `flamegraph` via Cargo.
+    This command downloads all necessary tools specified in `flake.nix` (compilers, libraries, debuggers, etc.) and starts a shell session with these tools available in the `PATH`. The `shellHook` in `flake.nix` will also run, attempting to install additional tools like `flamegraph` via Cargo.
 
-### 2. Using Docker or Podman
+### 2. Using Docker or Podman (Recommended for Windows or Container Fans)
 
-This method uses a Dockerfile to build a container image containing the Nix environment. It's useful if you prefer containerization or don't have Nix installed directly on your host machine.
+This method uses the provided `Dockerfile` to build a container image containing the complete Nix environment. It's useful if you prefer containerization or are running on an operating system where native Nix setup is more complex (like Windows).
 
 1.  **Prerequisites:**
     *   Docker ([Install Docker](https://docs.docker.com/engine/install/)) or Podman ([Install Podman](https://podman.io/getting-started/installation)).
-    *   Ensure your Nix installation (if any on the host) has generated a `flake.lock` file. If not, run `nix flake lock` in the project directory.
+    *   Ensure a `flake.lock` file exists in the project directory. If not, run `nix flake lock` (requires Nix on the host) or proceed with the build (it might fetch dependencies without a lock, which is less reproducible).
 
 2.  **Build the Image:**
     Navigate to the project directory and run:
@@ -173,78 +39,121 @@ This method uses a Dockerfile to build a container image containing the Nix envi
     (Replace `ai-mas-dev` with your preferred image tag).
 
 3.  **Run the Container:**
-    Start an interactive container session:
+    Start an interactive container session with your project code mounted into the container's `/workspace` directory:
     ```bash
-    # Using Docker
-    docker run -it --rm --privileged ai-mas-dev
+    # Using Docker (replace $(pwd) with %cd% on Windows CMD, or ${PWD} on PowerShell)
+    docker run -it --rm --privileged -v "$(pwd):/workspace" ai-mas-dev
 
-    # Using Podman
-    podman run -it --rm --privileged ai-mas-dev
+    # Using Podman (replace $(pwd) as above; :Z is for SELinux systems)
+    podman run -it --rm --privileged -v "$(pwd):/workspace:Z" ai-mas-dev
     ```
-    *   `--privileged`: This flag is **required** because the Dockerfile enables Nix sandboxing (`sandbox = true` in `/etc/nix/nix.conf`) within the container for better build reproducibility. Sandboxing needs elevated permissions to function correctly.
-    *   The container will automatically start the Nix development environment defined in `flake.nix` (via `CMD ["nix", "develop", "--command", "bash"]`).
+    *   `-v "$(pwd):/workspace"`: This mounts your current project directory (on the host) into the `/workspace` directory inside the container. This allows you to edit code using your preferred editor on your host machine, and compile/run it inside the container's environment.
+    *   `--privileged`: This flag is **required**. The Dockerfile enables Nix sandboxing (`sandbox = true` in `/etc/nix/nix.conf`) within the container for better build reproducibility, and sandboxing requires elevated permissions. It's also often needed for performance profiling tools like `perf`.
+    *   The container automatically starts the Nix development environment defined in `flake.nix` (via `CMD ["nix", "develop", "--command", "bash"]`). You'll land in a bash shell ready to work.
 
-## Included Tools
+## Included Tools (via Nix Flake / Dockerfile)
 
-The environment provides:
+The C++ environment provides:
 
 *   **C/C++:** `clang`, `clang-tools`, `cmake`, `gtest`
-*   **Rust:** `cargo`, `rustc` (for `flamegraph`/`inferno`)
+*   **Rust:** `cargo`, `rustc` (primarily for `flamegraph`/`inferno`)
 *   **Debugging:** `gdb`
-*   **Profiling:** `perf`, `flamegraph`, `inferno` (installed via `shellHook`)
+*   **Profiling:** `perf`, `flamegraph`, `inferno` (some installed via `shellHook`)
 *   **Code Quality:** `cppcheck`, `codespell`, `doxygen`, `lcov`
 *   **Utilities:** `make`, `which`, `file`, `bash`
 
-## Building the C++ Search Client
+## Working with the C++ Search Client
 
 Once inside the development environment (either via `nix develop` or the Docker/Podman container):
 
 ```bash
-ncd searchclient_cpp
+# Navigate to the C++ client directory
+cd searchclient_cpp
+
+# Build the client
 make
-```
 
-## Running the C++ Search Client
-
-```bash
-./searchclient <algorithm> < input.txt
-# Example:
+# Run the client (example)
 ./searchclient bfs < ../levels/level0.lvl
+
+# Run using the make target (reads level from ../levels/default.lvl)
+# make run
+
+# Clean build files
+make clean
 ```
 
 ## Profiling the C++ Search Client
 
-A Nix app is provided for easy profiling with `flamegraph`.
+Profiling helps identify performance bottlenecks. The environment includes `perf` and `flamegraph`.
 
-**From the project root directory (outside the C++ client directory):**
+### 1. Using the Nix App Defined in `flake.nix` (Recommended)
+
+The simplest way is to use the `profile-cpp` app, which is defined directly within the `flake.nix` file using `pkgs.writeShellScript`. Run it from the project root (works in both `nix develop` and the container):
 
 ```bash
-nix run .#profile-cpp -- <level_file> [search_algorithm]
+# Profile with a specific level file (default algorithm: bfs)
+nix run .#profile-cpp -- levels/custom/custom00.lvl
+
+# Profile with a specific level file and algorithm
+nix run .#profile-cpp -- levels/custom/custom00.lvl astar
 ```
 
-**Examples:**
+This Nix app automatically:
+*   Builds the `searchclient` if needed.
+*   Runs `flamegraph` with optimal settings.
+*   Saves the result to `searchclient_cpp/flamegraph.svg`.
+*   Cleans up temporary files.
+
+### 2. Manual Profiling
+
+For more control, run the tools manually inside the `searchclient_cpp` directory:
 
 ```bash
-# Profile with BFS on custom00.lvl
-nix run .#profile-cpp -- levels/custom/custom00.lvl bfs
+# Create an input file (example)
+cat ../levels/custom/custom00.lvl > input.txt
 
-# Profile with A* on level1.lvl (default algorithm is bfs if not specified)
-nix run .#profile-cpp -- levels/level1.lvl astar 
+# Option A: Using flamegraph directly
+flamegraph --freq 999 --flamechart --min-width 0.1 -o flamegraph.svg -- ./searchclient bfs < input.txt
+
+# Option B: Using perf and inferno separately
+perf record -F 99 -e cpu-clock -g -- ./searchclient bfs < input.txt
+perf script | inferno-flamegraph > flamegraph.svg
+
+# Clean up perf data if needed
+# rm perf.data*
 ```
 
-This command will:
-1.  Build the `searchclient` if it doesn't exist.
-2.  Run `flamegraph` with recommended settings.
-3.  Save the output SVG to `searchclient_cpp/flamegraph.svg`.
-4.  Clean up temporary files.
+### Troubleshooting Perf Permissions
 
-Alternatively, you can run `flamegraph` manually inside the `searchclient_cpp` directory:
+If `perf` or `flamegraph` gives permission errors:
 
+1.  **Inside Docker/Podman:** Ensure you launched the container with the `--privileged` flag.
+2.  **On Host Linux (Non-NixOS):** You might need to adjust system settings:
+    ```bash
+    sudo sysctl kernel.perf_event_paranoid=-1
+    sudo sysctl kernel.kptr_restrict=0
+    # Optional, increase buffer size if needed
+    # sudo sysctl kernel.perf_event_mlock_kb=65535
+    ```
+    These changes might reset on reboot. Consult your distribution's documentation for making them permanent.
+3.  **On Host NixOS:** Performance event permissions might be managed differently. Consult NixOS documentation or consider using the container method.
+
+## Java Client Commands (Legacy/Reference)
+
+If working with the Java client:
+
+Bash:
 ```bash
-flamegraph --freq 999 --flamechart --min-width 0.1 -o flamegraph.svg -- ./searchclient <algorithm> < ../levels/<level_file>
+javac searchclient/*.java && java -jar ../server.jar -l ../levels/MAPF00.lvl -c "java -Xmx8g searchclient.SearchClient -heur zero -bfs" -g -s 150 -t 180
+```
+
+Powershell:
+```powershell
+javac searchclient/*.java ; java -jar ../server.jar -l ../levels/MAPF00.lvl -c "java -Xmx8g searchclient.SearchClient -heur zero -bfs" -g -s 150 -t 180
 ```
 
 ## Notes
 
-*   The `shellHook` in `flake.nix` attempts to install `flamegraph` and `inferno` using `cargo install`. This requires network access when the environment is first entered (or when the Docker image is built/run, depending on caching).
-*   Using `perf` inside a Docker container might have limitations depending on the host system configuration and container runtime capabilities.
+*   The `shellHook` in `flake.nix` (and thus the Docker container startup) attempts to install `flamegraph` and `inferno` using `cargo install`. This requires network access when the environment is first entered/started.
+*   Using `perf` effectively often requires access to kernel symbols, which might be limited inside containers depending on the host setup, even with `--privileged`.
