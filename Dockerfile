@@ -14,5 +14,8 @@ COPY flake.nix flake.lock* ./
 # Copy the rest of the application code
 COPY . .
 
+# Add cargo bin directory to PATH
+ENV PATH="/root/.cargo/bin:${PATH}"
+
 # Set the default command to enter the Nix development shell
 CMD ["nix", "develop", "--command", "bash"]
