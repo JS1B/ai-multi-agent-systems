@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cmath>  // For std::abs, std::sqrt etc. if needed in h()
+#include <cmath>
 #include <string>
 
 #include "state.hpp"
@@ -11,7 +11,7 @@
 
 class Heuristic {
    public:
-    virtual ~Heuristic() = default;  // Virtual destructor is important for base classes
+    virtual ~Heuristic() = default;
 
     // Calculates the heuristic value f(n) = g(n) + h(n)
     // g(n) is the cost to reach state n (usually state.getG())

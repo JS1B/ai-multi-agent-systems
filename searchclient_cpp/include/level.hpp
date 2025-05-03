@@ -2,9 +2,13 @@
 
 #include <iostream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
+#include "agent.hpp"
+#include "box.hpp"
 #include "color.hpp"
+#include "goal.hpp"
 
 #define WALL '+'
 #define EMPTY ' '
@@ -17,21 +21,27 @@
 
 class Level {
    public:
+    Level() = delete;
     Level(std::istream &istream = std::cin);
     Level(const Level &) = default;
     Level &operator=(const Level &) = default;
     ~Level() = default;
 
-    std::vector<std::vector<bool>> walls;
+    static std::vector<std::vector<bool>> walls;
 
-    std::vector<int> agentRows;
-    std::vector<int> agentCols;
-    std::vector<Color> agentColors;
+    // std::vector<int> agentRows;
+    // std::vector<int> agentCols;
+    // std::vector<Color> agentColors;
+    // std::vector<Agent> agents;
+    std::unordered_map<char, Agent> agentsMap;
 
-    std::vector<std::vector<char>> boxes;
-    std::vector<Color> boxColors;
+    // std::vector<std::vector<char>> boxes;
+    // std::vector<Color> boxColors;
+    // std::vector<Box> boxes;
+    std::unordered_map<char, Box> boxesMap;
 
-    std::vector<std::vector<char>> goals;
+    // std::vector<Goal> goals;
+    static std::unordered_map<char, Goal> goalsMap;
 
     std::string toString();
 
