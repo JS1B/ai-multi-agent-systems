@@ -1,0 +1,13 @@
+{
+    "levels_dir": "../levels",
+    "output_dir": "output",
+    "cases": [
+        {
+            "input": "custom/basic01.lvl",
+            "strategies": [
+                "bfs",
+                "dfs"
+            ]
+        }
+    ]
+}
