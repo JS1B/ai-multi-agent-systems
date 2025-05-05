@@ -22,8 +22,7 @@
 class Level {
    public:
     Level() = delete;
-    Level(const std::string &domain, const std::string &name, const std::unordered_map<char, Agent> &agentsMap,
-          const std::unordered_map<char, Box> &boxesMap);
+    Level(const std::unordered_map<char, Agent> &agentsMap, const std::unordered_map<char, Box> &boxesMap);
     Level(const Level &) = default;
     Level &operator=(const Level &) = default;
     ~Level() = default;
@@ -36,9 +35,8 @@ class Level {
 
     std::string toString();
 
-   private:
-    const std::string domain_;
-    const std::string name_;
+    static std::string domain;
+    static std::string name;
 };
 
 Level loadLevel(std::istream &serverMessages);

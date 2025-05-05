@@ -89,6 +89,12 @@ bool State::operator==(const State &other) const {
         return false;
     }
 
+    for (const auto &agentPair : level.agentsMap) {
+        if (agentPair.second != other.level.agentsMap.at(agentPair.first)) {
+            return false;
+        }
+    }
+
     for (const auto &boxPair : level.boxesMap) {
         if (boxPair.second != other.level.boxesMap.at(boxPair.first)) {
             return false;

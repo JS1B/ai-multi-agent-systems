@@ -1,7 +1,8 @@
 CXX = g++
-# @todo: -O0 is needed for debugging switch to -O2 or more
+# @todo: -O0 is needed for debugging switch to -O2, -O3; -Og is fairly good too
+# @todo: remember to remove -g as well
 # @todo: 64bit?
-CXXFLAGS = -std=c++17 -Wall -Wextra -g -O0 -MMD -MP
+CXXFLAGS = -std=c++17 -Wall -Wextra -O0 -g -MMD -MP
 INCLUDES = -Iinclude
 
 SRC_DIR = src
@@ -12,6 +13,9 @@ SOURCES = $(wildcard $(SRC_DIR)/*.cpp)
 HPP_HEADERS = $(wildcard $(INC_DIR)/*.hpp)
 OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 EXECUTABLE = searchclient
+
+# Benchmark
+BENCHMARK_DIR = ../benchmarks
 
 # Flamegraph
 FLAMEGRAPH_DIR = ../lib/FlameGraph
@@ -43,6 +47,9 @@ clean:
 
 run: $(EXECUTABLE)
 	./$(EXECUTABLE)
+
+run_benchmark: $(EXECUTABLE)
+	cd $(BENCHMARK_DIR) && python run_benchmarks.py
 
 flamegraph: $(EXECUTABLE)
 	@echo "--- Generating CPU Flame Graph ---"
