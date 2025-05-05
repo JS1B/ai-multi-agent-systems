@@ -1,8 +1,18 @@
+RELEASE ?= false
+
+# @todo: figure out where we compile 64bit
+DEBUG_FLAGS = -O0 -g
+# RELEASE_FLAGS = -O3 -DNDEBUG -march=native
+RELEASE_FLAGS = -O3
+
+ifeq ($(RELEASE), false)
+	OPT_FLAGS = $(DEBUG_FLAGS)
+else
+	OPT_FLAGS = $(RELEASE_FLAGS)
+endif
+
 CXX = g++
-# @todo: -O0 is needed for debugging switch to -O2, -O3; -Og is fairly good too
-# @todo: remember to remove -g as well
-# @todo: 64bit?
-CXXFLAGS = -std=c++17 -Wall -Wextra -O0 -g -MMD -MP
+CXXFLAGS = -std=c++17 -Wall -Wextra $(OPT_FLAGS) -MMD -MP
 INCLUDES = -Iinclude
 
 SRC_DIR = src
@@ -19,7 +29,8 @@ BENCHMARK_DIR = ../benchmarks
 
 # Flamegraph
 FLAMEGRAPH_DIR = ../lib/FlameGraph
-LEVEL_FILE = ../levels/warmup/MAPF00.lvl
+FLAMEGRAPH_STRATEGY = bfs
+LEVEL_FILE = ../levels/warmup/MAPF02C.lvl
 FLAMEGRAPH_SVG = cpu_flamegraph.svg
 PERF_FREQ = 99
 
@@ -55,9 +66,9 @@ flamegraph: $(EXECUTABLE)
 	@echo "--- Generating CPU Flame Graph ---"
 	@echo "Step 1: Recording performance data with perf..."
 	@echo "NOTE: This may require sudo privileges or adjusting /proc/sys/kernel/perf_event_paranoid."
-	@echo "Running: perf record -F $(PERF_FREQ) -g -- ./$(EXECUTABLE) < $(LEVEL_FILE)"
+	@echo "Running: perf record -F $(PERF_FREQ) -g -- ./$(EXECUTABLE) $(FLAMEGRAPH_STRATEGY)< $(LEVEL_FILE)"
 	@# Run perf record. Add 'sudo' before 'perf' if needed.
-	perf record -F $(PERF_FREQ) -g -- ./$(EXECUTABLE) < $(LEVEL_FILE)
+	perf record -F $(PERF_FREQ) -g -- ./$(EXECUTABLE) $(FLAMEGRAPH_STRATEGY) < $(LEVEL_FILE)
 	@echo "Step 2: Converting perf data to text format..."
 	perf script > $(PERF_SCRIPT_OUT)
 	@echo "Step 3: Collapsing stacks using FlameGraph scripts..."

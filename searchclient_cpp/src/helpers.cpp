@@ -27,10 +27,13 @@ std::string trim(const std::string &str) {
     return str.substr(first, (last - first + 1));
 }
 
+// Replace all whitespaces with a single space
 std::string normalizeWhitespace(const std::string &str) {
     std::string result;
     for (char c : str) {
-        if (!std::isspace(c)) {
+        if (whitespaces.find(c) != std::string::npos) {
+            result += ' ';
+        } else {
             result += c;
         }
     }
