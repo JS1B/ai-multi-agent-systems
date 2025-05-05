@@ -10,6 +10,8 @@ __pycache__/
 build/
 searchclient_cpp/searchclient
 searchclient_cpp/cpu_flamegraph.svg
+searchclient_cpp/perf.data
+searchclient_cpp/perf.data.old
 
 # Java
 searchclient_java/searchclient.jar

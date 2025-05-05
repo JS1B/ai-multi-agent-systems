@@ -42,14 +42,15 @@ Level loadLevel(std::istream &serverMessages) {
     getline(serverMessages, line);
 
     std::vector<std::string> colorSection;
-    // colorSection.reserve(10);
+    colorSection.reserve(10);
     while (line.find("#") == std::string::npos) {
         colorSection.push_back(utils::trim(line));
         getline(serverMessages, line);
     }
 
-    std::vector<Color> agentColors;
-    std::vector<Color> boxColors;
+    std::unordered_map<char, Color> agentColors;
+    std::unordered_map<char, Color> boxColors;
+
     for (const std::string &line : colorSection) {
         std::string colorStr, entitiesStr;
         std::stringstream ss(line);
@@ -64,18 +65,19 @@ Level loadLevel(std::istream &serverMessages) {
         std::string entity;
         while (getline(entitiesStream, entity, ',')) {
             entity = utils::normalizeWhitespace(entity);
+            entity = utils::trim(entity);
             if (entity.length() != 1) {
                 continue;
             }
 
-            char entityChar = entity[0];
+            const char entityChar = entity[0];
             if (FIRST_AGENT <= entityChar && entityChar <= LAST_AGENT) {
-                agentColors.push_back(color);
+                agentColors.insert({entityChar, color});
                 continue;
             }
 
             if (FIRST_BOX <= entityChar && entityChar <= LAST_BOX) {
-                boxColors.push_back(color);
+                boxColors.insert({entityChar, color});
                 continue;
             }
         }
@@ -83,6 +85,7 @@ Level loadLevel(std::istream &serverMessages) {
 
     // Read initial state
     std::vector<std::string> levelLines;
+    levelLines.reserve(100);
 
     getline(serverMessages, line);
     while (line.find("#") == std::string::npos) {
@@ -91,22 +94,31 @@ Level loadLevel(std::istream &serverMessages) {
     }
 
     const int numRows = levelLines.size();
-    const int numCols = levelLines[0].length();
+    const int numCols = std::max_element(levelLines.begin(), levelLines.end(), [](const std::string &a, const std::string &b) {
+                            return a.length() < b.length();
+                        })->length();
     std::vector<std::vector<bool>> walls(numRows, std::vector<bool>(numCols, false));
+
     std::unordered_map<char, Agent> agentsMap;
     std::unordered_map<char, Box> boxesMap;
 
     for (int row = 0; row < numRows; row++) {
-        for (int col = 0; col < numCols; col++) {
-            char c = levelLines[row][col];
+        const std::string &line = levelLines[row];
+        for (int col = 0; col < (int)line.length(); col++) {
+            const char c = line[col];
             if (FIRST_AGENT <= c && c <= LAST_AGENT) {
-                agentsMap.insert({c, Agent(c, row, col, agentColors[c - FIRST_AGENT])});
+                agentsMap.insert({c, Agent(c, row, col, agentColors[c])});
             } else if (FIRST_BOX <= c && c <= LAST_BOX) {
-                boxesMap.insert({c, Box(c, row, col, boxColors[c - FIRST_BOX])});
+                boxesMap.insert({c, Box(c, row, col, boxColors[c])});
             } else if (c == WALL) {
                 walls[row][col] = true;
             }
         }
+    }
+
+    walls.shrink_to_fit();
+    for (auto &row : walls) {
+        row.shrink_to_fit();
     }
     Level::walls = walls;
 
@@ -120,13 +132,15 @@ Level loadLevel(std::istream &serverMessages) {
     }
 
     for (int row = 0; row < numRows; row++) {
-        for (int col = 0; col < numCols; col++) {
-            char c = goalLines[row][col];
-            if (('0' <= c && c <= '9') || ('A' <= c && c <= 'Z')) {
+        const std::string &line = goalLines[row];
+        for (int col = 0; col < (int)line.length(); col++) {
+            char c = line[col];
+            if ((FIRST_BOX <= c && c <= LAST_BOX) || (FIRST_AGENT <= c && c <= LAST_AGENT)) {
                 goalsMap.insert({c, Goal(c, row, col)});
             }
         }
     }
+
     Level::goalsMap = goalsMap;
     return Level(agentsMap, boxesMap);
 }
