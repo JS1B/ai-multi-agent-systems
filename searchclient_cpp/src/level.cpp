@@ -10,14 +10,15 @@
 
 std::vector<std::vector<bool>> Level::walls;
 std::unordered_map<char, Goal> Level::goalsMap;
+std::string Level::domain;
+std::string Level::name;
 
-Level::Level(const std::string &domain, const std::string &name, const std::unordered_map<char, Agent> &agentsMap,
-             const std::unordered_map<char, Box> &boxesMap)
-    : agentsMap(agentsMap), boxesMap(boxesMap), domain_(domain), name_(name) {}
+Level::Level(const std::unordered_map<char, Agent> &agentsMap, const std::unordered_map<char, Box> &boxesMap)
+    : agentsMap(agentsMap), boxesMap(boxesMap) {}
 
 std::string Level::toString() {
     std::stringstream ss;
-    ss << "Level(" << domain_ << ", " << name_ << ", " << walls.size() << "x" << walls[0].size() << ")";
+    ss << "Level(" << domain << ", " << name << ", " << walls.size() << "x" << walls[0].size() << ")";
     return ss.str();
 }
 
@@ -27,13 +28,13 @@ Level loadLevel(std::istream &serverMessages) {
     getline(serverMessages, line);  // #domain
     assert(line == "#domain");
     getline(serverMessages, line);  // hospital
-    const std::string domain = line;
+    Level::domain = line;
 
     // Read level name (skip)
     getline(serverMessages, line);  // #levelname
     assert(line == "#levelname");
     getline(serverMessages, line);  // <name>
-    const std::string name = line;
+    Level::name = line;
 
     // Read colors
     getline(serverMessages, line);  // #colors
@@ -127,5 +128,5 @@ Level loadLevel(std::istream &serverMessages) {
         }
     }
     Level::goalsMap = goalsMap;
-    return Level(domain, name, agentsMap, boxesMap);
+    return Level(agentsMap, boxesMap);
 }

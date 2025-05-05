@@ -3,7 +3,48 @@
     "output_dir": "output",
     "cases": [
         {
-            "input": "custom/basic01.lvl",
+            "input": "warmup/MAPF00.lvl",
+            "strategies": [
+                "bfs",
+                "dfs"
+            ]
+        },
+        {
+            "input": "warmup/MAPF01.lvl",
+            "strategies": [
+                "bfs",
+                "dfs"
+            ]
+        },
+        {
+            "input": "warmup/MAPF02.lvl",
+            "strategies": [
+                "bfs",
+                "dfs"
+            ]
+        },
+        {
+            "input": "warmup/MAPF02C.lvl",
+            "strategies": [
+                "bfs",
+                "dfs"
+            ]
+        },
+        {
+            "input": "warmup/MAPF03.lvl",
+            "strategies": [
+                "dfs"
+            ]
+        },
+        {
+            "input": "warmup/MAPFslidingpuzzle.lvl",
+            "strategies": [
+                "bfs",
+                "dfs"
+            ]
+        },
+        {
+            "input": "warmup/BFSFriendly.lvl",
             "strategies": [
                 "bfs",
                 "dfs"

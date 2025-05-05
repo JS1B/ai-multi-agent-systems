@@ -10,7 +10,7 @@ enum class ActionType { NoOp, Move, Push, Pull };
 
 class Action {
    private:
-    Action(const std::string &name, ActionType type, const Point2D agentDelta, const Point2D boxDelta);
+    Action(const std::string &name, const ActionType type, const Point2D agentDelta, const Point2D boxDelta);
 
    public:
     Action(const Action &) = delete;

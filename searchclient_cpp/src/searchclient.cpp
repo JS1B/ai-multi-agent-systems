@@ -26,6 +26,20 @@ For a text to be treated as a comment, it must be sent via:
 - stdout - starting with #
 */
 
+std::string formatJointAction(const std::vector<const Action *> &joint_action, bool with_bubble = true) {
+    static const size_t max_action_string_length = 20;
+
+    std::string result;
+    result.reserve(joint_action.size() * max_action_string_length);
+
+    for (const auto &action : joint_action) {
+        result += action->name + (with_bubble ? "@" + action->name : "");
+        result += "|";
+    }
+    result.pop_back();
+    return result;
+}
+
 // Map string to strategy
 std::unordered_map<std::string, Frontier *> strategy_map = {
     {"bfs", new FrontierBFS()}, {"dfs", new FrontierDFS()},
@@ -34,7 +48,7 @@ std::unordered_map<std::string, Frontier *> strategy_map = {
 };
 
 int main(int argc, char *argv[]) {
-    fprintf(stderr, "C++ SearchClient initializing. I am sending this using the error output stream.\n");
+    fprintf(stderr, "C++ SearchClient initializing.\n");
 
     // Send client name to server.
     fprintf(stdout, "SearchClient\n");
@@ -70,13 +84,10 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    fprintf(stdout, "Found solution of length %zu.\n", plan.size());
+    fprintf(stderr, "Found solution of length %zu.\n", plan.size());
+    std::string s;
     for (const auto &joint_action : plan) {
-        std::vector<std::string> actionNames;
-        for (const auto &action : joint_action) {
-            actionNames.push_back(action->name + "@" + action->name);
-        }
-        std::string s = utils::join(actionNames, "|");
+        s = formatJointAction(joint_action, false);
 
         fprintf(stdout, "%s\n", s.c_str());
         fflush(stdout);

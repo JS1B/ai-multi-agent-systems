@@ -2,7 +2,7 @@
 
 #include <deque>
 #include <queue>
-#include <stdexcept>  // For std::runtime_error
+#include <stdexcept>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -10,7 +10,6 @@
 #include "heuristic.hpp"
 #include "state.hpp"
 
-// Abstract Frontier base class (Interface)
 class Frontier {
    public:
     virtual ~Frontier() = default;
@@ -26,7 +25,7 @@ class Frontier {
 class FrontierBFS : public Frontier {
    private:
     std::deque<State*> queue_;
-    std::unordered_set<State*> set_;
+    std::unordered_set<State*, StatePtrHash, StatePtrEqual> set_;
 
    public:
     void add(State* state) override {
@@ -57,7 +56,7 @@ class FrontierBFS : public Frontier {
 class FrontierDFS : public Frontier {
    private:
     std::deque<State*> queue_;
-    std::unordered_set<State*> set_;
+    std::unordered_set<State*, StatePtrHash, StatePtrEqual> set_;
 
    public:
     void add(State* state) override {

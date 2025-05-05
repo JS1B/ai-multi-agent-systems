@@ -3,7 +3,6 @@
 #include <chrono>
 #include <iomanip>
 #include <iostream>
-#include <set>
 #include <unordered_set>
 #include <vector>
 
@@ -15,7 +14,7 @@
 // Global start time
 static auto start_time = std::chrono::high_resolution_clock::now();
 
-void printSearchStatus(const std::unordered_set<State *> &explored, const Frontier &frontier) {
+void printSearchStatus(const std::unordered_set<State *, StatePtrHash, StatePtrEqual> &explored, const Frontier &frontier) {
     static bool first_time = true;
     if (first_time) {
         first_time = false;
@@ -36,11 +35,11 @@ std::vector<std::vector<const Action *>> search(State *initial_state, Frontier *
     int iterations = 0;
 
     frontier->add(initial_state);
-    std::unordered_set<State *> explored;
+    std::unordered_set<State *, StatePtrHash, StatePtrEqual> explored;
 
     while (true) {
         iterations++;
-        if (iterations % 100 == 0) {  // 10000
+        if (iterations % 10000 == 0) {  // 10000
             printSearchStatus(explored, *frontier);
         }
 
@@ -67,7 +66,9 @@ std::vector<std::vector<const Action *>> search(State *initial_state, Frontier *
         for (State *child : state->getExpandedStates()) {
             if (explored.find(child) == explored.end() && !frontier->contains(child)) {
                 frontier->add(child);
+                continue;
             }
+            delete child;  // @todo: check if this is correct - may not be enough
         }
     }
 }

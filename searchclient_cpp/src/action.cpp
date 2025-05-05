@@ -2,10 +2,9 @@
 
 #include "point2d.hpp"
 
-Action::Action(const std::string &name, ActionType type, const Point2D agentDelta, const Point2D boxDelta)
+Action::Action(const std::string &name, const ActionType type, const Point2D agentDelta, const Point2D boxDelta)
     : name(name), type(type), agentDelta(agentDelta), boxDelta(boxDelta) {}
 
-// Define all static members - cannot be initialized in the header file if .hpp is included in multiple files
 const Action Action::NoOp("NoOp", ActionType::NoOp, {0, 0}, {0, 0});
 
 const Action Action::MoveN("Move(N)", ActionType::Move, {-1, 0}, {0, 0});
