@@ -1,0 +1,231 @@
+{
+    "note": "Fist comparable rewrite results. Works way better with the exception of dfs on some levels (MAPF02C)",
+    "timestamp": "2025-05-05T04:12:09.188369",
+    "cases": [
+        {
+            "level": "custom/basic01.lvl",
+            "strategy": "bfs",
+            "solution": [
+                "WIP"
+            ],
+            "metrics": {
+                "expanded": 5.0,
+                "frontier": 0.0,
+                "generated": 5.0,
+                "time[s]": 0.0,
+                "alloc[mb]": 13.5,
+                "maxalloc[mb]": 512.0
+            }
+        },
+        {
+            "level": "custom/basic01.lvl",
+            "strategy": "dfs",
+            "solution": [
+                "WIP"
+            ],
+            "metrics": {
+                "expanded": 3.0,
+                "frontier": 2.0,
+                "generated": 5.0,
+                "time[s]": 0.0,
+                "alloc[mb]": 13.5,
+                "maxalloc[mb]": 512.0
+            }
+        },
+        {
+            "level": "warmup/MAPF00.lvl",
+            "strategy": "bfs",
+            "solution": [
+                "WIP"
+            ],
+            "metrics": {
+                "expanded": 48.0,
+                "frontier": 0.0,
+                "generated": 48.0,
+                "time[s]": 0.0,
+                "alloc[mb]": 13.5,
+                "maxalloc[mb]": 512.0
+            }
+        },
+        {
+            "level": "warmup/MAPF00.lvl",
+            "strategy": "dfs",
+            "solution": [
+                "WIP"
+            ],
+            "metrics": {
+                "expanded": 40.0,
+                "frontier": 8.0,
+                "generated": 48.0,
+                "time[s]": 0.0,
+                "alloc[mb]": 13.5,
+                "maxalloc[mb]": 512.0
+            }
+        },
+        {
+            "level": "warmup/MAPF01.lvl",
+            "strategy": "bfs",
+            "solution": [
+                "WIP"
+            ],
+            "metrics": {
+                "expanded": 2303.0,
+                "frontier": 47.0,
+                "generated": 2350.0,
+                "time[s]": 0.018,
+                "alloc[mb]": 13.5,
+                "maxalloc[mb]": 512.0
+            }
+        },
+        {
+            "level": "warmup/MAPF01.lvl",
+            "strategy": "dfs",
+            "solution": [
+                "WIP"
+            ],
+            "metrics": {
+                "expanded": 23.0,
+                "frontier": 197.0,
+                "generated": 220.0,
+                "time[s]": 0.0,
+                "alloc[mb]": 13.5,
+                "maxalloc[mb]": 512.0
+            }
+        },
+        {
+            "level": "warmup/MAPF02.lvl",
+            "strategy": "bfs",
+            "solution": [
+                "WIP"
+            ],
+            "metrics": {
+                "expanded": 108190.0,
+                "frontier": 2255.0,
+                "generated": 110445.0,
+                "time[s]": 4.528,
+                "alloc[mb]": 52.4,
+                "maxalloc[mb]": 512.0
+            }
+        },
+        {
+            "level": "warmup/MAPF02.lvl",
+            "strategy": "dfs",
+            "solution": [
+                "WIP"
+            ],
+            "metrics": {
+                "expanded": 48.0,
+                "frontier": 1673.0,
+                "generated": 1721.0,
+                "time[s]": 0.002,
+                "alloc[mb]": 13.5,
+                "maxalloc[mb]": 512.0
+            }
+        },
+        {
+            "level": "warmup/MAPF02C.lvl",
+            "strategy": "bfs",
+            "solution": [
+                "WIP"
+            ],
+            "metrics": {
+                "expanded": 110347.0,
+                "frontier": 193.0,
+                "generated": 110540.0,
+                "time[s]": 4.558,
+                "alloc[mb]": 52.5,
+                "maxalloc[mb]": 512.0
+            }
+        },
+        {
+            "level": "warmup/MAPF02C.lvl",
+            "strategy": "dfs",
+            "solution": [
+                "WIP"
+            ],
+            "metrics": {
+                "expanded": 104102.0,
+                "frontier": 6440.0,
+                "generated": 110542.0,
+                "time[s]": 4.917,
+                "alloc[mb]": 55.3,
+                "maxalloc[mb]": 512.0
+            }
+        },
+        {
+            "level": "warmup/MAPF03.lvl",
+            "strategy": "dfs",
+            "solution": [
+                "WIP"
+            ],
+            "metrics": {
+                "expanded": 34.0,
+                "frontier": 3314.0,
+                "generated": 3348.0,
+                "time[s]": 0.004,
+                "alloc[mb]": 13.5,
+                "maxalloc[mb]": 512.0
+            }
+        },
+        {
+            "level": "warmup/MAPFslidingpuzzle.lvl",
+            "strategy": "bfs",
+            "solution": [
+                "WIP"
+            ],
+            "metrics": {
+                "expanded": 180761.0,
+                "frontier": 524.0,
+                "generated": 181285.0,
+                "time[s]": 1.367,
+                "alloc[mb]": 120.0,
+                "maxalloc[mb]": 512.0
+            }
+        },
+        {
+            "level": "warmup/MAPFslidingpuzzle.lvl",
+            "strategy": "dfs",
+            "solution": [
+                "WIP"
+            ],
+            "metrics": {
+                "expanded": 18081.0,
+                "frontier": 15228.0,
+                "generated": 33309.0,
+                "time[s]": 0.125,
+                "alloc[mb]": 24.8,
+                "maxalloc[mb]": 512.0
+            }
+        },
+        {
+            "level": "warmup/BFSFriendly.lvl",
+            "strategy": "bfs",
+            "solution": [
+                "WIP"
+            ],
+            "metrics": {
+                "expanded": 1.0,
+                "frontier": 1.0,
+                "generated": 2.0,
+                "time[s]": 0.0,
+                "alloc[mb]": 17.8,
+                "maxalloc[mb]": 512.0
+            }
+        },
+        {
+            "level": "warmup/BFSFriendly.lvl",
+            "strategy": "dfs",
+            "solution": [
+                "WIP"
+            ],
+            "metrics": {
+                "expanded": 1003.0,
+                "frontier": 0.0,
+                "generated": 1003.0,
+                "time[s]": 0.002,
+                "alloc[mb]": 17.8,
+                "maxalloc[mb]": 512.0
+            }
+        }
+    ]
+}
