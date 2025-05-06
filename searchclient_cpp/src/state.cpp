@@ -1,5 +1,7 @@
 #include "state.hpp"
 
+#include <random>
+
 #include "helpers.hpp"
 
 State::State(Level level) : level(level), parent(nullptr), g_(0) {}
@@ -57,6 +59,7 @@ std::vector<State *> State::getExpandedStates() const {
     }
 
     // @todo: Shuffle the expanded states - why?
+    // Improves dfs ~4 times, worsens bfs ~3 times
     // std::shuffle(expandedStates.begin(), expandedStates.end(), std::random_device());
     return expandedStates;
 }
