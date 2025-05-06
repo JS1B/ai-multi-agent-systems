@@ -47,6 +47,9 @@ class Level {
     void moveAgent(const char id, const Action *&action);
     void moveBox(const char id, const Action *&action);
 
+    bool operator==(const Level &other) const;
+    bool operator!=(const Level &other) const;
+
    private:
     // @todo: test
     std::vector<std::vector<char>> grid_layout_;

@@ -84,24 +84,8 @@ size_t State::getHash() const {
 bool State::operator==(const State &other) const {
     if (this == &other) return true;
 
-    if (level.agentsMap.size() != other.level.agentsMap.size() || level.boxesMap.size() != other.level.boxesMap.size()) {
+    if (level == other.level) {
         return false;
-    }
-
-    if (level.agentsMap != other.level.agentsMap || level.boxesMap != other.level.boxesMap) {
-        return false;
-    }
-
-    for (const auto &agentPair : level.agentsMap) {
-        if (agentPair.second != other.level.agentsMap.at(agentPair.first)) {
-            return false;
-        }
-    }
-
-    for (const auto &boxPair : level.boxesMap) {
-        if (boxPair.second != other.level.boxesMap.at(boxPair.first)) {
-            return false;
-        }
     }
 
     return true;

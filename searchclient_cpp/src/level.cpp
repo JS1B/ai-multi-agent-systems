@@ -50,6 +50,19 @@ void Level::moveBox(const char id, const Action *&action) {
     grid_layout_[box.position().x()][box.position().y()] = id;
 }
 
+bool Level::operator==(const Level &other) const {
+    for (size_t i = 0; i < grid_layout_.size(); i++) {
+        for (size_t j = 0; j < grid_layout_[i].size(); j++) {
+            if (grid_layout_[i][j] != other.grid_layout_[i][j]) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool Level::operator!=(const Level &other) const { return !(*this == other); }
+
 Level loadLevel(std::istream &serverMessages) {
     // Read domain (skip)
     std::string line;
