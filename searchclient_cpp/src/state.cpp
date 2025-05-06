@@ -4,7 +4,7 @@
 
 #include "helpers.hpp"
 
-State::State(Level level) : level(level), parent(nullptr), g_(0) {}
+State::State(Level level) : level(level), parent(nullptr), g_(0) { jointAction.reserve(level.agentsMap.size()); }
 
 std::vector<std::vector<const Action *>> State::extractPlan() const {
     std::vector<std::vector<const Action *>> plan;
@@ -120,25 +120,25 @@ bool State::isApplicable(const Agent &agent, const Action &action) const {
 
         case ActionType::Move:
             agentDestination = agent.position() + action.agentDelta;
-            return cellIsFree(agentDestination);
+            return isCellFree(agentDestination);
 
         case ActionType::Push: {
             boxPosition = agent.position() + action.agentDelta;
-            boxIdConsidered = boxIdAt(boxPosition);
-            if (boxIdConsidered == 0) return false;
+            boxIdConsidered = isCellBox(boxPosition) ? charAt(boxPosition) : EMPTY;
+            if (boxIdConsidered == EMPTY) return false;
 
             const Box &box = level.boxesMap.at(boxIdConsidered);
-            return agent.color() == box.color() && cellIsFree(boxPosition);
+            return agent.color() == box.color() && isCellFree(boxPosition);
         }
 
         case ActionType::Pull: {
             boxPosition = agent.position() - action.agentDelta;
-            boxIdConsidered = boxIdAt(boxPosition);
-            if (boxIdConsidered == 0) return false;
+            boxIdConsidered = isCellBox(boxPosition) ? charAt(boxPosition) : EMPTY;
+            if (boxIdConsidered == EMPTY) return false;
 
             const Box &box = level.boxesMap.at(boxIdConsidered);
             agentDestination = agent.position() + action.agentDelta;
-            return agent.color() == box.color() && cellIsFree(agentDestination);
+            return agent.color() == box.color() && isCellFree(agentDestination);
         }
         default:
             throw std::invalid_argument("Invalid action type");
@@ -152,12 +152,12 @@ bool State::isGoalState() const {
 
         // Every box must be on a goal
         for (const auto &boxPair : level.boxesMap) {
-            if (boxPair.second.getId() == goalId && !boxPair.second.at(goalPos)) return false;
+            if (boxPair.first == goalId && !boxPair.second.at(goalPos)) return false;
         }
 
         // Every agent must be on a goal
         for (const auto &agentPair : level.agentsMap) {
-            if (agentPair.second.getId() == goalId && !agentPair.second.at(goalPos)) return false;
+            if (agentPair.first == goalId && !agentPair.second.at(goalPos)) return false;
         }
     }
     return true;
@@ -166,7 +166,6 @@ bool State::isGoalState() const {
 bool State::isConflicting(const std::vector<const Action *> &jointAction) const {
     size_t numAgents = level.agentsMap.size();
     std::vector<Point2D> destinations(numAgents);
-    // std::vector<Point2D> boxPositions(numAgents);
     Point2D destBoxPos;
 
     for (const auto &agentPair : level.agentsMap) {
@@ -180,19 +179,16 @@ bool State::isConflicting(const std::vector<const Action *> &jointAction) const 
 
             case ActionType::Move:
                 destinations[agentIndex] = agent.position() + action->agentDelta;
-                // boxPositions[agentIndex] = agent.position();  // @todo: Distinct dummy value
                 break;
 
             case ActionType::Push:
                 destBoxPos = agent.position() + action->agentDelta;
                 destinations[agentIndex] = destBoxPos + action->boxDelta;
-                // boxPositions[agentIndex] = destBoxPos;
                 break;
 
             case ActionType::Pull:
                 destBoxPos = agent.position() - action->boxDelta;
                 destinations[agentIndex] = destBoxPos + action->agentDelta;
-                // boxPositions[agentIndex] = destBoxPos;
                 break;
 
             default:
@@ -219,9 +215,10 @@ std::string State::toString() const {
     std::stringstream ss;
     ss << "State(agentRows=\n";
     for (size_t row = 0; row < level.walls.size(); row++) {
-        for (size_t col = 0; col < level.walls[row].size(); col++) {
-            const char boxId = boxIdAt(Point2D(row, col));
-            const char agentId = agentIdAt(Point2D(row, col));
+        const size_t col_size = level.walls[row].size();
+        for (size_t col = 0; col < col_size; col++) {
+            const char boxId = charAt(Point2D(row, col));
+            const char agentId = charAt(Point2D(row, col));
 
             if (boxId != 0) {
                 ss << boxId;
@@ -257,32 +254,28 @@ State::State(const State *parent, std::vector<const Action *> jointAction)
                 break;
 
             case ActionType::Move:
-                agent.moveBy(action->agentDelta);
+                level.moveAgent(agentPair.first, action);
                 break;
 
             case ActionType::Push: {
-                agent.moveBy(action->agentDelta);
+                level.moveAgent(agentPair.first, action);
                 const Point2D boxPosition = agent.position();
-                const char boxId = boxIdAt(boxPosition);
-                if (boxId == 0) {
-                    throw std::invalid_argument("Box not found");
+                if (!level.isCellBox(boxPosition)) {
+                    return;
                 }
 
-                Box &box = level.boxesMap.at(boxId);
-                box.moveBy(action->boxDelta);
+                level.moveBox(level.charAt(boxPosition), action);
                 break;
             }
 
             case ActionType::Pull: {
-                const Point2D boxPosition = agent.position() - action->agentDelta;
-                const char boxId = boxIdAt(boxPosition);
-                if (boxId == 0) {
-                    throw std::invalid_argument("Box not found");
+                const Point2D boxPosition = agent.position();
+                level.moveAgent(agentPair.first, action);
+                if (!level.isCellBox(boxPosition)) {
+                    return;
                 }
 
-                Box &box = level.boxesMap.at(boxId);
-                box.moveBy(action->boxDelta);
-                agent.moveBy(action->agentDelta);
+                level.moveBox(level.charAt(boxPosition), action);
                 break;
             }
 
@@ -292,27 +285,10 @@ State::State(const State *parent, std::vector<const Action *> jointAction)
     }
 }
 
-bool State::cellIsFree(const Point2D &position) const {
-    if (level.walls[position.x()][position.y()]) return false;
-    if (boxIdAt(position) != 0) return false;
-    if (agentIdAt(position) != 0) return false;
-    return true;
-}
+bool State::isCellFree(const Point2D &position) const { return level.isCellEmpty(position); }
 
-char State::agentIdAt(const Point2D &position) const {
-    for (const auto &agentPair : level.agentsMap) {
-        if (agentPair.second.position() == position) {
-            return agentPair.first;
-        }
-    }
-    return 0;
-}
+bool State::isCellBox(const Point2D &position) const { return level.isCellBox(position); }
 
-char State::boxIdAt(const Point2D &position) const {
-    for (const auto &boxPair : level.boxesMap) {
-        if (boxPair.second.position() == position) {
-            return boxPair.first;
-        }
-    }
-    return 0;
-}
+bool State::isCellAgent(const Point2D &position) const { return level.isCellAgent(position); }
+
+char State::charAt(const Point2D &position) const { return level.charAt(position); }

@@ -13,13 +13,41 @@ std::unordered_map<char, Goal> Level::goalsMap;
 std::string Level::domain;
 std::string Level::name;
 
-Level::Level(const std::unordered_map<char, Agent> &agentsMap, const std::unordered_map<char, Box> &boxesMap)
-    : agentsMap(agentsMap), boxesMap(boxesMap) {}
+Level::Level(const std::unordered_map<char, Agent> &agentsMap, const std::unordered_map<char, Box> &boxesMap,
+             const std::vector<std::vector<char>> &grid_layout)
+    : agentsMap(agentsMap), boxesMap(boxesMap), grid_layout_(grid_layout) {}
 
 std::string Level::toString() {
     std::stringstream ss;
     ss << "Level(" << domain << ", " << name << ", " << walls.size() << "x" << walls[0].size() << ")";
     return ss.str();
+}
+bool Level::isCellEmpty(const Point2D &position) const { return charAt(position) == EMPTY; }
+
+bool Level::isCellBox(const Point2D &position) const {
+    const char c = charAt(position);
+    return c >= FIRST_BOX && c <= LAST_BOX;
+}
+
+bool Level::isCellAgent(const Point2D &position) const {
+    const char c = charAt(position);
+    return c >= FIRST_AGENT && c <= LAST_AGENT;
+}
+
+char Level::charAt(const Point2D &position) const { return grid_layout_[position.x()][position.y()]; }
+
+void Level::moveAgent(const char id, const Action *&action) {
+    Agent &agent = agentsMap.at(id);
+    grid_layout_[agent.position().x()][agent.position().y()] = EMPTY;
+    agent.moveBy(action->agentDelta);
+    grid_layout_[agent.position().x()][agent.position().y()] = id;
+}
+
+void Level::moveBox(const char id, const Action *&action) {
+    Box &box = boxesMap.at(id);
+    grid_layout_[box.position().x()][box.position().y()] = EMPTY;
+    box.moveBy(action->boxDelta);
+    grid_layout_[box.position().x()][box.position().y()] = id;
 }
 
 Level loadLevel(std::istream &serverMessages) {
@@ -97,6 +125,10 @@ Level loadLevel(std::istream &serverMessages) {
     const int numCols = std::max_element(levelLines.begin(), levelLines.end(), [](const std::string &a, const std::string &b) {
                             return a.length() < b.length();
                         })->length();
+
+    std::vector<std::vector<char>> grid_layout;
+    grid_layout.resize(numRows, std::vector<char>(numCols, EMPTY));
+
     std::vector<std::vector<bool>> walls(numRows, std::vector<bool>(numCols, false));
 
     std::unordered_map<char, Agent> agentsMap;
@@ -106,12 +138,18 @@ Level loadLevel(std::istream &serverMessages) {
         const std::string &line = levelLines[row];
         for (int col = 0; col < (int)line.length(); col++) {
             const char c = line[col];
+            grid_layout[row][col] = c;
             if (FIRST_AGENT <= c && c <= LAST_AGENT) {
                 agentsMap.insert({c, Agent(c, row, col, agentColors[c])});
-            } else if (FIRST_BOX <= c && c <= LAST_BOX) {
+                continue;
+            }
+            if (FIRST_BOX <= c && c <= LAST_BOX) {
                 boxesMap.insert({c, Box(c, row, col, boxColors[c])});
-            } else if (c == WALL) {
+                continue;
+            }
+            if (c == WALL) {
                 walls[row][col] = true;
+                continue;
             }
         }
     }
@@ -122,6 +160,10 @@ Level loadLevel(std::istream &serverMessages) {
     }
     Level::walls = walls;
 
+    grid_layout.shrink_to_fit();
+    for (auto &row : grid_layout) {
+        row.shrink_to_fit();
+    }
     // Read goal state
     std::unordered_map<char, Goal> goalsMap;
     std::vector<std::string> goalLines;
@@ -134,7 +176,7 @@ Level loadLevel(std::istream &serverMessages) {
     for (int row = 0; row < numRows; row++) {
         const std::string &line = goalLines[row];
         for (int col = 0; col < (int)line.length(); col++) {
-            char c = line[col];
+            const char c = line[col];
             if ((FIRST_BOX <= c && c <= LAST_BOX) || (FIRST_AGENT <= c && c <= LAST_AGENT)) {
                 goalsMap.insert({c, Goal(c, row, col)});
             }
@@ -142,5 +184,5 @@ Level loadLevel(std::istream &serverMessages) {
     }
 
     Level::goalsMap = goalsMap;
-    return Level(agentsMap, boxesMap);
+    return Level(agentsMap, boxesMap, grid_layout);
 }

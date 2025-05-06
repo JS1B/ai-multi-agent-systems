@@ -44,13 +44,10 @@ class State {
     mutable size_t hash_ = 0;
 
     // Returns true if the cell at the given position is free (i.e. not a wall, box, or agent)
-    bool cellIsFree(const Point2D &position) const;
-
-    // Returns the id of the agent at the given position, or 0
-    char agentIdAt(const Point2D &position) const;
-
-    // Returns the id of the box at the given position, or 0
-    char boxIdAt(const Point2D &position) const;
+    bool isCellFree(const Point2D &position) const;
+    bool isCellBox(const Point2D &position) const;
+    bool isCellAgent(const Point2D &position) const;
+    char charAt(const Point2D &position) const;
 };
 
 // Custom hash function for State pointers
