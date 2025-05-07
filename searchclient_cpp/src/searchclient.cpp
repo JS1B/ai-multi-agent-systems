@@ -13,6 +13,7 @@
 // Own code
 #include "action.hpp"
 #include "color.hpp"
+#include "feature_flags.hpp"
 #include "frontier.hpp"
 #include "graphsearch.hpp"
 #include "helpers.hpp"
@@ -53,6 +54,8 @@ int main(int argc, char *argv[]) {
     // Send client name to server.
     fprintf(stdout, "SearchClient\n");
 
+    fprintf(stderr, "Feature flags: %s\n", getFeatureFlags());
+
     // Parse command line arguments (e.g., for specifying search strategy)
     std::string strategy = "bfs";
     if (argc > 1) {
@@ -63,6 +66,7 @@ int main(int argc, char *argv[]) {
     Level level = loadLevel(std::cin);
     fprintf(stderr, "Loaded %s\n", level.toString().c_str());
 
+    // Create initial state
     State initial_state = State(level);
 
     // Create frontier
@@ -86,16 +90,16 @@ int main(int argc, char *argv[]) {
 
     fprintf(stderr, "Found solution of length %zu.\n", plan.size());
     std::string s;
-    for (const auto &joint_action : plan) {
-        s = formatJointAction(joint_action, false);
+    // for (const auto &joint_action : plan) {
+    //     s = formatJointAction(joint_action, false);
 
-        fprintf(stdout, "%s\n", s.c_str());
-        fflush(stdout);
+    //     fprintf(stdout, "%s\n", s.c_str());
+    //     fflush(stdout);
 
-        // Read server's response to not fill up the stdin buffer and block the server.
-        std::string response;
-        getline(std::cin, response);
-    }
+    //     // Read server's response to not fill up the stdin buffer and block the server.
+    //     std::string response;
+    //     getline(std::cin, response);
+    // }
 
     delete frontier;
     return 0;

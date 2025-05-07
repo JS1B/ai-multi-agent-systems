@@ -32,7 +32,7 @@ FLAMEGRAPH_DIR = ../lib/FlameGraph
 FLAMEGRAPH_STRATEGY = bfs
 LEVEL_FILE = ../levels/warmup/MAPF02C.lvl
 FLAMEGRAPH_SVG = cpu_flamegraph.svg
-PERF_FREQ = 99
+PERF_FREQ = 399
 
 PERF_DATA_FILE = perf.data
 PERF_SCRIPT_OUT = out.perf

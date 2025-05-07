@@ -15,7 +15,7 @@ class Box {
     Box &operator=(const Box &) = default;
     ~Box() = default;
 
-    bool operator==(const Box &other) const { return id_ == other.id_ && position_ == other.position_ && color_ == other.color_; }
+    bool operator==(const Box &other) const { return /* id_ == other.id_ &&*/ position_ == other.position_ && color_ == other.color_; }
     bool operator!=(const Box &other) const { return !(*this == other); }
 
     Point2D position() const { return position_; }

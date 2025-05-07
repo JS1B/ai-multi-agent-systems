@@ -2,9 +2,29 @@
 
 #include <random>
 
+#include "feature_flags.hpp"
 #include "helpers.hpp"
 
+std::random_device State::rd_;
+std::mt19937 State::g_rd_(rd_());
+
 State::State(Level level) : level(level), parent(nullptr), g_(0) {}
+
+[[nodiscard]] void *State::operator new(std::size_t size) {
+#ifdef USE_STATE_MEMORY_POOL
+    return StateMemoryPoolAllocator::getInstance().allocate(size);
+#else
+    return ::operator new(size);
+#endif
+}
+
+void State::operator delete(void *ptr) noexcept {
+#ifdef USE_STATE_MEMORY_POOL
+    StateMemoryPoolAllocator::getInstance().deallocate(ptr);
+#else
+    return ::operator delete(ptr);
+#endif
+}
 
 std::vector<std::vector<const Action *>> State::extractPlan() const {
     std::vector<std::vector<const Action *>> plan;
@@ -58,9 +78,10 @@ std::vector<State *> State::getExpandedStates() const {
         if (done) break;
     }
 
-    // @todo: Shuffle the expanded states - why?
     // Improves dfs ~4 times, worsens bfs ~3 times
-    // std::shuffle(expandedStates.begin(), expandedStates.end(), std::random_device());
+#ifdef USE_STATE_SHUFFLE
+    std::shuffle(expandedStates.begin(), expandedStates.end(), State::g_rd_);
+#endif
     return expandedStates;
 }
 
@@ -88,10 +109,6 @@ bool State::operator==(const State &other) const {
         return false;
     }
 
-    if (level.agentsMap != other.level.agentsMap || level.boxesMap != other.level.boxesMap) {
-        return false;
-    }
-
     for (const auto &agentPair : level.agentsMap) {
         if (agentPair.second != other.level.agentsMap.at(agentPair.first)) {
             return false;
@@ -106,9 +123,6 @@ bool State::operator==(const State &other) const {
 
     return true;
 }
-
-// @todo: This is not a good comparison operator.
-bool State::operator<(const State &other) const { return this->getG() < other.getG(); }
 
 bool State::isApplicable(const Agent &agent, const Action &action) const {
     Point2D agentDestination, boxPosition;

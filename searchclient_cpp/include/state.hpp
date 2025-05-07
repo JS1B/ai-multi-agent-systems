@@ -2,7 +2,10 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <functional>
+#include <new>
+#include <random>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -17,6 +20,9 @@ class State {
     State(Level level);
 
     Level level;
+
+    [[nodiscard]] static void *operator new(std::size_t number_of_states);
+    static void operator delete(void *ptr) noexcept;
 
     const State *parent;
     std::vector<const Action *> jointAction;
@@ -42,6 +48,9 @@ class State {
 
     const int g_;  // Cost of reaching this state
     mutable size_t hash_ = 0;
+    // Store random device for shuffling
+    static std::random_device rd_;
+    static std::mt19937 g_rd_;
 
     // Returns true if the cell at the given position is free (i.e. not a wall, box, or agent)
     bool cellIsFree(const Point2D &position) const;
@@ -56,14 +65,9 @@ class State {
 // Custom hash function for State pointers
 struct StatePtrHash {
     std::size_t operator()(const State *state_ptr) const {
-        // Ensure the pointer is not null before dereferencing
         if (!state_ptr) {
-            // Handle null pointer case, e.g., return a specific hash value
-            // or throw an exception, depending on your logic.
-            // Returning 0 is simple but might collide with the cached hash=0 state.
             return 0;
         }
-        // Dereference the pointer and call the State's hashing method
         return state_ptr->getHash();
     }
 };
@@ -81,4 +85,75 @@ struct StatePtrEqual {
         // Dereference pointers and use the State's equality operator
         return *lhs_ptr == *rhs_ptr;
     }
+};
+
+// Insert StateMemoryPoolAllocator class definition here
+class StateMemoryPoolAllocator {
+   private:
+    static constexpr size_t ESTIMATED_STATES_IN_POOL = 10'000'000;
+    static constexpr size_t STATE_SIZE_FOR_POOL = sizeof(State);
+    static constexpr size_t POOL_SIZE_BYTES = ESTIMATED_STATES_IN_POOL * STATE_SIZE_FOR_POOL;
+
+    alignas(alignof(State)) std::vector<u_char> memory_pool_;
+    size_t next_free_offset_ = 0;
+
+    StateMemoryPoolAllocator() {
+        try {
+            memory_pool_.resize(POOL_SIZE_BYTES);
+        } catch (const std::bad_alloc &e) {
+            fprintf(stderr, "CRITICAL ERROR: Failed to allocate memory pool of %zu bytes for StateMemoryPoolAllocator.\n", POOL_SIZE_BYTES);
+            fprintf(stderr, "sizeof(State) is %zu bytes.\n", sizeof(State));
+            throw;  // Re-throw, program likely cannot continue
+        }
+        // fprintf(stderr, "INFO: StateMemoryPoolAllocator pool initialized. Capacity: %zu bytes for approx %zu states.\n",
+        //         memory_pool_.capacity(), memory_pool_.capacity() / (sizeof(State) > 0 ? sizeof(State) : 1));
+    }
+
+    StateMemoryPoolAllocator(const StateMemoryPoolAllocator &) = delete;
+    StateMemoryPoolAllocator &operator=(const StateMemoryPoolAllocator &) = delete;
+
+   public:
+    static StateMemoryPoolAllocator &getInstance() {
+        static StateMemoryPoolAllocator instance;
+        return instance;
+    }
+
+    // Allocate memory for one State object from the pool
+    void *allocate(std::size_t size) {
+        // Simple alignment: ensure next_free_offset_ is aligned.
+        // More robust alignment would use std::align if needed, but for
+        // contiguous allocations of same-sized objects, aligning the start
+        // of the pool and ensuring object size is a multiple of alignment
+        // is often sufficient. Here, alignas on memory_pool_ helps.
+        // We assume sizeof(State) is already suitable or that alignas handles it. - @todo: why?
+
+        if (next_free_offset_ + size > memory_pool_.size()) {
+            // @todo: Reallocate memory_pool_ to double its current size for release
+            fprintf(stderr, "CRITICAL ERROR: StateMemoryPoolAllocator pool exhausted (requested %zu, offset %zu, capacity %zu).\n", size,
+                    next_free_offset_, memory_pool_.size());
+            fprintf(stderr, "Consider increasing ESTIMATED_STATES_IN_POOL in StateMemoryPoolAllocator\n");
+            throw std::bad_alloc();  // Critical failure
+        }
+
+        void *ptr = memory_pool_.data() + next_free_offset_;
+        next_free_offset_ += size;
+        return ptr;
+    }
+
+    // @todo: Currently no-op, but could be used to return memory to the pool if needed.
+    void deallocate(void *ptr) noexcept {
+        (void)ptr;  // Suppress unused parameter warning
+    }
+
+    // Optional: Reset for multiple runs (if your main loop runs search multiple times)
+    void reset() {
+        fprintf(stderr, "INFO: StateAllocator pool reset.\n");
+        next_free_offset_ = 0;
+        // For debugging, you might want to fill with a pattern:
+        // std::fill(memory_pool_.begin(), memory_pool_.end(), 0xCD);
+    }
+
+    inline size_t getUsedBytes() const { return next_free_offset_; }
+    inline size_t getTotalBytes() const { return memory_pool_.capacity(); }
+    inline size_t getRemainingBytes() const { return memory_pool_.capacity() - next_free_offset_; }
 };
