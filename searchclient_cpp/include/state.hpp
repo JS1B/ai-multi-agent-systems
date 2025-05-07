@@ -94,7 +94,7 @@ class StateMemoryPoolAllocator {
     static constexpr size_t STATE_SIZE_FOR_POOL = sizeof(State);
     static constexpr size_t POOL_SIZE_BYTES = ESTIMATED_STATES_IN_POOL * STATE_SIZE_FOR_POOL;
 
-    alignas(alignof(State)) std::vector<u_char> memory_pool_;
+    alignas(alignof(State)) std::vector<u_int8_t> memory_pool_;
     size_t next_free_offset_ = 0;
 
     StateMemoryPoolAllocator() {
@@ -120,23 +120,21 @@ class StateMemoryPoolAllocator {
 
     // Allocate memory for one State object from the pool
     void *allocate(std::size_t size) {
-        // Simple alignment: ensure next_free_offset_ is aligned.
-        // More robust alignment would use std::align if needed, but for
-        // contiguous allocations of same-sized objects, aligning the start
-        // of the pool and ensuring object size is a multiple of alignment
-        // is often sufficient. Here, alignas on memory_pool_ helps.
-        // We assume sizeof(State) is already suitable or that alignas handles it. - @todo: why?
+        // Ensure size is padded to be a multiple of alignment for subsequent allocations
+        // This is a simplified approach; robust padding might be slightly more complex
+        // if size itself isn't already suitable.
+        // std::size_t aligned_size = (size + alignof(State) - 1) & ~(alignof(State) - 1);
+        // if you want to pad size itself
+        // but usually sizeof(T) is used directly
 
-        if (next_free_offset_ + size > memory_pool_.size()) {
-            // @todo: Reallocate memory_pool_ to double its current size for release
-            fprintf(stderr, "CRITICAL ERROR: StateMemoryPoolAllocator pool exhausted (requested %zu, offset %zu, capacity %zu).\n", size,
-                    next_free_offset_, memory_pool_.size());
-            fprintf(stderr, "Consider increasing ESTIMATED_STATES_IN_POOL in StateMemoryPoolAllocator\n");
-            throw std::bad_alloc();  // Critical failure
+        std::size_t current_offset_aligned = (next_free_offset_ + alignof(State) - 1) & ~(alignof(State) - 1);
+
+        if (current_offset_aligned + size > memory_pool_.size()) {  // Use original size for check after aligning start
+            fprintf(stderr, "CRITICAL ERROR: StateMemoryPoolAllocator pool exhausted...\n");
+            throw std::bad_alloc();
         }
-
-        void *ptr = memory_pool_.data() + next_free_offset_;
-        next_free_offset_ += size;
+        void *ptr = memory_pool_.data() + current_offset_aligned;
+        next_free_offset_ = current_offset_aligned + size;  // Use original size for increment
         return ptr;
     }
 

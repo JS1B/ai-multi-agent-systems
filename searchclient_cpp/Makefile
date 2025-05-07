@@ -2,8 +2,7 @@ RELEASE ?= false
 
 # @todo: figure out where we compile 64bit
 DEBUG_FLAGS = -O0 -g
-# RELEASE_FLAGS = -O3 -DNDEBUG -march=native
-RELEASE_FLAGS = -O3
+RELEASE_FLAGS = -O3 -ffast-math -DNDEBUG -march=native
 
 ifeq ($(RELEASE), false)
 	OPT_FLAGS = $(DEBUG_FLAGS)
@@ -11,8 +10,8 @@ else
 	OPT_FLAGS = $(RELEASE_FLAGS)
 endif
 
-CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Wextra $(OPT_FLAGS) -MMD -MP
+CXX = clang++
+CXXFLAGS = -std=c++17 -Wall -Wextra $(OPT_FLAGS) -MMD -MP -flto
 INCLUDES = -Iinclude
 
 SRC_DIR = src
@@ -45,7 +44,7 @@ $(shell mkdir -p $(OBJ_DIR))
 all: $(EXECUTABLE)
 
 $(EXECUTABLE): $(OBJECTS)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) -flto -o $@ $^
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@

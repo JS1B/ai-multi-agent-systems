@@ -10,7 +10,7 @@ class Goal {
     char id() const { return id_; }
     Point2D position() const { return position_; }
 
-    bool operator==(const Goal &other) const { return id_ == other.id_; }
+    bool operator==(const Goal &other) const { return id_ == other.id_ && position_ == other.position_; }
     bool operator!=(const Goal &other) const { return !(*this == other); }
 
     bool at(Point2D position) const { return position_ == position; }

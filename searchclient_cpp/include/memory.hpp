@@ -1,6 +1,8 @@
 #pragma once
 
+#include <cstdint>
+
 namespace Memory {
-extern double maxUsage;
-double getUsage();
+extern uint32_t maxUsage;
+uint32_t getUsage();
 }  // namespace Memory

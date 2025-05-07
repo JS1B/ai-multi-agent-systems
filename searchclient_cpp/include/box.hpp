@@ -12,10 +12,10 @@ class Box {
     Box(char id, uint16_t row, uint16_t col, Color color) : id_(id), position_(row, col), color_(color) {}
 
     Box(const Box &) = default;
-    Box &operator=(const Box &) = default;
+    Box &operator=(const Box &) = delete;
     ~Box() = default;
 
-    bool operator==(const Box &other) const { return /* id_ == other.id_ &&*/ position_ == other.position_ && color_ == other.color_; }
+    bool operator==(const Box &other) const { return id_ == other.id_ && position_ == other.position_ && color_ == other.color_; }
     bool operator!=(const Box &other) const { return !(*this == other); }
 
     Point2D position() const { return position_; }

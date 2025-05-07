@@ -11,7 +11,7 @@ class Agent {
     Agent(const char id, uint16_t x, uint16_t y, const Color color) : id_(id), position_(x, y), color_(color) {}
 
     Agent(const Agent &) = default;
-    Agent &operator=(const Agent &) = default;
+    Agent &operator=(const Agent &) = delete;
     ~Agent() = default;
 
     bool operator==(const Agent &other) const { return id_ == other.id_ && position_ == other.position_ && color_ == other.color_; }

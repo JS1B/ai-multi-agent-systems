@@ -12,6 +12,7 @@ searchclient_cpp/searchclient
 searchclient_cpp/cpu_flamegraph.svg
 searchclient_cpp/perf.data
 searchclient_cpp/perf.data.old
+searchclient_cpp/*.profraw
 
 # Java
 searchclient_java/searchclient.jar

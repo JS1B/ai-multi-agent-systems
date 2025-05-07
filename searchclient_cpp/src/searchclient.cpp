@@ -42,8 +42,8 @@ std::string formatJointAction(const std::vector<const Action *> &joint_action, b
 }
 
 // Map string to strategy
-std::unordered_map<std::string, Frontier *> strategy_map = {
-    {"bfs", new FrontierBFS()}, {"dfs", new FrontierDFS()},
+std::unordered_map<std::string, std::function<Frontier *()>> strategy_map = {
+    {"bfs", []() { return new FrontierBFS(); }}, {"dfs", []() { return new FrontierDFS(); }},
     // {"astar", new FrontierBestFirst(new HeuristicAStar(initial_state))},
     // {"wastar", new FrontierBestFirst(new HeuristicGreedy(initial_state))},
 };
@@ -67,12 +67,12 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "Loaded %s\n", level.toString().c_str());
 
     // Create initial state
-    State initial_state = State(level);
+    State *initial_state = new State(level);
 
     // Create frontier
     Frontier *frontier;
     try {
-        frontier = strategy_map.at(strategy);
+        frontier = strategy_map.at(strategy)();
     } catch (const std::exception &e) {
         fprintf(stderr, "Unknown strategy: %s\n", strategy.c_str());
         return 1;
@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
 
     // Search for a plan
     fprintf(stderr, "Starting %s.\n", frontier->getName().c_str());
-    std::vector<std::vector<const Action *>> plan = search(&initial_state, frontier);
+    std::vector<std::vector<const Action *>> plan = search(initial_state, frontier);
 
     // Print plan to server
     if (plan.empty()) {

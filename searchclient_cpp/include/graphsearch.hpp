@@ -27,7 +27,7 @@ void printSearchStatus(const std::unordered_set<State *, StatePtrHash, StatePtrE
     size_t size_explored = explored.size();
     size_t size_frontier = frontier.size();
 
-    printf("#%8zu, %8zu, %9zu, %7.3f, %9.1f, %12.1f\n", size_explored, size_frontier, size_explored + size_frontier, elapsed_time,
+    printf("#%8zu, %8zu, %9zu, %7.3f, %9u, %12u\n", size_explored, size_frontier, size_explored + size_frontier, elapsed_time,
            Memory::getUsage(), Memory::maxUsage);
 }
 
@@ -43,10 +43,12 @@ std::vector<std::vector<const Action *>> search(State *initial_state, Frontier *
             printSearchStatus(explored, *frontier);
         }
 
-        if (Memory::getUsage() > Memory::maxUsage) {
-            printSearchStatus(explored, *frontier);
-            fprintf(stderr, "Maximum memory usage exceeded.\n");
-            return {};  // Return an empty plan to indicate failure
+        if (iterations % 1000 == 0) {
+            if (Memory::getUsage() > Memory::maxUsage) {
+                printSearchStatus(explored, *frontier);
+                fprintf(stderr, "Maximum memory usage exceeded.\n");
+                return {};  // Return an empty plan to indicate failure
+            }
         }
 
         if (frontier->isEmpty()) {

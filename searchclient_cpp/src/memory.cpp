@@ -12,22 +12,22 @@
 #include <unistd.h>
 #endif
 
-double Memory::maxUsage = 2048.0;  // Default max memory usage in MB
+uint32_t Memory::maxUsage = 2048;  // Default max memory usage in MB
 
-double Memory::getUsage() {
+uint32_t Memory::getUsage() {
 #ifdef _WIN32
     PROCESS_MEMORY_COUNTERS pmc;
     if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc))) {
-        return (double)pmc.WorkingSetSize / (1024 * 1024);  // Convert bytes to MB
+        return pmc.WorkingSetSize / (1024 * 1024);  // Convert bytes to MB
     }
     fprintf(stderr, FAILED_TO_GET_MEMORY_MSG);
-    return 0.0;
+    return 0;
 #else
     struct rusage usage;
     if (getrusage(RUSAGE_SELF, &usage) == 0) {
-        return (double)usage.ru_maxrss / 1024;  // Convert KB to MB
+        return usage.ru_maxrss / 1024;  // Convert KB to MB
     }
     fprintf(stderr, FAILED_TO_GET_MEMORY_MSG);
-    return 0.0;
+    return 0;
 #endif
 }
