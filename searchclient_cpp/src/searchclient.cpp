@@ -89,18 +89,23 @@ int main(int argc, char *argv[]) {
     }
 
     fprintf(stderr, "Found solution of length %zu.\n", plan.size());
+
+#ifdef DISABLE_ACTION_PRINTING
+#else
     std::string s;
-    // for (const auto &joint_action : plan) {
-    //     s = formatJointAction(joint_action, false);
+    for (const auto &joint_action : plan) {
+        s = formatJointAction(joint_action, false);
 
-    //     fprintf(stdout, "%s\n", s.c_str());
-    //     fflush(stdout);
+        fprintf(stdout, "%s\n", s.c_str());
+        fflush(stdout);
 
-    //     // Read server's response to not fill up the stdin buffer and block the server.
-    //     std::string response;
-    //     getline(std::cin, response);
-    // }
+        // Read server's response to not fill up the stdin buffer and block the server.
+        std::string response;
+        getline(std::cin, response);
+    }
+#endif
 
     delete frontier;
+    delete initial_state;
     return 0;
 }
