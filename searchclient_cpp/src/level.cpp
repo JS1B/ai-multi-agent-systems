@@ -120,6 +120,7 @@ Level loadLevel(std::istream &serverMessages) {
     for (auto &row : walls) {
         row.shrink_to_fit();
     }
+
     Level::walls = walls;
 
     // Read goal state

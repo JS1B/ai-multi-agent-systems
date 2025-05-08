@@ -3,7 +3,7 @@
 // comment out to disable
 // #define USE_STATE_MEMORY_POOL  // WIP
 #define USE_STATE_SHUFFLE
-// #define DISABLE_ACTION_PRINTING
+#define DISABLE_ACTION_PRINTING
 
 /********************************************************** */
 

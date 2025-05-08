@@ -28,6 +28,8 @@ class FrontierBFS : public Frontier {
     std::unordered_set<State*, StatePtrHash, StatePtrEqual> set_;
 
    public:
+    FrontierBFS() { set_.reserve(10'000); }
+
     void add(State* state) override {
         queue_.push_back(state);
         set_.insert(state);
@@ -59,6 +61,8 @@ class FrontierDFS : public Frontier {
     std::unordered_set<State*, StatePtrHash, StatePtrEqual> set_;
 
    public:
+    FrontierDFS() { set_.reserve(10'000); }
+
     void add(State* state) override {
         queue_.push_front(state);
         set_.insert(state);

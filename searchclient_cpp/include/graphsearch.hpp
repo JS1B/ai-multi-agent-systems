@@ -21,11 +21,11 @@ void printSearchStatus(const std::unordered_set<State *, StatePtrHash, StatePtrE
         printf("#Expanded, Frontier, Generated, Time[s], Alloc[MB], MaxAlloc[MB]\n");
     }
 
-    auto now = std::chrono::high_resolution_clock::now();
-    auto elapsed_time = std::chrono::duration<double>(now - start_time).count();
+    const auto now = std::chrono::high_resolution_clock::now();
+    const auto elapsed_time = std::chrono::duration<double>(now - start_time).count();
 
-    size_t size_explored = explored.size();
-    size_t size_frontier = frontier.size();
+    const size_t size_explored = explored.size();
+    const size_t size_frontier = frontier.size();
 
     printf("#%8zu, %8zu, %9zu, %7.3f, %9u, %12u\n", size_explored, size_frontier, size_explored + size_frontier, elapsed_time,
            Memory::getUsage(), Memory::maxUsage);
@@ -36,6 +36,7 @@ std::vector<std::vector<const Action *>> search(State *initial_state, Frontier *
 
     frontier->add(initial_state);
     std::unordered_set<State *, StatePtrHash, StatePtrEqual> explored;
+    explored.reserve(400'000);
 
     while (true) {
         iterations++;

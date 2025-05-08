@@ -90,14 +90,13 @@ size_t State::getHash() const {
         return hash_;
     }
 
-    size_t seed = 0;
+    size_t seed = 0x1u;
     for (const auto &agentPair : level.agentsMap) {
         utils::hashCombine(seed, agentPair.second.position());
     }
     for (const auto &boxPair : level.boxesMap) {
         utils::hashCombine(seed, boxPair.second.position());
     }
-
     hash_ = (seed == 0) ? 1 : seed;
     return hash_;
 }
