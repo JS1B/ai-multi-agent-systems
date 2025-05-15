@@ -42,7 +42,7 @@ class State {
     bool operator<(const State &other) const;
 
     bool isGoalState() const;
-    bool isApplicable(const Agent &agent, const Action &action) const;
+    bool isApplicable(const Agent &agent_from_current_state, const Action &action) const;
     bool isConflicting(const std::vector<const Action *> &jointAction) const;
 
     std::string toString() const;
@@ -53,9 +53,11 @@ class State {
     std::vector<char> getAgentChars() const;
     std::vector<char> getBoxChars() const;
 
+    bool isSolved() const;
+
    private:
     // Creates a new state from a parent state and a joint action performed in that state.
-    State(const State *parent, std::vector<const Action *> jointAction, const Level& level_ref);
+    State(const State *parent_ptr, std::vector<const Action *> jointAction_param, const Level& level_ref);
 
     const int g_;  // Cost of reaching this state
     mutable size_t hash_ = 0;
@@ -71,6 +73,11 @@ class State {
 
     // Returns the id of the box at the given position, or 0
     char boxIdAt(const Point2D &position) const;
+
+    // Optimized methods with precomputed occupancy grid
+    bool isApplicable(const Agent &agent_from_current_state, const Action &action, const std::vector<std::vector<char>>& occupancy_grid) const;
+    bool isConflicting(const std::vector<const Action *> &jointAction, const std::vector<std::vector<char>>& occupancy_grid) const;
+    void populateOccupancyGrid(std::vector<std::vector<char>>& grid) const; // Helper to fill grid
 };
 
 // Custom hash function for State pointers

@@ -21,7 +21,7 @@ std::string join(const std::vector<std::string> &strings, const std::string &sep
 std::string trim(const std::string &str) {
     size_t first = str.find_first_not_of(whitespaces);
     if (std::string::npos == first) {
-        return str;  // String is all whitespace
+        return "";
     }
     size_t last = str.find_last_not_of(whitespaces);
     return str.substr(first, (last - first + 1));

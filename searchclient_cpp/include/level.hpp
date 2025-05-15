@@ -43,7 +43,11 @@ class Level {
     const std::unordered_map<char, Agent> agentsMap;
     const std::unordered_map<char, Box> boxesMap;
 
-    std::string toString();
+    // Pre-sorted IDs for consistent iteration order in hashing/equality
+    std::vector<char> sortedAgentIds_;
+    std::vector<char> sortedBoxIds_;
+
+    std::string toString() const;
 
     bool isWall(int r_y, int c_x) const;
     char getEntityAt(int r, int c) const;
@@ -51,6 +55,19 @@ class Level {
 
     int getRows() const { return rows_; }
     int getCols() const { return cols_; }
+
+    // Helper to get all agent characters (IDs)
+    std::vector<char> getAgentChars() const;
+    std::vector<char> getBoxChars() const;
+
+    // Getter methods
+    const std::string& getDomain() const { return domain_; }
+    const std::string& getName() const { return name_; }
+    const std::vector<std::vector<bool>>& getWalls() const { return walls_; }
+    const std::unordered_map<char, Goal>& getGoalsMap() const { return goalsMap_; }
+    const std::map<char, Point2D>& getGoalsMapForPoint2D() const { return goalsMap_for_Point2D_; }
+    const std::vector<char>& getSortedAgentIds() const { return sortedAgentIds_; }
+    const std::vector<char>& getSortedBoxIds() const { return sortedBoxIds_; }
 };
 
 Level loadLevel(std::istream &serverMessages);

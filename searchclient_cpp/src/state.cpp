@@ -4,6 +4,7 @@
 
 #include "feature_flags.hpp"
 #include "helpers.hpp"
+#include <vector> // Make sure it's included for std::vector<std::vector<char>>
 
 std::random_device State::rd_;
 std::mt19937 State::g_rd_(rd_());
@@ -55,6 +56,11 @@ std::vector<State *> State::getExpandedStates() const {
         return expandedStates;
     }
 
+    // --- OPTIMIZATION: Create and populate occupancy grid once for this state expansion ---
+    std::vector<std::vector<char>> current_occupancy_grid(this->level_.rows_, std::vector<char>(this->level_.cols_));
+    this->populateOccupancyGrid(current_occupancy_grid); // Populate it with current state info
+    // --- END OCCUPANCY GRID SETUP ---
+
     std::vector<std::vector<const Action *>> applicableActionPerAgent(num_agents);
     std::vector<char> agent_ids_in_order; // To map agent_idx back to agent_id if needed, and for consistent iteration
     agent_ids_in_order.reserve(num_agents);
@@ -70,7 +76,8 @@ std::vector<State *> State::getExpandedStates() const {
         const Agent& agent = this->currentAgents_.at(agent_id); // Get agent from current state
         
         for (const Action *actionPtr : Action::allValues()) {
-            if (isApplicable(agent, *actionPtr)) { // Pass agent from current state
+            // Call the new private isApplicable with the precomputed grid
+            if (isApplicable(agent, *actionPtr, current_occupancy_grid)) { 
                 applicableActionPerAgent[agent_idx].push_back(actionPtr);
             }
         }
@@ -97,7 +104,8 @@ std::vector<State *> State::getExpandedStates() const {
             break; 
         }
         
-        if (!isConflicting(currentJointAction)) { 
+        // Call the new private isConflicting with the precomputed grid
+        if (!isConflicting(currentJointAction, current_occupancy_grid)) { 
             // Pass this->level_ to the State constructor
             expandedStates.push_back(new State(this, currentJointAction, this->level_));
         } 
@@ -130,23 +138,25 @@ size_t State::getHash() const {
     }
 
     size_t seed = 0x1u;
-    // Hash based on current agent positions
-    std::vector<char> agent_keys;
-    for(const auto& pair : this->currentAgents_) agent_keys.push_back(pair.first);
-    std::sort(agent_keys.begin(), agent_keys.end()); // Sort keys for consistent hash order
-    for(char key : agent_keys){
-        utils::hashCombine(seed, this->currentAgents_.at(key).position());
-        // utils::hashCombine(seed, this->currentAgents_.at(key).getId()); // Optionally include ID if colors can change etc.
+
+    // Hash based on current agent positions using pre-sorted IDs from level_
+    for(char agent_id : this->level_.sortedAgentIds_){
+        // It's crucial that currentAgents_ map contains all agent_ids from sortedAgentIds_
+        // If an agent might not exist in currentAgents_ (e.g., if agents can be removed),
+        // you'd need to check for existence with .count() or .find() first.
+        // Assuming all agents listed in level_.sortedAgentIds_ are always in currentAgents_:
+        utils::hashCombine(seed, this->currentAgents_.at(agent_id).position());
+        // Optionally include other agent properties if they define the state and can change
+        // utils::hashCombine(seed, this->currentAgents_.at(agent_id).getId()); 
     }
 
-    // Hash based on current box positions
-    std::vector<char> box_keys;
-    for(const auto& pair : this->currentBoxes_) box_keys.push_back(pair.first);
-    std::sort(box_keys.begin(), box_keys.end()); // Sort keys for consistent hash order
-    for(char key : box_keys){
-        utils::hashCombine(seed, this->currentBoxes_.at(key).position());
-        // utils::hashCombine(seed, this->currentBoxes_.at(key).getId()); // Optionally include ID
-        // utils::hashCombine(seed, static_cast<int>(this->currentBoxes_.at(key).color())); // Optionally include color
+    // Hash based on current box positions using pre-sorted IDs from level_
+    for(char box_id : this->level_.sortedBoxIds_){
+        // Similar assumption for boxes: all box_ids in level_.sortedBoxIds_ exist in currentBoxes_.
+        utils::hashCombine(seed, this->currentBoxes_.at(box_id).position());
+        // Optionally include other box properties if they define the state and can change
+        // utils::hashCombine(seed, this->currentBoxes_.at(box_id).getId());
+        // utils::hashCombine(seed, static_cast<int>(this->currentBoxes_.at(box_id).color()));
     }
     
     hash_ = (seed == 0) ? 1 : seed; // Ensure hash is never 0 if 0 is used as uncomputed flag
@@ -182,45 +192,136 @@ bool State::operator==(const State &other) const {
     return true;
 }
 
-bool State::isApplicable(const Agent &agent_from_current_state, const Action &action) const {
-    Point2D agentPos = agent_from_current_state.position();
-    Color agentColor = agent_from_current_state.color();
+// New private helper method to populate the occupancy grid
+void State::populateOccupancyGrid(std::vector<std::vector<char>>& grid) const {
+    const int num_rows = this->level_.rows_;
+    const int num_cols = this->level_.cols_;
 
-    switch (action.type) {
-        case ActionType::NoOp:
-            return true;
+    // Ensure grid is correctly sized, or clear and resize if it might be reused
+    // For now, assume it comes in correctly sized (e.g. getExpandedStates will size it)
+    // If not, add: grid.assign(num_rows, std::vector<char>(num_cols, ' '));
+    // For safety, let's resize it here.
+    grid.assign(num_rows, std::vector<char>(num_cols, ' ')); // ' ' for empty
 
-        case ActionType::Move: {
-            Point2D newAgentPos = agentPos + action.agentDelta;
-            return cellIsFree(newAgentPos);
-        }
-        case ActionType::Push: {
-            Point2D boxPos = agentPos + action.agentDelta; // Expected position of the box
-            char boxId = this->boxIdAt(boxPos); // Check our current state for a box here
-            if (boxId == 0) return false; // No box to push in current state
-
-            // Get the actual box from our current state to check its color
-            const Box& actualBox = this->currentBoxes_.at(boxId);
-
-            if (actualBox.color() != agentColor) return false; // Agent cannot push box of different color
-
-            Point2D newBoxPos = boxPos + action.boxDelta; // Box's new position
-            return cellIsFree(newBoxPos);
-        }
-        case ActionType::Pull: {
-            Point2D newAgentPos = agentPos + action.agentDelta;
-            Point2D boxOriginalPos = agentPos - action.boxDelta; // Original position of the box relative to current agent pos
-            char boxId = this->boxIdAt(boxOriginalPos); // Check our current state for a box here
-            if (boxId == 0) return false; // No box to pull
-
-            const Box& actualBox = this->currentBoxes_.at(boxId);
-
-            if (actualBox.color() != agentColor) return false; // Agent cannot pull box of different color
-            
-            return cellIsFree(newAgentPos); // Agent's new position must be free
+    // 1. Mark walls
+    for (int r = 0; r < num_rows; ++r) {
+        for (int c = 0; c < num_cols; ++c) {
+            if (this->level_.walls_[r][c]) {
+                grid[r][c] = 'W'; // Wall
+            }
         }
     }
-    return false; 
+
+    // 2. Mark current boxes
+    for (const auto& box_pair : this->currentBoxes_) {
+        const Point2D& pos = box_pair.second.position();
+        if (pos.y() >= 0 && pos.y() < num_rows && pos.x() >= 0 && pos.x() < num_cols) {
+            grid[pos.y()][pos.x()] = 'B'; // Box
+        }
+    }
+
+    // 3. Mark current agents (agents occupy cells over boxes if at same location)
+    for (const auto& agent_pair : this->currentAgents_) {
+        const Point2D& pos = agent_pair.second.position();
+        if (pos.y() >= 0 && pos.y() < num_rows && pos.x() >= 0 && pos.x() < num_cols) {
+            grid[pos.y()][pos.x()] = 'A'; // Agent
+        }
+    }
+}
+
+bool State::isApplicable(const Agent &agent_from_current_state, const Action &action) const {
+    // This is the original public version. 
+    // For now, it could create a grid and call the new private one, or we assume it won't be used externally much.
+    // Let's make it create a grid and call the new one to keep it functional if called.
+    std::vector<std::vector<char>> occupancy_grid(this->level_.rows_, std::vector<char>(this->level_.cols_));
+    populateOccupancyGrid(occupancy_grid);
+    return isApplicable(agent_from_current_state, action, occupancy_grid);
+}
+
+// New private isApplicable that uses the precomputed grid
+bool State::isApplicable(const Agent &agent_from_current_state, const Action &action, const std::vector<std::vector<char>>& occupancy_grid) const {
+    Point2D agentPos = agent_from_current_state.position();
+    Color agentColor = agent_from_current_state.color(); // Needed for Push/Pull color checks
+    const int num_rows = this->level_.rows_;
+    const int num_cols = this->level_.cols_;
+
+    Point2D agent_target_pos = agentPos + action.agentDelta;
+
+    // Boundary checks for agent's target position
+    if (agent_target_pos.y() < 0 || agent_target_pos.y() >= num_rows || agent_target_pos.x() < 0 || agent_target_pos.x() >= num_cols) {
+        return false; // Agent moves out of bounds
+    }
+
+    char cell_content_at_agent_target = occupancy_grid[agent_target_pos.y()][agent_target_pos.x()];
+
+    if (action.type == ActionType::Move) {
+        // Agent cannot move into a wall or a cell occupied by another agent or a box.
+        // The occupancy_grid has agents marked as 'A', boxes as 'B'.
+        // The moving agent itself is not yet in agent_target_pos in this grid.
+        if (cell_content_at_agent_target == 'W' || 
+            cell_content_at_agent_target == 'A' || 
+            cell_content_at_agent_target == 'B') {
+            return false;
+        }
+    } else if (action.type == ActionType::Push) {
+        if (cell_content_at_agent_target != 'B') return false; // Must push a box
+
+        // Find the box at agent_target_pos
+        char box_id_to_push = 0;
+        for(const auto& box_pair : this->currentBoxes_){
+            if(box_pair.second.position() == agent_target_pos){
+                box_id_to_push = box_pair.first;
+                if (box_pair.second.color() != agentColor) return false; // Color mismatch
+                break;
+            }
+        }
+        if (box_id_to_push == 0) return false; // Should not happen if cell_content_at_agent_target was 'B' from a valid box
+
+        Point2D box_target_pos = agent_target_pos + action.boxDelta; // Box moves in the same dir as agent for Push
+
+        // Boundary checks for box's target position
+        if (box_target_pos.y() < 0 || box_target_pos.y() >= num_rows || box_target_pos.x() < 0 || box_target_pos.x() >= num_cols) {
+            return false; // Box pushed out of bounds
+        }
+        // Box cannot be pushed into a Wall, another Agent, or another Box.
+        char cell_content_at_box_target = occupancy_grid[box_target_pos.y()][box_target_pos.x()];
+        if (cell_content_at_box_target == 'W' || 
+            cell_content_at_box_target == 'A' || 
+            cell_content_at_box_target == 'B') { 
+            return false;
+        }
+    } else if (action.type == ActionType::Pull) {
+        Point2D box_original_pos = agentPos - action.boxDelta; // Box is behind the agent relative to action
+        
+        // Boundary checks for box's original position
+        if (box_original_pos.y() < 0 || box_original_pos.y() >= num_rows || box_original_pos.x() < 0 || box_original_pos.x() >= num_cols) {
+            return false; // Box pulled from out of bounds (should not happen if state is valid)
+        }
+        char cell_content_at_box_original = occupancy_grid[box_original_pos.y()][box_original_pos.x()];
+        if (cell_content_at_box_original != 'B') return false; // Must pull a box
+
+        // Find the box at box_original_pos
+        char box_id_to_pull = 0;
+        for(const auto& box_pair : this->currentBoxes_){
+            if(box_pair.second.position() == box_original_pos){
+                box_id_to_pull = box_pair.first;
+                if (box_pair.second.color() != agentColor) return false; // Color mismatch
+                break;
+            }
+        }
+        if (box_id_to_pull == 0) return false; 
+
+        // Agent target cell must be free of walls, other agents, or other boxes (not the one being pulled).
+        if (cell_content_at_agent_target == 'W' || 
+            cell_content_at_agent_target == 'A' || 
+            (cell_content_at_agent_target == 'B' && agent_target_pos != box_original_pos) ) { // If target is a box, it must be the one we are pulling (which it can't be as agent moves into its old cell)
+            return false;
+        }
+    } else if (action.type == ActionType::NoOp) {
+        return true; // NoOp is always applicable if all other actions fail
+    }
+
+    return true;
 }
 
 bool State::isGoalState() const {
@@ -256,101 +357,184 @@ bool State::isGoalState() const {
 }
 
 bool State::isConflicting(const std::vector<const Action *> &jointAction) const {
-    // numAgents() now refers to currentAgents_.size()
-    size_t num_agents = this->numAgents(); 
-    if (jointAction.size() != num_agents) {
-        // This would be an internal error, jointAction should match number of agents
-        return true; // Treat as conflicting if sizes don't match
-    }
+    // Original public version. Can be updated like isApplicable or removed.
+    std::vector<std::vector<char>> occupancy_grid(this->level_.rows_, std::vector<char>(this->level_.cols_));
+    populateOccupancyGrid(occupancy_grid);
+    return isConflicting(jointAction, occupancy_grid);
+}
 
-    std::vector<Point2D> agent_final_positions(num_agents);
-    std::vector<Point2D> box_final_positions;
-    std::vector<char> moved_box_ids; 
+// New private isConflicting that uses the precomputed grid for static checks
+bool State::isConflicting(const std::vector<const Action *> &jointAction, const std::vector<std::vector<char>>& occupancy_grid) const {
+    size_t num_agents = jointAction.size();
+    if (num_agents == 0) return false;
 
-    // Get agent IDs in a consistent order to map jointAction indices correctly
-    std::vector<char> agent_ids_in_order;
-    agent_ids_in_order.reserve(num_agents);
-    for(const auto& agentPair : this->currentAgents_) { // Iterate current agents
+    // Agent IDs in the order of jointAction (assumed to be sorted from getExpandedStates)
+    std::vector<char> agent_ids_in_order; 
+    agent_ids_in_order.reserve(this->currentAgents_.size());
+    for(const auto& agentPair : this->currentAgents_) { 
         agent_ids_in_order.push_back(agentPair.first);
     }
     std::sort(agent_ids_in_order.begin(), agent_ids_in_order.end());
+    if (agent_ids_in_order.size() != num_agents) {
+        // This would be an internal error, jointAction size mismatch with currentAgents
+        fprintf(stderr, "Error: isConflicting - jointAction size mismatch with current agent count.\n");
+        return true; // Treat as conflict
+    }
 
-    for (size_t agent_idx = 0; agent_idx < num_agents; ++agent_idx) {
-        char agent_id = agent_ids_in_order[agent_idx];
-        const Agent &agent = this->currentAgents_.at(agent_id); // Agent from current state
-        const Action *action = jointAction[agent_idx]; // Action for this agent_idx
 
-        switch (action->type) {
-            case ActionType::NoOp:
-                agent_final_positions[agent_idx] = agent.position();
-                break;
+    std::vector<Point2D> agent_prev_positions(num_agents);
+    std::vector<Point2D> agent_final_positions(num_agents);
+    std::vector<Point2D> box_prev_positions; // Store {id, prev_pos}
+    std::vector<Point2D> box_final_positions;  // Store {id, final_pos}
+    std::vector<char> moved_box_ids;       // IDs of boxes moved by this joint action
 
-            case ActionType::Move:
-                agent_final_positions[agent_idx] = agent.position() + action->agentDelta;
-                break;
+    const int num_rows = this->level_.rows_;
+    const int num_cols = this->level_.cols_;
 
-            case ActionType::Push: {
-                Point2D box_original_pos = agent.position() + action->agentDelta;
-                agent_final_positions[agent_idx] = box_original_pos; 
-                
-                // We need the ID of the box at box_original_pos FROM THE CURRENT STATE
-                char current_box_id_at_pos = this->boxIdAt(box_original_pos);
-                if (current_box_id_at_pos != 0) { 
-                    box_final_positions.push_back(box_original_pos + action->boxDelta);
-                    moved_box_ids.push_back(current_box_id_at_pos);
+    for (size_t i = 0; i < num_agents; ++i) {
+        char agent_id = agent_ids_in_order[i];
+        const Agent& agent = this->currentAgents_.at(agent_id);
+        const Action* action = jointAction[i];
+
+        agent_prev_positions[i] = agent.position();
+        agent_final_positions[i] = agent.position() + action->agentDelta;
+
+        // Check for agent moving out of bounds or into a wall (using the precomputed grid)
+        if (agent_final_positions[i].y() < 0 || agent_final_positions[i].y() >= num_rows || 
+            agent_final_positions[i].x() < 0 || agent_final_positions[i].x() >= num_cols || 
+            occupancy_grid[agent_final_positions[i].y()][agent_final_positions[i].x()] == 'W') {
+            return true; // Conflict: Agent moves off board or into wall
+        }
+
+        if (action->type == ActionType::Push) {
+            Point2D box_orig_pos = agent.position() + action->agentDelta;
+            Point2D box_final_pos = box_orig_pos + action->boxDelta;
+            
+            // Check if box pushed out of bounds or into a wall (using precomputed grid)
+            if (box_final_pos.y() < 0 || box_final_pos.y() >= num_rows || 
+                box_final_pos.x() < 0 || box_final_pos.x() >= num_cols ||
+                occupancy_grid[box_final_pos.y()][box_final_pos.x()] == 'W') {
+                return true; // Conflict: Box pushed off board or into wall
+            }
+            // Also check if box pushed into another agent's initial position (not covered by static grid)
+            // This specific check might be better handled by destination cell comparisons later.
+
+            // Find the ID of the box being pushed
+            char box_id = 0;
+            for(const auto& box_pair : this->currentBoxes_){
+                if(box_pair.second.position() == box_orig_pos){
+                    box_id = box_pair.first;
+                    break;
                 }
-                break;
+            }
+            if(box_id != 0) { // Should always find a box if action is Push and applicable
+                moved_box_ids.push_back(box_id);
+                box_prev_positions.push_back(box_orig_pos);
+                box_final_positions.push_back(box_final_pos);
             }
 
-            case ActionType::Pull: {
-                agent_final_positions[agent_idx] = agent.position() + action->agentDelta; 
-                Point2D box_original_pos = agent.position() - action->boxDelta; 
-                
-                char current_box_id_at_pos = this->boxIdAt(box_original_pos);
-                if (current_box_id_at_pos != 0) { 
-                    box_final_positions.push_back(agent.position()); // Box moves to where the agent *was*
-                    moved_box_ids.push_back(current_box_id_at_pos);
+        } else if (action->type == ActionType::Pull) {
+            Point2D box_orig_pos = agent.position() - action->boxDelta; // Box is behind agent
+            Point2D box_final_pos = agent.position(); // Box moves to where agent was
+
+            // (Bounds check for box_orig_pos is part of isApplicable)
+            // Check if box pulled into a wall (at agent's original spot - but agent is moving from there)
+            // The cell agent_final_positions[i] is where the agent moves.
+            // The cell agent_prev_positions[i] is where the box moves.
+            // Check if box_final_pos (agent_prev_positions[i]) is a wall is implicitly handled
+            // by the agent not being on a wall initially.
+            // What matters is if agent_final_positions[i] is a wall (checked above).
+
+            // Find the ID of the box being pulled
+            char box_id = 0;
+            for(const auto& box_pair : this->currentBoxes_){
+                if(box_pair.second.position() == box_orig_pos){
+                    box_id = box_pair.first;
+                    break;
                 }
-                break;
             }
-            default:
-                throw std::invalid_argument("Invalid action type in isConflicting");
-        }
-    }
-
-    // Check for agent-agent conflicts (two agents ending in the same cell)
-    for (size_t a1 = 0; a1 < num_agents; ++a1) {
-        for (size_t a2 = a1 + 1; a2 < num_agents; ++a2) {
-            if (agent_final_positions[a1] == agent_final_positions[a2]) {
-                return true; // Conflict: two agents at the same destination
+             if(box_id != 0) { // Should always find a box if action is Pull and applicable
+                moved_box_ids.push_back(box_id);
+                box_prev_positions.push_back(box_orig_pos);
+                box_final_positions.push_back(box_final_pos);
             }
         }
     }
 
-    // Check for box-box conflicts (two boxes ending in the same cell)
-    for (size_t b1 = 0; b1 < box_final_positions.size(); ++b1) {
-        for (size_t b2 = b1 + 1; b2 < box_final_positions.size(); ++b2) {
-            if (box_final_positions[b1] == box_final_positions[b2]) {
-                return true; // Conflict: two boxes at the same destination
+    // Conflict Check 1: Two agents move to the same cell.
+    for (size_t i = 0; i < num_agents; ++i) {
+        for (size_t j = i + 1; j < num_agents; ++j) {
+            if (agent_final_positions[i] == agent_final_positions[j]) {
+                return true; // Conflict: Two agents to same cell
             }
         }
     }
 
-    // Check for agent-box conflicts (agent ends where a box also ends)
-    for (size_t a = 0; a < num_agents; ++a) {
-        for (size_t b = 0; b < box_final_positions.size(); ++b) {
-            if (agent_final_positions[a] == box_final_positions[b]) {
-                return true; // Conflict: agent and box at the same destination
+    // Conflict Check 2: Agent moves into a cell where a (different) box is moving.
+    // Conflict Check 3: Two boxes move to the same cell.
+    for (size_t i = 0; i < box_final_positions.size(); ++i) {
+        // Check against other boxes
+        for (size_t j = i + 1; j < box_final_positions.size(); ++j) {
+            if (box_final_positions[i] == box_final_positions[j]) {
+                return true; // Conflict: Two boxes to same cell
             }
+        }
+        // Check against agents
+        for (size_t k = 0; k < num_agents; ++k) {
+            if (agent_final_positions[k] == box_final_positions[i]) {
+                // This is a conflict unless agent k is the one moving box i.
+                // Check if agent k is pushing/pulling box moved_box_ids[i]
+                bool agent_moved_this_box = false;
+                const Action* agent_k_action = jointAction[k];
+                if (agent_k_action->type == ActionType::Push) {
+                    Point2D box_pushed_by_k_orig_pos = agent_prev_positions[k] + agent_k_action->agentDelta;
+                    if (box_pushed_by_k_orig_pos == box_prev_positions[i]) agent_moved_this_box = true;
+                } else if (agent_k_action->type == ActionType::Pull) {
+                    Point2D box_pulled_by_k_orig_pos = agent_prev_positions[k] - agent_k_action->boxDelta;
+                    if (box_pulled_by_k_orig_pos == box_prev_positions[i]) agent_moved_this_box = true;
+                }
+                if (!agent_moved_this_box) return true; // Conflict
+            }
+        }
+    }
+
+    // Conflict Check 4: Agent moves into a cell occupied by a box that ISN'T moving.
+    // The occupancy_grid contains initial positions of static boxes.
+    for (size_t i = 0; i < num_agents; ++i) {
+        Point2D agent_dest = agent_final_positions[i];
+        if (occupancy_grid[agent_dest.y()][agent_dest.x()] == 'B') {
+            // Agent moves to a cell that initially had a box. Is this box one that moved?
+            bool conflict_with_static_box = true;
+            for(const auto& moved_box_prev_pos : box_prev_positions){
+                if(moved_box_prev_pos == agent_dest){
+                    conflict_with_static_box = false; // The box at agent's dest moved away
+                    break;
+                }
+            }
+            if(conflict_with_static_box) return true; // Conflict with a box that didn't move
         }
     }
     
-    // Add additional checks for swapping cells if necessary
-    // e.g., agent1 moves A->B, agent2 moves B->A simultaneously.
-    // This is not caught by simple destination checks if agentDelta implies a path.
-    // However, our actions are atomic movements to cells, so this might be less of an issue
-    // unless intermediate pathing is considered part of the conflict.
-    // The current setup assumes actions are instantaneous transitions to final cells.
+    // Conflict Check 5: Box moves into a cell occupied by another box that ISN'T moving.
+    // This is harder with the current structure. If a box B1 moves to P, and P initially had static box B2,
+    // this is a conflict. occupancy_grid[box_final_pos.y()][box_final_pos.x()] == 'B' implies this.
+    // However, we also need to ensure that the 'B' is not the previous position of *another moved box*.
+    for(const auto& box_dest : box_final_positions) {
+        if (occupancy_grid[box_dest.y()][box_dest.x()] == 'B') {
+            bool conflict_with_static_box = true;
+            for(const auto& moved_box_prev_pos : box_prev_positions) {
+                 if (moved_box_prev_pos == box_dest) { // The box at box_dest moved away.
+                     conflict_with_static_box = false;
+                     break;
+                 }
+            }
+            if (conflict_with_static_box) return true;
+        }
+    }
+
+    // TODO: Add check for agent moving to the previous location of another agent (swap places)
+    // For actions that are not NoOp, if agent_final_pos[i] == agent_prev_pos[j] AND agent_final_pos[j] == agent_prev_pos[i]
+    // This is usually allowed. The current checks for final positions colliding are primary.
 
     return false; // No conflicts found
 }
