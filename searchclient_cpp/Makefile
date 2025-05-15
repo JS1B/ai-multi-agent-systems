@@ -1,3 +1,5 @@
+SHELL := /bin/bash
+
 RELEASE ?= false
 
 # @todo: figure out where we compile 64bit
@@ -59,7 +61,7 @@ run: $(EXECUTABLE)
 	./$(EXECUTABLE)
 
 run_benchmark: $(EXECUTABLE)
-	cd $(BENCHMARK_DIR) && python run_benchmarks.py
+	cd $(BENCHMARK_DIR) && uv run run_benchmarks.py
 
 flamegraph: $(EXECUTABLE)
 	@echo "--- Generating CPU Flame Graph ---"

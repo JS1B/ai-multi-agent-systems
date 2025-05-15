@@ -9,6 +9,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 #include "action.hpp"
 #include "color.hpp"
@@ -17,9 +18,13 @@
 class State {
    public:
     State() = delete;
-    State(Level level);
+    State(const Level& level_ref);
 
-    Level level;
+    const Level& level_;
+
+    // New members to store the current, mutable positions of agents and boxes for this state
+    std::unordered_map<char, Agent> currentAgents_;
+    std::unordered_map<char, Box> currentBoxes_;
 
     [[nodiscard]] static void *operator new(std::size_t number_of_states);
     static void operator delete(void *ptr) noexcept;
@@ -42,9 +47,15 @@ class State {
 
     std::string toString() const;
 
+    std::size_t numAgents() const { return currentAgents_.size(); }
+    std::size_t numBoxes() const { return currentBoxes_.size(); }
+
+    std::vector<char> getAgentChars() const;
+    std::vector<char> getBoxChars() const;
+
    private:
     // Creates a new state from a parent state and a joint action performed in that state.
-    State(const State *parent, std::vector<const Action *> jointAction);
+    State(const State *parent, std::vector<const Action *> jointAction, const Level& level_ref);
 
     const int g_;  // Cost of reaching this state
     mutable size_t hash_ = 0;

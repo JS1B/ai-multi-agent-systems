@@ -2,8 +2,10 @@
 
 #include <cmath>
 #include <string>
+#include <memory> // For std::unique_ptr
 
 #include "state.hpp"
+#include "HeuristicCalculator.hpp" // Include the new calculator interface
 
 // Forward declaration if State includes Heuristic or for pointer usage,
 // but full definition is needed for f() signature.
@@ -11,6 +13,10 @@
 
 class Heuristic {
    public:
+    // Constructor now takes a HeuristicCalculator
+    Heuristic(std::unique_ptr<HeuristicCalculators::HeuristicCalculator> calculator)
+        : calculator_(std::move(calculator)) {}
+
     virtual ~Heuristic() = default;
 
     // Calculates the heuristic value f(n) = g(n) + h(n)
@@ -19,65 +25,61 @@ class Heuristic {
     // Make it const as it shouldn't modify the heuristic object itself
     virtual int f(const State& state) const = 0;
 
-    // Calculates the heuristic estimate h(n)
-    // Default implementation returns 0, derived classes can override.
+    // h(n) is now primarily delegated to the calculator
     virtual int h(const State& state) const {
-        // Basic Manhattan distance example (assuming single agent/goal for simplicity)
-        // Needs proper implementation based on actual goals and boxes.
-        // This is just a placeholder.
-        int estimate = 0;
-        // Example: distance for agent 0 to its goal if defined
-        // This needs the actual goal coordinates for agent 0
-        // for (size_t r = 0; r < state.goals.size(); ++r) {
-        //     for (size_t c = 0; c < state.goals[r].size(); ++c) {
-        //         if (state.goals[r][c] == '0') { // Assuming goal for agent 0 is '0'
-        //             estimate += std::abs(state.agentRows[0] - static_cast<int>(r));
-        //             estimate += std::abs(state.agentCols[0] - static_cast<int>(c));
-        //             goto goal_found; // Found agent 0 goal
-        //         }
-        //     }
-        // }
-        // goal_found:
-
-        // Add distances for boxes to their goals
-        // Needs mapping from box char to goal char/location
-
-        return estimate;  // Placeholder
+        if (calculator_) {
+            // fprintf(stderr, "DEBUG_HEURISTIC: h() called, calculator_ is valid. Name: %s\n", calculator_->getName().c_str());
+            return calculator_->calculateH(state);
+        } else {
+            // fprintf(stderr, "ERROR_HEURISTIC: h() called, but calculator_ is NULL!\n");
+        }
+        return 0; 
     }
 
     // Returns the name of the heuristic strategy
     // Make it const as it shouldn't modify the heuristic object itself
     virtual std::string getName() const = 0;
+
+    // Helper to get the name of the underlying calculator strategy
+    std::string getCalculatorName() const {
+        if (calculator_) {
+            return calculator_->getName();
+        }
+        return "None";
+    }
+
+   protected: // Or private, depending on if derived classes need direct access (they shouldn't normally)
+    std::unique_ptr<HeuristicCalculators::HeuristicCalculator> calculator_;
 };
 
 class HeuristicAStar : public Heuristic {
    public:
-    // Constructor doesn't need to call base with state
-    HeuristicAStar(const State& initial_state) {
-        // Use initial_state for pre-processing if needed
-        (void)initial_state;  // Avoid unused variable warning if not used
+    // Constructor now takes a HeuristicCalculator
+    HeuristicAStar(const State& initial_state, std::unique_ptr<HeuristicCalculators::HeuristicCalculator> calc)
+        : Heuristic(std::move(calc)) {
+        (void)initial_state; // initial_state can be used by calculator if it needs pre-computation
     }
 
     // Match base signature: const State&, const
     int f(const State& state) const override { return state.getG() + h(state); }
 
     // Implement getName, matching base signature
-    std::string getName() const override { return "A*"; }
+    std::string getName() const override { return "A* (h=" + getCalculatorName() + ")"; }
 };
 
 class HeuristicWeightedAStar : public Heuristic {
    public:
-    // Constructor doesn't need to call base with state
-    HeuristicWeightedAStar(const State& initial_state, int w) : w_(w) {
-        // Use initial_state for pre-processing if needed
-        (void)initial_state;  // Avoid unused variable warning if not used
+    // Constructor now takes a HeuristicCalculator
+    HeuristicWeightedAStar(const State& initial_state, int w, std::unique_ptr<HeuristicCalculators::HeuristicCalculator> calc)
+        : Heuristic(std::move(calc)), w_(w) {
+        (void)initial_state;
     }
 
     // Match base signature: const State&, const
     int f(const State& state) const override { return state.getG() + w_ * h(state); }
 
     // Implement getName, matching base signature
-    std::string getName() const override { return "WA*(" + std::to_string(w_) + ")"; }
+    std::string getName() const override { return "WA*(" + std::to_string(w_) + ", h=" + getCalculatorName() + ")"; }
 
    private:
     int w_;
@@ -85,15 +87,15 @@ class HeuristicWeightedAStar : public Heuristic {
 
 class HeuristicGreedy : public Heuristic {
    public:
-    // Constructor doesn't need to call base with state
-    HeuristicGreedy(const State& initial_state) {
-        // Use initial_state for pre-processing if needed
-        (void)initial_state;  // Avoid unused variable warning if not used
+    // Constructor now takes a HeuristicCalculator
+    HeuristicGreedy(const State& initial_state, std::unique_ptr<HeuristicCalculators::HeuristicCalculator> calc)
+        : Heuristic(std::move(calc)) {
+        (void)initial_state;
     }
 
     // Match base signature: const State&, const
-    int f(const State& state) const override { return h(state); }
+    int f(const State& state) const override { return h(state); } // g(n) is 0 for Greedy
 
     // Implement getName, matching base signature
-    std::string getName() const override { return "Greedy"; }
+    std::string getName() const override { return "Greedy (h=" + getCalculatorName() + ")"; }
 };

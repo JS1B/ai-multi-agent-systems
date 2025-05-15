@@ -1,0 +1,28 @@
+#domain
+hospital
+#levelname
+SAsoko1_04
+#colors
+blue: 0, A
+#initial
+++++++
++0A  +
+++++++
+#goal
+++++++
++   A+
+++++++
+#end
+#clientname
+searchclient.SearchClient
+#actions
+2900577:Push(E,E)
+3267453:Push(E,E)
+#end
+#solved
+true
+#numactions
+2
+#time
+3267453
+#end

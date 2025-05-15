@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <map>
 
 #include "agent.hpp"
 #include "box.hpp"
@@ -22,21 +23,34 @@
 class Level {
    public:
     Level() = delete;
-    Level(const std::unordered_map<char, Agent> &agentsMap, const std::unordered_map<char, Box> &boxesMap);
+    Level(const std::unordered_map<char, Agent> &agentsMap, const std::unordered_map<char, Box> &boxesMap,
+          std::vector<std::vector<bool>> walls,
+          std::unordered_map<char, Goal> goalsMap, 
+          std::map<char, Point2D> goalsMap_for_Point2D,
+          std::string domain, std::string name, int rows, int cols);
     Level(const Level &) = default;
-    Level &operator=(const Level &) = default;
+    Level &operator=(const Level &) = delete;
     ~Level() = default;
 
-    static std::vector<std::vector<bool>> walls;
-    static std::unordered_map<char, Goal> goalsMap;
+    std::vector<std::vector<bool>> walls_;
+    std::unordered_map<char, Goal> goalsMap_;
+    std::map<char, Point2D> goalsMap_for_Point2D_;
+    std::string domain_;
+    std::string name_;
+    int rows_ = 0;
+    int cols_ = 0;
 
-    std::unordered_map<char, Agent> agentsMap;
-    std::unordered_map<char, Box> boxesMap;
+    const std::unordered_map<char, Agent> agentsMap;
+    const std::unordered_map<char, Box> boxesMap;
 
     std::string toString();
 
-    static std::string domain;
-    static std::string name;
+    bool isWall(int r_y, int c_x) const;
+    char getEntityAt(int r, int c) const;
+    Point2D getGoalPosition(char entity_id) const;
+
+    int getRows() const { return rows_; }
+    int getCols() const { return cols_; }
 };
 
 Level loadLevel(std::istream &serverMessages);

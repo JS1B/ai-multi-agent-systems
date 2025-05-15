@@ -15,6 +15,13 @@ class Point2D {
     bool operator==(const Point2D &other) const { return x_ == other.x_ && y_ == other.y_; }
     bool operator!=(const Point2D &other) const { return !(*this == other); }
 
+    // Add operator< for std::map compatibility
+    bool operator<(const Point2D &other) const {
+        if (y_ < other.y_) return true;
+        if (y_ > other.y_) return false;
+        return x_ < other.x_;
+    }
+
     Point2D &operator+=(const Point2D &other) {
         x_ += other.x_;
         y_ += other.y_;

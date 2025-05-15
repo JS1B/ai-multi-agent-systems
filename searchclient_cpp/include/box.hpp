@@ -8,8 +8,8 @@
 
 class Box {
    public:
+    Box(char id, int x_col, int y_row, Color color) : id_(id), position_(x_col, y_row), color_(color) {}
     Box(char id, Point2D position, Color color) : id_(id), position_(position), color_(color) {}
-    Box(char id, uint16_t row, uint16_t col, Color color) : id_(id), position_(row, col), color_(color) {}
 
     Box(const Box &) = default;
     Box &operator=(const Box &) = delete;

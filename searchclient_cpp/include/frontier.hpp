@@ -6,6 +6,8 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
+#include <map>
+#include <unordered_map>
 
 #include "heuristic.hpp"
 #include "state.hpp"
@@ -89,58 +91,95 @@ class FrontierDFS : public Frontier {
 
 // @todo gpt below - completely untested
 // Best-First Search Frontier (A*, Greedy Best-First, Uniform Cost)
-// class FrontierBestFirst : public Frontier {
-//    private:
-//     const Heuristic* heuristic_;  // Pointer to the heuristic, ownership managed externally
-//     std::unordered_set<State> set_;
+class FrontierBestFirst : public Frontier {
+   public:
+    FrontierBestFirst(Heuristic *heuristic) : heuristic_(heuristic) {
+        if (!heuristic_) {
+            throw std::invalid_argument("Heuristic cannot be null for FrontierBestFirst.");
+        }
+    }
+    ~FrontierBestFirst() override {
+        delete heuristic_; // Owns the heuristic object
+        // States in open_set_ and closed_set_ are owned by the GraphSearch (caller of pop)
+        // or StateMemoryPoolAllocator if custom new/delete is fully utilized.
+        // For now, assuming states popped are deleted by caller if no plan, or part of plan.
+        // States not popped from open_set_ upon destruction should be cleaned up if not managed by pool.
+        for (auto const& [key, val] : open_set_) {
+            delete val; // Clean up states remaining in open_set
+        }
+    }
 
-//     // Custom comparator for the priority queue
-//     // Compares states based on the heuristic's f() value
-//     // std::priority_queue is a max-heap by default, so we need > for a min-heap behavior based on f()
-//     struct StateComparator {
-//         const Heuristic* h;
-//         StateComparator(const Heuristic* heuristic) : h(heuristic) {}
-//         bool operator()(const State& lhs, const State& rhs) const {
-//             // Higher f-value means lower priority (further down the max-heap)
-//             return h->f(lhs) > h->f(rhs);
-//         }
-//     };
+    void add(State *state) override {
+        int f_value = heuristic_->f(*state);
 
-//     // Priority queue using the custom comparator
-//     std::priority_queue<State, std::vector<State>, StateComparator> queue;
+        // Check if already in closed set
+        auto closed_it = closed_set_.find(state);
+        if (closed_it != closed_set_.end()) {
+            // If in closed and the path to it was better or equal, ignore new state.
+            // (This simple check uses f-value; could use g-value if heuristic is consistent)
+            if (closed_it->second <= f_value) { 
+                delete state; // New path is not better
+                return;
+            }
+            // If new path is better (f_value is lower), it shouldn't be in closed yet with a worse value.
+            // This indicates a potential issue or need for reopening. For now, we don't reopen.
+        }
 
-//    public:
-//     // Constructor takes a pointer to a Heuristic object
-//     FrontierBestFirst(const Heuristic* h) : heuristic_(h), queue_(StateComparator(h)) {
-//         if (!heuristic_) {
-//             throw std::invalid_argument("Heuristic cannot be null for FrontierBestFirst.");
-//         }
-//     }
+        // Check if a version of this state is in open_set_ already
+        // This is inefficient for multimap. A common A* uses a map for open_set_ from State* to f-value/iterator
+        // to allow efficient update. For simplicity with multimap, we might add duplicates
+        // and let pop() handle finding the true best one. Or, iterate to find and update.
+        // Iterating to find and update (if better path found):
+        bool updated_in_open = false;
+        for (auto it = open_set_.begin(); it != open_set_.end(); ++it) {
+            if (*(it->second) == *state) { // State content equality
+                if (f_value < it->first) { // New path is better
+                    delete it->second; // Delete old state from open set
+                    open_set_.erase(it);
+                    open_set_.emplace(f_value, state); // Add new one
+                    updated_in_open = true;
+                    break;
+                } else {
+                    delete state; // New path not better than one already in open
+                    updated_in_open = true; // Mark as handled
+                    break;
+                }
+            }
+        }
 
-//     void add(const State* state) override {
-//         queue_.push(*state);
-//         set_.insert(*state);
-//     }
+        if (!updated_in_open) {
+            open_set_.emplace(f_value, state);
+        }
+    }
 
-//     State* pop() override {
-//         if (isEmpty()) {
-//             throw std::runtime_error("Cannot pop from an empty BestFirst frontier.");
-//         }
-//         // top() returns a const reference, need to copy before popping
-//         State state = queue_.top();
-//         queue_.pop();
-//         set_.erase(state);  // Erase requires a non-const State, relies on State's hash and ==
-//         return state;
-//     }
+    State *pop() override {
+        if (isEmpty()) {
+            throw std::out_of_range("Cannot pop from an empty BestFirst frontier.");
+        }
+        auto best_it = open_set_.begin(); // Smallest f-value is at the beginning of multimap
+        State *best_state = best_it->second;
+        int f_value = best_it->first;
+        open_set_.erase(best_it);
 
-//     // Check the set for emptiness, as queue.empty() might be true while set isn't (if pop failed somehow?)
-//     // Or just rely on queue emptiness which should be consistent. Java used set.isEmpty().
-//     bool isEmpty() const override { return queue_.empty(); }
+        closed_set_.emplace(best_state, f_value); // Add to closed set
+        return best_state;
+    }
 
-//     // Size based on the queue size
-//     size_t size() const override { return queue_.size(); }
+    bool isEmpty() const override { return open_set_.empty(); }
+    size_t size() const override { return open_set_.size(); }
+    // Contains for BestFirst typically means if it's scheduled for expansion (in open) 
+    // or already expanded (in closed). This is a simplified 'is in open_set'.
+    bool contains(State *state) const override { 
+        for (auto const& [key, val] : open_set_) {
+            if (*val == *state) return true;
+        }
+        return false; 
+    }
+    std::string getName() const override { return heuristic_->getName(); }
+    const Heuristic* getHeuristic() const { return heuristic_; }
 
-//     bool contains(const State* state) const override { return set_.count(*state); }
-
-//     std::string getName() const override { ic interface return "best-first search using " + heuristic_->getName(); }
-// };
+private:
+    Heuristic *heuristic_;
+    std::multimap<int, State *> open_set_; // Key: f-value, Value: State pointer
+    std::unordered_map<const State *, int, StatePtrHash, StatePtrEqual> closed_set_; // Key: State pointer, Value: f-value when closed
+};

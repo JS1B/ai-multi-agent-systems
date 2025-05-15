@@ -4,8 +4,8 @@
 
 class Goal {
    public:
+    Goal(char id, int x_col, int y_row) : id_(id), position_(x_col, y_row) {}
     Goal(char id, Point2D position) : id_(id), position_(position) {}
-    Goal(char id, uint16_t row, uint16_t col) : id_(id), position_(row, col) {}
 
     char id() const { return id_; }
     Point2D position() const { return position_; }

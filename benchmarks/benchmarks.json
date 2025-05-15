@@ -1,53 +1,77 @@
 {
     "levels_dir": "../levels",
-    "output_dir": "output",
+    "output_dir": "benchmark_results",
     "cases": [
         {
             "input": "warmup/MAPF00.lvl",
             "strategies": [
-                "bfs",
-                "dfs"
+                "-s astar -hc zero",
+                "-s astar -hc mds",
+                "-s astar -hc sic",
+                "-s astar -hc bgm",
+                "-s astar -hc scp",
+                "-s wastar -hc zero",
+                "-s wastar -hc mds",
+                "-s wastar -hc sic",
+                "-s wastar -hc bgm",
+                "-s wastar -hc scp",
+                "-s greedy -hc zero",
+                "-s greedy -hc mds",
+                "-s greedy -hc sic",
+                "-s greedy -hc bgm",
+                "-s greedy -hc scp",
+                "-s bfs",
+                "-s dfs"
             ]
         },
         {
             "input": "warmup/MAPF01.lvl",
             "strategies": [
-                "bfs",
-                "dfs"
+                "-s bfs",
+                "-s dfs"
             ]
         },
         {
             "input": "warmup/MAPF02.lvl",
             "strategies": [
-                "bfs",
-                "dfs"
+                "-s bfs",
+                "-s dfs"
             ]
         },
         {
             "input": "warmup/MAPF02C.lvl",
             "strategies": [
-                "bfs",
-                "dfs"
-            ]
-        },
-        {
-            "input": "warmup/MAPF03.lvl",
-            "strategies": [
-                "dfs"
+                "-s astar -hc zero",
+                "-s astar -hc mds",
+                "-s astar -hc sic",
+                "-s astar -hc bgm",
+                "-s astar -hc scp",
+                "-s wastar -hc zero",
+                "-s wastar -hc mds",
+                "-s wastar -hc sic",
+                "-s wastar -hc bgm",
+                "-s wastar -hc scp",
+                "-s greedy -hc zero",
+                "-s greedy -hc mds",
+                "-s greedy -hc sic",
+                "-s greedy -hc bgm",
+                "-s greedy -hc scp",
+                "-s bfs",
+                "-s dfs"
             ]
         },
         {
             "input": "warmup/MAPFslidingpuzzle.lvl",
             "strategies": [
-                "bfs",
-                "dfs"
+                "-s bfs",
+                "-s dfs"
             ]
         },
         {
             "input": "warmup/BFSFriendly.lvl",
             "strategies": [
-                "bfs",
-                "dfs"
+                "-s bfs",
+                "-s dfs"
             ]
         }
     ]
