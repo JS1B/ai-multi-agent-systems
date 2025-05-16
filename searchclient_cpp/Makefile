@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-RELEASE ?= false
+RELEASE ?= true
 
 # @todo: figure out where we compile 64bit
 DEBUG_FLAGS = -O0 -g
@@ -61,7 +61,7 @@ run: $(EXECUTABLE)
 	./$(EXECUTABLE)
 
 run_benchmark: $(EXECUTABLE)
-	cd $(BENCHMARK_DIR) && uv run run_benchmarks.py
+	cd $(BENCHMARK_DIR) && uv run run_benchmarks_hyperfine.py
 
 flamegraph: $(EXECUTABLE)
 	@echo "--- Generating CPU Flame Graph ---"

@@ -26,6 +26,8 @@ SHUTDOWN_REQUESTED = False
 ORIGINAL_TERMIOS_SETTINGS: Optional[list] = None
 
 # TODO: Add process pool executor from concurrent.futures with tqdm progress bar
+# Global variable to store max_workers, set in main
+MAX_WORKERS_COUNT: Optional[int] = None
 
 BENCHMARK_CONFIG_FILE = "benchmarks.json"
 CPP_EXECUTABLE_PATH = "../searchclient_cpp/searchclient" 
@@ -226,6 +228,16 @@ def _update_active_tasks_display(panel_to_update: Panel, current_active_tasks: D
         if shutting_down:
             table_title += " - Shutdown Requested"
 
+    info_texts = []
+    if not is_initial_call and MAX_WORKERS_COUNT is not None:
+        num_actually_running = 0
+        # current_active_tasks is Dict[Future, Dict[str, Any]] when not is_initial_call
+        for future_obj in current_active_tasks.keys():
+            if future_obj.running():
+                num_actually_running += 1
+        info_texts.append(Text(f"Tasks Actively Running: {num_actually_running} / {MAX_WORKERS_COUNT}", style="bold", justify="center"))
+        info_texts.append(Text(" ")) # Spacer
+
     new_table = Table(title=table_title, expand=True, show_header=True, show_edge=True, padding=(0,1))
     new_table.add_column("Level", style="dim cyan", max_width=30, overflow="fold")
     new_table.add_column("Strategy", style="magenta", max_width=25, overflow="fold")
@@ -238,8 +250,7 @@ def _update_active_tasks_display(panel_to_update: Panel, current_active_tasks: D
         # Sort by original submission order (using index from enumerate)
         # The dict is {i: task_config}, so values are task_configs
         sorted_task_configs = [task_data for task_data in current_active_tasks.values()] 
-        # Assuming current_active_tasks was {i: task_config for i, task_config in enumerate(tasks_to_run_configs)}
-        # No, it's passed as {i: task ...} which implies it's already prepared this way.
+        # Assuming current_active_tasks was {i: task ...} which implies it's already prepared this way.
 
         for task_config in sorted_task_configs:
             new_table.add_row(
@@ -265,9 +276,9 @@ def _update_active_tasks_display(panel_to_update: Panel, current_active_tasks: D
                 current_status_style = "dark_orange"
             elif future_obj.running():
                 current_status_text = "Running..."
-                current_status_style = "yellow"
+                current_status_style = "bold yellow" # Changed style
             elif future_obj.done():
-                current_status_text = "Finalizing..."
+                current_status_text = "Completing..." # Task done in worker, pending result sync
                 current_status_style = "light_green"
             else: # Not cancelled, not running, not done => Pending in queue
                 current_status_text = "Pending..."
@@ -280,7 +291,7 @@ def _update_active_tasks_display(panel_to_update: Panel, current_active_tasks: D
                 elif current_status_text == "Pending...":
                     current_status_text = "Pending (SD)"
                     # Keep grey50 or change?
-                # If "Cancelled" or "Finalizing...", no (SD) needed as they are already in a terminal state for this future
+                # If "Cancelled" or "Completing...", no (SD) needed as they are already in a terminal state for this future
 
             new_table.add_row(
                 Text(os.path.basename(task_cfg["level_path_relative"])),
@@ -288,11 +299,16 @@ def _update_active_tasks_display(panel_to_update: Panel, current_active_tasks: D
                 Text(current_status_text, style=current_status_style)
             )
             
-    panel_to_update.renderable = new_table
+    renderables_for_panel = []
+    if info_texts:
+        renderables_for_panel.extend(info_texts)
+    renderables_for_panel.append(new_table)
+    
+    panel_to_update.renderable = Group(*renderables_for_panel)
 
 
 def main():
-    global SHUTDOWN_REQUESTED, ORIGINAL_TERMIOS_SETTINGS
+    global SHUTDOWN_REQUESTED, ORIGINAL_TERMIOS_SETTINGS, MAX_WORKERS_COUNT
 
     listener_thread = None
     if sys.stdin.isatty():
@@ -311,6 +327,8 @@ def main():
     cases_config = config["cases"]
     # Allow timeout to be configurable in benchmarks.json in the future, for now use global default
     case_timeout_seconds = config.get("timeout_seconds_per_case", DEFAULT_TIMEOUT_SECONDS)
+
+    MAX_WORKERS_COUNT = os.cpu_count() or 4 # Default to 4 if os.cpu_count() is None
 
     if not ensure_output_directory(output_dir):
         return
@@ -379,7 +397,7 @@ def main():
                                          is_initial_call=True)
             live.refresh() # Initial display before starting pool
 
-            with ProcessPoolExecutor() as executor:
+            with ProcessPoolExecutor(max_workers=MAX_WORKERS_COUNT) as executor:
                 active_tasks_runtime_map: Dict[Any, Dict[str, Any]] = {} # future -> task_config
 
                 for task_config in tasks_to_run_configs:

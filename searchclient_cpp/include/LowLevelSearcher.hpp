@@ -2,8 +2,7 @@
 
 #include <vector>
 #include <queue>    // For std::priority_queue
-#include <unordered_set> // For std::unordered_set (used by closed_set in .cpp)
-// #include <unordered_map> // Will be replaced by emhash or is already handled
+// #include <unordered_set> // Replaced by emhash9::HashSet
 #include <memory>   // For std::shared_ptr
 #include <functional> // For std::hash
 
@@ -13,7 +12,8 @@
 #include "level.hpp"      // Corrected casing, assuming file is level.hpp - Assuming this doesn't depend on emhash
 #include "HeuristicCalculator.hpp" // For a basic heuristic like Manhattan Distance - Assuming this doesn't depend on emhash
 
-#include "third_party/emhash/hash_table8.hpp" // For state_g_costs in .cpp
+#include "third_party/emhash/hash_table8.hpp" // For emhash8
+#include "third_party/emhash/hash_set4.hpp"   // For emhash9
 // #include "third_party/emhash/hash_set8.hpp" // Removed to avoid macro conflicts
 
 struct LowLevelState {

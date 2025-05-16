@@ -1,0 +1,104 @@
+{
+  "timestamp": "2025-05-16T12:52:38.994210023Z",
+  "cases": [
+    {
+      "level": "\"MAPF00.lvl\\n\"",
+      "strategy": "N/A",
+      "solution": [],
+      "metrics": {},
+      "status": "FileNotFound",
+      "error_message": "Level file not found",
+      "duration_seconds": 0.0
+    },
+    {
+      "level": "\"MAPF01.lvl\\n\"",
+      "strategy": "N/A",
+      "solution": [],
+      "metrics": {},
+      "status": "FileNotFound",
+      "error_message": "Level file not found",
+      "duration_seconds": 0.0
+    },
+    {
+      "level": "\"MAPF02.lvl\\n\"",
+      "strategy": "N/A",
+      "solution": [],
+      "metrics": {},
+      "status": "FileNotFound",
+      "error_message": "Level file not found",
+      "duration_seconds": 0.0
+    },
+    {
+      "level": "\"MAPF02C.lvl\\n\"",
+      "strategy": "N/A",
+      "solution": [],
+      "metrics": {},
+      "status": "FileNotFound",
+      "error_message": "Level file not found",
+      "duration_seconds": 0.0
+    },
+    {
+      "level": "\"MAPFslidingpuzzle.lvl\\n\"",
+      "strategy": "N/A",
+      "solution": [],
+      "metrics": {},
+      "status": "FileNotFound",
+      "error_message": "Level file not found",
+      "duration_seconds": 0.0
+    },
+    {
+      "level": "\"BFSFriendly.lvl\\n\"",
+      "strategy": "N/A",
+      "solution": [],
+      "metrics": {},
+      "status": "FileNotFound",
+      "error_message": "Level file not found",
+      "duration_seconds": 0.0
+    },
+    {
+      "level": "\"basic00.lvl\\n\"",
+      "strategy": "N/A",
+      "solution": [],
+      "metrics": {},
+      "status": "FileNotFound",
+      "error_message": "Level file not found",
+      "duration_seconds": 0.0
+    },
+    {
+      "level": "\"basic01.lvl\\n\"",
+      "strategy": "N/A",
+      "solution": [],
+      "metrics": {},
+      "status": "FileNotFound",
+      "error_message": "Level file not found",
+      "duration_seconds": 0.0
+    },
+    {
+      "level": "\"AAAFUN.lvl\\n\"",
+      "strategy": "N/A",
+      "solution": [],
+      "metrics": {},
+      "status": "FileNotFound",
+      "error_message": "Level file not found",
+      "duration_seconds": 0.0
+    },
+    {
+      "level": "\"Eighty.lvl\\n\"",
+      "strategy": "N/A",
+      "solution": [],
+      "metrics": {},
+      "status": "FileNotFound",
+      "error_message": "Level file not found",
+      "duration_seconds": 0.0
+    },
+    {
+      "level": "\"MSPaint.lvl\\n\"",
+      "strategy": "N/A",
+      "solution": [],
+      "metrics": {},
+      "status": "FileNotFound",
+      "error_message": "Level file not found",
+      "duration_seconds": 0.0
+    }
+  ]
+}

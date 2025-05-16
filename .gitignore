@@ -40,4 +40,4 @@ devenv.local.nix
 .pre-commit-config.yaml
 .flox/
 benchmarks/.venv/
-benchmarks/benchmark_results/
+benchmarks/benchmark_results/*

@@ -300,5 +300,6 @@ int main(int argc, char *argv[]) {
 #endif
 
     delete frontier;
+
     return 0;
 }

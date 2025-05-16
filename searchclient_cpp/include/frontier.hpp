@@ -4,11 +4,11 @@
 #include <queue>
 #include <stdexcept>
 #include <string>
-#include <unordered_set>
 #include <vector>
 #include <map>
 
 #include "third_party/emhash/hash_table8.hpp"
+#include "third_party/emhash/hash_set4.hpp"
 
 #include "heuristic.hpp"
 #include "state.hpp"
@@ -28,7 +28,7 @@ class Frontier {
 class FrontierBFS : public Frontier {
    private:
     std::deque<State*> queue_;
-    std::unordered_set<State*, StatePtrHash, StatePtrEqual> set_;
+    emhash9::HashSet<State*, StatePtrHash, StatePtrEqual> set_;
 
    public:
     FrontierBFS() { set_.reserve(10'000); }
@@ -61,7 +61,7 @@ class FrontierBFS : public Frontier {
 class FrontierDFS : public Frontier {
    private:
     std::deque<State*> queue_;
-    std::unordered_set<State*, StatePtrHash, StatePtrEqual> set_;
+    emhash9::HashSet<State*, StatePtrHash, StatePtrEqual> set_;
 
    public:
     FrontierDFS() { set_.reserve(10'000); }

@@ -57,7 +57,8 @@ std::pair<AgentPath, int> LowLevelSearcher::find_path(
     emhash8::HashMap<LowLevelState, int, LowLevelStateHash> state_g_costs;
 
     // Visited set (closed set). Stores LowLevelState by value.
-    std::unordered_set<LowLevelState, LowLevelStateHash> closed_set;
+    // Using emhash9 for HashSet.
+    emhash9::HashSet<LowLevelState, LowLevelStateHash> closed_set;
 
     Point2D start_pos = agent_to_plan.position();
     int start_h = calculate_heuristic(start_pos, goal_pos);
@@ -76,13 +77,31 @@ std::pair<AgentPath, int> LowLevelSearcher::find_path(
         current_state_ptr = open_set.top(); // Now current_state_ptr is a shared_ptr
         open_set.pop();
 
-        // Check if already expanded (if we found a shorter path to it after it was closed, 
-        // which shouldn't happen with a consistent heuristic, but good for robustness or non-strict graph search)
-        // Or, more simply, if it's in closed set, we've processed it.
-        if (closed_set.count(*current_state_ptr)) {
+        // Check if already visited with a same or lower g-cost (if using g-cost in closed set comparison)
+        // For a simple closed set (just presence), this check is simpler.
+        // if (closed_set.count(*current_state_ptr)) {
+        //    continue;
+        // }
+        // For emhash9::HashSet, count is fine.
+        // The emplace below will also effectively check for existence before inserting for unique sets.
+        // However, explicit check can be clearer or allow different logic if needed.
+
+        // Add to closed set.
+        // For emhash9::HashSet, emplace returns a pair {iterator, bool}.
+        // We are interested in whether the insertion happened.
+        // If it already exists, emplace for a unique set won't insert a duplicate.
+        auto insert_result = closed_set.emplace(*current_state_ptr);
+        if (!insert_result.second) { // If it was already there
+             // If we want to only proceed if it's a new entry, or if we want to update if g-cost is better,
+             // this is where that logic would go.
+             // For a simple "visited" check, if it's already there, we might skip.
+             // However, our main g-cost check is with state_g_costs.
+             // The primary role of closed_set here is to avoid re-expanding identical (pos, time) states
+             // that have already been put on the closed list.
+             // If emplace fails because it's a duplicate, we can continue.
             continue;
         }
-        closed_set.emplace(*current_state_ptr); // Add to closed set by value
+        // If we reach here, it means current_state_ptr was newly added to closed_set.
         nodes_expanded++;
 
         // Goal check
