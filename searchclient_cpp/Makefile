@@ -39,6 +39,12 @@ PERF_DATA_FILE = perf.data
 PERF_SCRIPT_OUT = out.perf
 FOLDED_OUT = out.folded 
 
+# Valgrind settings
+VALGRIND_LOG_FILE = valgrind-out.txt
+VALGRIND_OPTIONS = --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose --log-file=$(VALGRIND_LOG_FILE)
+# Default strategy and level for Valgrind, can be changed here or overridden in command line.
+VALGRIND_STRATEGY ?= $(FLAMEGRAPH_STRATEGY) # Default VALGRIND_STRATEGY to FLAMEGRAPH_STRATEGY (e.g. bfs)
+VALGRIND_LEVEL_FILE ?= ../levels/warmup/MAPF00.lvl # Changed default to MAPF00.lvl
 
 # Create if doesn't exist
 $(shell mkdir -p $(OBJ_DIR))
@@ -83,4 +89,13 @@ flamegraph: $(EXECUTABLE)
 	rm -f $(PERF_DATA_FILE) $(PERF_SCRIPT_OUT) $(FOLDED_OUT)
 	@echo "Done. Open $(FLAMEGRAPH_SVG) in a web browser."
 
-.PHONY: all clean run 
+valgrind_run: $(EXECUTABLE)
+	@echo "--- Running $(EXECUTABLE) with Valgrind ---"
+	@echo "Using strategy: $(VALGRIND_STRATEGY), Level: $(VALGRIND_LEVEL_FILE)"
+	@echo "Valgrind options: $(VALGRIND_OPTIONS)"
+	@echo "Output will be logged to $(VALGRIND_LOG_FILE)"
+	@echo "To use different strategy/level: make valgrind_run VALGRIND_STRATEGY=<strat> VALGRIND_LEVEL_FILE=<levelpath>"
+	valgrind $(VALGRIND_OPTIONS) ./$(EXECUTABLE) -s $(VALGRIND_STRATEGY) < $(VALGRIND_LEVEL_FILE)
+	@echo "--- Valgrind run finished. Check $(VALGRIND_LOG_FILE) for details. ---"
+
+.PHONY: all clean run flamegraph valgrind_run 

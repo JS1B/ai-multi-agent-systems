@@ -219,7 +219,9 @@ def run_benchmarks_for_level_process(
     os.close(tmp_json_fd)
 
     # Construct hyperfine command: hyperfine [options] --export-json <tmp> --input <level> "cmd1" "cmd2" ...
-    hyperfine_commands_to_run = [f'"{executable_path} {s}"' for s in strategy_args_list] # Quotes for safety
+    # The f-string quoting was causing hyperfine to see '"{cmd}"' instead of '{cmd}', leading to "command not found".
+    # Hyperfine expects each command-to-benchmark as a separate string argument.
+    hyperfine_commands_to_run = [f'{executable_path} {s}' for s in strategy_args_list]
     
     base_hyperfine_cmd = ["hyperfine"]
     if hyperfine_runs is not None: base_hyperfine_cmd.extend(["--runs", str(hyperfine_runs)])

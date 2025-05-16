@@ -80,11 +80,13 @@ Level loadLevel(std::istream &serverMessages) {
     int parsed_cols = 0;
 
     auto findSection = [&](const std::string& section_name, bool is_optional = false) -> bool {
-        if (serverMessages.good() && line.rfind(section_name, 0) == 0) { // check if current line starts with section_name
+        if (serverMessages.good() && line.rfind(section_name, 0) == 0) { 
             return true;
         }
+        line.clear(); 
+        serverMessages.clear(); // Ensure stream is in a good state before this loop
         while (getline(serverMessages, line)) {
-            if (line.rfind(section_name, 0) == 0) { // check if line starts with section_name
+            if (line.rfind(section_name, 0) == 0) {
                 return true;
             }
             if (!line.empty() && line[0] != '#') { // Allow full-line comments
@@ -262,6 +264,7 @@ Level loadLevel(std::istream &serverMessages) {
             char entity_char = current_g_line[c];
             if ((FIRST_BOX <= entity_char && entity_char <= LAST_BOX) ||
                 (FIRST_AGENT <= entity_char && entity_char <= LAST_AGENT)) {
+                // This character is a valid agent or box ID, process it as a goal.
                 if (parsed_goals_map_data.count(entity_char)) {
                      fprintf(stderr, "Warning: Duplicate goal for entity '%c' at (%zu,%zu). Previous definition at (%d,%d) will be overwritten.\n", 
                              entity_char, c, r, 
@@ -272,9 +275,7 @@ Level loadLevel(std::istream &serverMessages) {
                 parsed_goals_map_data.emplace(entity_char, Goal(entity_char, static_cast<int>(c), static_cast<int>(r)));
                 
                 parsed_goals_map_for_point2d_data.insert_or_assign(entity_char, Point2D(static_cast<int>(c), static_cast<int>(r)));
-            } else if (entity_char != ' ') {
-                fprintf(stderr, "Warning: Unrecognized character '%c' at (%zu,%zu) in #goal section. Ignoring.\n", entity_char, r, c);
-            }
+            } // else: any other character (space, wall '+', etc.) in the #goal section is silently ignored.
         }
     }
 

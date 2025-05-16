@@ -1,0 +1,124 @@
+==635372== Memcheck, a memory error detector
+==635372== Copyright (C) 2002-2024, and GNU GPL'd, by Julian Seward et al.
+==635372== Using Valgrind-3.24.0-fcdaa47426-20241101 and LibVEX; rerun with -h for copyright info
+==635372== Command: ./searchclient -s bfs
+==635372== Parent PID: 635371
+==635372== 
+--635372-- 
+--635372-- Valgrind options:
+--635372--    --leak-check=full
+--635372--    --show-leak-kinds=all
+--635372--    --track-origins=yes
+--635372--    --verbose
+--635372--    --log-file=valgrind-out.txt
+--635372-- Contents of /proc/version:
+--635372--   Linux version 6.12.26 (nixbld@localhost) (gcc (GCC) 14.2.1 20250322, GNU ld (GNU Binutils) 2.44) #1-NixOS SMP PREEMPT_DYNAMIC Fri May  2 05:59:33 UTC 2025
+--635372-- 
+--635372-- Arch and hwcaps: AMD64, LittleEndian, amd64-cx16-lzcnt-rdtscp-sse3-ssse3-avx-avx2-bmi-f16c-rdrand-rdseed-fma
+--635372-- Page sizes: currently 4096, max supported 4096
+--635372-- Valgrind library directory: /nix/store/khpw84hwm976g4cf9qm24sbxc7czmw25-valgrind-3.24.0/libexec/valgrind
+--635372-- Reading syms from /home/wogyfikacja/Documents/ai-multi-agent-systems/searchclient_cpp/searchclient
+--635372-- Reading syms from /nix/store/g3s0z9r7m1lsfxdk8bj88nw8k8q3dmmg-glibc-2.40-66/lib/ld-linux-x86-64.so.2
+--635372-- Reading syms from /nix/store/khpw84hwm976g4cf9qm24sbxc7czmw25-valgrind-3.24.0/libexec/valgrind/memcheck-amd64-linux
+--635372--    object doesn't have a dynamic symbol table
+--635372-- Scheduler: using generic scheduler lock implementation.
+--635372-- Reading suppressions file: /nix/store/khpw84hwm976g4cf9qm24sbxc7czmw25-valgrind-3.24.0/libexec/valgrind/default.supp
+==635372== embedded gdbserver: reading from /tmp/nix-shell-632855-0/vgdb-pipe-from-vgdb-to-635372-by-wogyfikacja-on-???
+==635372== embedded gdbserver: writing to   /tmp/nix-shell-632855-0/vgdb-pipe-to-vgdb-from-635372-by-wogyfikacja-on-???
+==635372== embedded gdbserver: shared mem   /tmp/nix-shell-632855-0/vgdb-pipe-shared-mem-vgdb-635372-by-wogyfikacja-on-???
+==635372== 
+==635372== TO CONTROL THIS PROCESS USING vgdb (which you probably
+==635372== don't want to do, unless you know exactly what you're doing,
+==635372== or are doing some strange experiment):
+==635372==   /nix/store/khpw84hwm976g4cf9qm24sbxc7czmw25-valgrind-3.24.0/libexec/valgrind/../../bin/vgdb --pid=635372 ...command...
+==635372== 
+==635372== TO DEBUG THIS PROCESS USING GDB: start GDB like this
+==635372==   /path/to/gdb ./searchclient
+==635372== and then give GDB the following command
+==635372==   target remote | /nix/store/khpw84hwm976g4cf9qm24sbxc7czmw25-valgrind-3.24.0/libexec/valgrind/../../bin/vgdb --pid=635372
+==635372== --pid is optional if only one valgrind process is running
+==635372== 
+--635372-- REDIR: 0x4027d90 (ld-linux-x86-64.so.2:strlen) redirected to 0x580ca792 (vgPlain_amd64_linux_REDIR_FOR_strlen)
+--635372-- REDIR: 0x4026700 (ld-linux-x86-64.so.2:strcmp) redirected to 0x580ca7ac (vgPlain_amd64_linux_REDIR_FOR_strcmp)
+--635372-- REDIR: 0x40264d0 (ld-linux-x86-64.so.2:index) redirected to 0x580ca7c7 (vgPlain_amd64_linux_REDIR_FOR_index)
+--635372-- Reading syms from /nix/store/v7xx51d5s57bc5k6s53ni1dwy5waq5yr-ld-floxlib-1.0.0/lib/ld-floxlib.so
+--635372-- Reading syms from /nix/store/g3s0z9r7m1lsfxdk8bj88nw8k8q3dmmg-glibc-2.40-66/lib/libc.so.6
+--635372-- Reading syms from /nix/store/khpw84hwm976g4cf9qm24sbxc7czmw25-valgrind-3.24.0/libexec/valgrind/vgpreload_core-amd64-linux.so
+--635372-- Reading syms from /nix/store/khpw84hwm976g4cf9qm24sbxc7czmw25-valgrind-3.24.0/libexec/valgrind/vgpreload_memcheck-amd64-linux.so
+==635372== WARNING: new redirection conflicts with existing -- ignoring it
+--635372--     old: 0x04026700 (strcmp              ) R-> (0000.0) 0x580ca7ac vgPlain_amd64_linux_REDIR_FOR_strcmp
+--635372--     new: 0x04026700 (strcmp              ) R-> (2016.0) 0x04a68af0 strcmp
+==635372== WARNING: new redirection conflicts with existing -- ignoring it
+--635372--     old: 0x04027d90 (strlen              ) R-> (0000.0) 0x580ca792 vgPlain_amd64_linux_REDIR_FOR_strlen
+--635372--     new: 0x04027d90 (strlen              ) R-> (2007.0) 0x04a67510 strlen
+--635372-- REDIR: 0x4025b30 (ld-linux-x86-64.so.2:mempcpy) redirected to 0x4a6d7b0 (mempcpy)
+--635372-- Reading syms from /nix/store/gv7z0km39q3fgzavpic8vrl7smh5n2w6-gcc-14.2.1.20250322-lib/lib/libstdc++.so.6.0.33
+--635372-- Reading syms from /nix/store/g3s0z9r7m1lsfxdk8bj88nw8k8q3dmmg-glibc-2.40-66/lib/libm.so.6
+--635372-- Reading syms from /nix/store/0x600292yi5qzg389nan9j4dvzlh8785-gcc-14.2.1.20250322-libgcc/lib/libgcc_s.so.1
+--635372-- REDIR: 0x4027f30 (ld-linux-x86-64.so.2:strncmp) redirected to 0x4a681c0 (strncmp)
+--635372-- REDIR: 0x4b34910 (libstdc++.so.6:operator new(unsigned long)) redirected to 0x4a5df4d (operator new(unsigned long))
+==635372== Conditional jump or move depends on uninitialised value(s)
+==635372==    at 0x4F75309: ??? (in /nix/store/g3s0z9r7m1lsfxdk8bj88nw8k8q3dmmg-glibc-2.40-66/lib/libc.so.6)
+==635372==    by 0x4B4D188: std::basic_istream<char, std::char_traits<char> >& std::getline<char, std::char_traits<char>, std::allocator<char> >(std::basic_istream<char, std::char_traits<char> >&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, char) (in /nix/store/gv7z0km39q3fgzavpic8vrl7smh5n2w6-gcc-14.2.1.20250322-lib/lib/libstdc++.so.6.0.33)
+==635372==    by 0x113A3D: loadLevel(std::istream&) (in /home/wogyfikacja/Documents/ai-multi-agent-systems/searchclient_cpp/searchclient)
+==635372==    by 0x123174: main (in /home/wogyfikacja/Documents/ai-multi-agent-systems/searchclient_cpp/searchclient)
+==635372==  Uninitialised value was created by a stack allocation
+==635372==    at 0x112CEA: loadLevel(std::istream&) (in /home/wogyfikacja/Documents/ai-multi-agent-systems/searchclient_cpp/searchclient)
+==635372== 
+--635372-- REDIR: 0x4b32af0 (libstdc++.so.6:operator delete(void*, unsigned long)) redirected to 0x4a61b8b (operator delete(void*, unsigned long))
+==635372== Invalid read of size 32
+==635372==    at 0x4F78A5D: ??? (in /nix/store/g3s0z9r7m1lsfxdk8bj88nw8k8q3dmmg-glibc-2.40-66/lib/libc.so.6)
+==635372==    by 0x4E67777: ??? (in /nix/store/g3s0z9r7m1lsfxdk8bj88nw8k8q3dmmg-glibc-2.40-66/lib/libc.so.6)
+==635372==  Address 0x500ddb0 is 0 bytes inside a block of size 31 alloc'd
+==635372==    at 0x4A5DFBB: operator new(unsigned long) (in /nix/store/khpw84hwm976g4cf9qm24sbxc7czmw25-valgrind-3.24.0/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==635372==    by 0x4BD253D: std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_mutate(unsigned long, unsigned long, char const*, unsigned long) (in /nix/store/gv7z0km39q3fgzavpic8vrl7smh5n2w6-gcc-14.2.1.20250322-lib/lib/libstdc++.so.6.0.33)
+==635372==    by 0x4BD362A: std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_replace(unsigned long, unsigned long, char const*, unsigned long) (in /nix/store/gv7z0km39q3fgzavpic8vrl7smh5n2w6-gcc-14.2.1.20250322-lib/lib/libstdc++.so.6.0.33)
+==635372==    by 0x11294D: Level::toString[abi:cxx11]() const (in /home/wogyfikacja/Documents/ai-multi-agent-systems/searchclient_cpp/searchclient)
+==635372==    by 0x123193: main (in /home/wogyfikacja/Documents/ai-multi-agent-systems/searchclient_cpp/searchclient)
+==635372== 
+--635372-- REDIR: 0x4b32ae0 (libstdc++.so.6:operator delete(void*)) redirected to 0x4a61697 (operator delete(void*))
+==635372== 
+==635372== Process terminating with default action of signal 6 (SIGABRT): dumping core
+==635372==    at 0x4E99CDC: ??? (in /nix/store/g3s0z9r7m1lsfxdk8bj88nw8k8q3dmmg-glibc-2.40-66/lib/libc.so.6)
+==635372==    by 0x4FF867F: ??? (in /nix/store/g3s0z9r7m1lsfxdk8bj88nw8k8q3dmmg-glibc-2.40-66/lib/libc.so.6)
+==635372==    by 0xC703691B37350FF: ???
+==635372==    by 0x5: ???
+==635372==    by 0x483B9FF: ???
+==635372==    by 0x540AFFF: ???
+==635372==    by 0xFFF: ???
+==635372==    by 0x1FFEFF8147: ???
+==635372==    by 0x4E413C5: ??? (in /nix/store/g3s0z9r7m1lsfxdk8bj88nw8k8q3dmmg-glibc-2.40-66/lib/libc.so.6)
+==635372==    by 0x4FF9B4F: ??? (in /nix/store/g3s0z9r7m1lsfxdk8bj88nw8k8q3dmmg-glibc-2.40-66/lib/libc.so.6)
+==635372==    by 0x4E28939: ??? (in /nix/store/g3s0z9r7m1lsfxdk8bj88nw8k8q3dmmg-glibc-2.40-66/lib/libc.so.6)
+==635372==    by 0x1F: ???
+==635372== 
+==635372== HEAP SUMMARY:
+==635372==     in use at exit: 0 bytes in 0 blocks
+==635372==   total heap usage: 2,858 allocs, 2,858 frees, 3,387,093 bytes allocated
+==635372== 
+==635372== All heap blocks were freed -- no leaks are possible
+==635372== 
+==635372== ERROR SUMMARY: 3 errors from 2 contexts (suppressed: 0 from 0)
+==635372== 
+==635372== 1 errors in context 1 of 2:
+==635372== Conditional jump or move depends on uninitialised value(s)
+==635372==    at 0x4F75309: ??? (in /nix/store/g3s0z9r7m1lsfxdk8bj88nw8k8q3dmmg-glibc-2.40-66/lib/libc.so.6)
+==635372==    by 0x4B4D188: std::basic_istream<char, std::char_traits<char> >& std::getline<char, std::char_traits<char>, std::allocator<char> >(std::basic_istream<char, std::char_traits<char> >&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&, char) (in /nix/store/gv7z0km39q3fgzavpic8vrl7smh5n2w6-gcc-14.2.1.20250322-lib/lib/libstdc++.so.6.0.33)
+==635372==    by 0x113A3D: loadLevel(std::istream&) (in /home/wogyfikacja/Documents/ai-multi-agent-systems/searchclient_cpp/searchclient)
+==635372==    by 0x123174: main (in /home/wogyfikacja/Documents/ai-multi-agent-systems/searchclient_cpp/searchclient)
+==635372==  Uninitialised value was created by a stack allocation
+==635372==    at 0x112CEA: loadLevel(std::istream&) (in /home/wogyfikacja/Documents/ai-multi-agent-systems/searchclient_cpp/searchclient)
+==635372== 
+==635372== 
+==635372== 2 errors in context 2 of 2:
+==635372== Invalid read of size 32
+==635372==    at 0x4F78A5D: ??? (in /nix/store/g3s0z9r7m1lsfxdk8bj88nw8k8q3dmmg-glibc-2.40-66/lib/libc.so.6)
+==635372==    by 0x4E67777: ??? (in /nix/store/g3s0z9r7m1lsfxdk8bj88nw8k8q3dmmg-glibc-2.40-66/lib/libc.so.6)
+==635372==  Address 0x500ddb0 is 0 bytes inside a block of size 31 alloc'd
+==635372==    at 0x4A5DFBB: operator new(unsigned long) (in /nix/store/khpw84hwm976g4cf9qm24sbxc7czmw25-valgrind-3.24.0/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==635372==    by 0x4BD253D: std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_mutate(unsigned long, unsigned long, char const*, unsigned long) (in /nix/store/gv7z0km39q3fgzavpic8vrl7smh5n2w6-gcc-14.2.1.20250322-lib/lib/libstdc++.so.6.0.33)
+==635372==    by 0x4BD362A: std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_replace(unsigned long, unsigned long, char const*, unsigned long) (in /nix/store/gv7z0km39q3fgzavpic8vrl7smh5n2w6-gcc-14.2.1.20250322-lib/lib/libstdc++.so.6.0.33)
+==635372==    by 0x11294D: Level::toString[abi:cxx11]() const (in /home/wogyfikacja/Documents/ai-multi-agent-systems/searchclient_cpp/searchclient)
+==635372==    by 0x123193: main (in /home/wogyfikacja/Documents/ai-multi-agent-systems/searchclient_cpp/searchclient)
+==635372== 
+==635372== ERROR SUMMARY: 3 errors from 2 contexts (suppressed: 0 from 0)
