@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cmath>
 
 #include "helpers.hpp"
 
@@ -38,6 +39,11 @@ class Point2D {
 
     inline int16_t x() const { return x_; }
     inline int16_t y() const { return y_; }
+
+    // Static method to calculate Manhattan distance
+    static int manhattanDistance(Point2D p1, Point2D p2) {
+        return std::abs(p1.x_ - p2.x_) + std::abs(p1.y_ - p2.y_);
+    }
 
    private:
     int16_t x_;

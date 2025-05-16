@@ -5,8 +5,13 @@ import datetime
 import subprocess
 import time # For timing individual benchmarks
 from dataclasses import dataclass, field
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed, CancelledError
 from typing import Dict, Any, List, Tuple, Optional # For type hints
+
+# For keyboard listener
+import threading
+import termios
+import tty
 
 from rich.live import Live
 from rich.table import Table
@@ -15,11 +20,16 @@ from rich.console import Group, Console
 from rich.panel import Panel
 from rich.text import Text
 
+# Global shutdown flag
+SHUTDOWN_REQUESTED = False
+# Store original terminal settings
+ORIGINAL_TERMIOS_SETTINGS: Optional[list] = None
+
 # TODO: Add process pool executor from concurrent.futures with tqdm progress bar
 
 BENCHMARK_CONFIG_FILE = "benchmarks.json"
 CPP_EXECUTABLE_PATH = "../searchclient_cpp/searchclient" 
-DEFAULT_TIMEOUT_SECONDS = 300 # 5 minutes per case
+DEFAULT_TIMEOUT_SECONDS = 600 # 5 minutes per case
 
 BENCHMARK_CONFIG_REQUIRED_KEYS = ["levels_dir", "output_dir", "cases"]
 
@@ -176,29 +186,122 @@ def create_benchmark_live_progress() -> Progress:
         expand=True
     )
 
-def _update_active_tasks_display(panel_to_update: Panel, current_active_tasks: Dict[Any, Dict[str, Any]], all_submitted_count: int, is_initial_call: bool):
-    title_status = "Submitted" if is_initial_call else "Running"
-    table_title = f"{title_status} Benchmark Cases ({len(current_active_tasks)}/{all_submitted_count})"
+def keyboard_listener():
+    global SHUTDOWN_REQUESTED, ORIGINAL_TERMIOS_SETTINGS
+    # Need to import select here as it's unix-specific with tty
+    # and only relevant if this function is actually called (i.e. is a tty)
+    import select
+
+    fd = sys.stdin.fileno()
+    ORIGINAL_TERMIOS_SETTINGS = termios.tcgetattr(fd)
+    try:
+        tty.setcbreak(fd)
+        # Print to stderr to avoid interfering with Rich Live display on stdout
+        print("\nPress 'q' to request shutdown of benchmarks...", flush=True, file=sys.stderr)
+        while not SHUTDOWN_REQUESTED: 
+            if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
+                char = sys.stdin.read(1)
+                if char.lower() == 'q':
+                    print("\n'q' pressed. Requesting shutdown...", flush=True, file=sys.stderr)
+                    SHUTDOWN_REQUESTED = True
+                    break
+            time.sleep(0.1) 
+    except termios.error:
+        print("\nWarning: Not a TTY, 'q' to quit functionality disabled.", flush=True, file=sys.stderr)
+    except ImportError:
+        print("\nWarning: 'select' module not available. 'q' to quit functionality might be impaired on this system.", flush=True, file=sys.stderr)
+    finally:
+        if ORIGINAL_TERMIOS_SETTINGS:
+            termios.tcsetattr(fd, termios.TCSADRAIN, ORIGINAL_TERMIOS_SETTINGS)
+
+def _update_active_tasks_display(panel_to_update: Panel, current_active_tasks: Dict[Any, Dict[str, Any]], all_submitted_count: int, is_initial_call: bool, shutting_down: bool = False):
+    title_status = "Submitted" if is_initial_call else ("Shutting Down..." if shutting_down and not current_active_tasks else "Processing")
+    if shutting_down and not current_active_tasks and not is_initial_call:
+        table_title = f"All Tasks Processed - Shutdown Complete"
+    elif is_initial_call:
+        table_title = f"Preparing Benchmark Cases ({all_submitted_count})"
+    else:
+        active_count = len(current_active_tasks)
+        table_title = f"{title_status} Benchmark Cases ({active_count}/{all_submitted_count})"
+        if shutting_down:
+            table_title += " - Shutdown Requested"
+
     new_table = Table(title=table_title, expand=True, show_header=True, show_edge=True, padding=(0,1))
     new_table.add_column("Level", style="dim cyan", max_width=30, overflow="fold")
     new_table.add_column("Strategy", style="magenta", max_width=25, overflow="fold")
     new_table.add_column("Status", justify="center", style="bold")
 
-    status_text = "Pending..." if is_initial_call else "Running..."
-    status_style = "grey50" if is_initial_call else "yellow"
-    
-    sorted_active_tasks = list(current_active_tasks.values()) # Get task_configs
-    
-    for task_config in sorted_active_tasks:
-        new_table.add_row(
-            Text(os.path.basename(task_config["level_path_relative"])),
-            Text(task_config["strategy_args"]),
-            Text(status_text, style=status_style)
-        )
+    if is_initial_call:
+        # current_active_tasks is Dict[int, Dict[str, Any]] (index -> task_config)
+        status_text = "Queued"
+        status_style = "dim blue" # Changed for initial state
+        # Sort by original submission order (using index from enumerate)
+        # The dict is {i: task_config}, so values are task_configs
+        sorted_task_configs = [task_data for task_data in current_active_tasks.values()] 
+        # Assuming current_active_tasks was {i: task_config for i, task_config in enumerate(tasks_to_run_configs)}
+        # No, it's passed as {i: task ...} which implies it's already prepared this way.
+
+        for task_config in sorted_task_configs:
+            new_table.add_row(
+                Text(os.path.basename(task_config["level_path_relative"])),
+                Text(task_config["strategy_args"]),
+                Text(status_text, style=status_style)
+            )
+    else:
+        # current_active_tasks is Dict[Future, Dict[str, Any]] (future -> task_config)
+        tasks_to_display = []
+        for future_obj, task_cfg in current_active_tasks.items():
+            tasks_to_display.append((future_obj, task_cfg))
+
+        # Sort by task ID for consistent display order
+        tasks_to_display.sort(key=lambda x: x[1].get('id', ''))
+
+        for future_obj, task_cfg in tasks_to_display:
+            current_status_text = ""
+            current_status_style = ""
+
+            if future_obj.cancelled():
+                current_status_text = "Cancelled"
+                current_status_style = "dark_orange"
+            elif future_obj.running():
+                current_status_text = "Running..."
+                current_status_style = "yellow"
+            elif future_obj.done():
+                current_status_text = "Finalizing..."
+                current_status_style = "light_green"
+            else: # Not cancelled, not running, not done => Pending in queue
+                current_status_text = "Pending..."
+                current_status_style = "grey50"
+            
+            if shutting_down and not future_obj.done():
+                if current_status_text == "Running...":
+                    current_status_text = "Running (SD)"
+                    current_status_style = "orange_red1"
+                elif current_status_text == "Pending...":
+                    current_status_text = "Pending (SD)"
+                    # Keep grey50 or change?
+                # If "Cancelled" or "Finalizing...", no (SD) needed as they are already in a terminal state for this future
+
+            new_table.add_row(
+                Text(os.path.basename(task_cfg["level_path_relative"])),
+                Text(task_cfg["strategy_args"]),
+                Text(current_status_text, style=current_status_style)
+            )
+            
     panel_to_update.renderable = new_table
 
 
 def main():
+    global SHUTDOWN_REQUESTED, ORIGINAL_TERMIOS_SETTINGS
+
+    listener_thread = None
+    if sys.stdin.isatty():
+        listener_thread = threading.Thread(target=keyboard_listener, daemon=True)
+        listener_thread.start()
+    else:
+        # Print to stderr as this is before Rich console might be fully set up for Live
+        print("Info: Not a TTY, 'q' to quit functionality disabled.", flush=True, file=sys.stderr)
+
     config = load_benchmark_config()
     if config is None:
         return
@@ -255,141 +358,167 @@ def main():
         return
 
     overall_progress = create_benchmark_live_progress()
-    # Create an initial empty table for the panel that _update_active_tasks_display will populate
-    initial_active_tasks_table = Table(expand=True, show_header=True, show_edge=True, padding=(0,1))
-    initial_active_tasks_table.add_column("Level", style="dim cyan", max_width=30, overflow="fold")
-    initial_active_tasks_table.add_column("Strategy", style="magenta", max_width=25, overflow="fold")
-    initial_active_tasks_table.add_column("Status", justify="center", style="bold")
+    active_tasks_panel = Panel(Text("Initializing..."), title="Active Benchmark Cases", border_style="blue", expand=True)
     
-    progress_panel = Panel(overall_progress, title="[b]Benchmark Progress[/b]", border_style="green")
-    active_tasks_panel = Panel(initial_active_tasks_table, title="[b]Active Tasks[/b]", border_style="blue") # Title here might be overridden by table title
-    layout = Group(progress_panel, active_tasks_panel)
-    
-    overall_task_id: Optional[TaskID] = overall_progress.add_task("Overall Progress", total=len(tasks_to_run_configs))
+    layout = Group(overall_progress, active_tasks_panel)
 
-    active_futures: Dict[Any, Dict[str, Any]] = {} # Maps future to task_config
+    console = Console() # Create a console for printing messages after Live exits
 
-    Console().print(f"[bold green]Starting benchmarks[/bold green] (timeout per case: {case_timeout_seconds}s). Results will be saved in {output_dir}")
+    # Store futures to be able to cancel them
+    future_to_task_map: Dict[Any, Dict[str, Any]] = {}
 
     try:
-        with Live(layout, refresh_per_second=2, screen=True, transient=True) as live:
-            with ProcessPoolExecutor() as executor:
-                # Submit all tasks and initially populate the active_tasks_table
-                initial_active_tasks_table.rows.clear() # Ensure it's empty before populating
-                for task_config in tasks_to_run_configs:
-                    future = executor.submit(run_single_benchmark_case_process, CPP_EXECUTABLE_PATH, task_config["level_path_full"], task_config["strategy_args"], case_timeout_seconds)
-                    active_futures[future] = task_config
-                    initial_active_tasks_table.add_row(
-                        Text(os.path.basename(task_config["level_path_relative"])),
-                        Text(task_config["strategy_args"]),
-                        Text("Pending...", style="grey50")
-                    )
-                
-                # Initial display of all tasks as pending/running
-                _update_active_tasks_display(active_tasks_panel, active_futures, len(tasks_to_run_configs), is_initial_call=True)
+        # Reverted screen and transient, kept vertical_overflow and console
+        with Live(layout, console=console, refresh_per_second=4, vertical_overflow="visible", screen=True, transient=True) as live:
+            task_id_progress = overall_progress.add_task("[cyan]Overall Progress", total=len(tasks_to_run_configs))
             
-                completed_count = 0
-                for future in as_completed(active_futures):
-                    task_config = active_futures.pop(future) # Remove from active as it's now completed
-                    completed_count += 1
-                    level_rel_path = task_config["level_path_relative"]
-                    strat_args = task_config["strategy_args"]
+            # Prepare initial display for active tasks
+            _update_active_tasks_display(active_tasks_panel, \
+                                         {i: task for i, task in enumerate(tasks_to_run_configs)}, \
+                                         len(tasks_to_run_configs), \
+                                         is_initial_call=True)
+            live.refresh() # Initial display before starting pool
+
+            with ProcessPoolExecutor() as executor:
+                active_tasks_runtime_map: Dict[Any, Dict[str, Any]] = {} # future -> task_config
+
+                for task_config in tasks_to_run_configs:
+                    if SHUTDOWN_REQUESTED:
+                        live.console.print("[yellow]Shutdown requested. No more tasks will be submitted.[/yellow]")
+                        break 
+                    future = executor.submit(run_single_benchmark_case_process, CPP_EXECUTABLE_PATH, task_config["level_path_full"], task_config["strategy_args"], case_timeout_seconds)
+                    future_to_task_map[future] = task_config
+                    active_tasks_runtime_map[future] = task_config # Add to runtime map
+
+                # Update active tasks display to "Running" for those submitted
+                # This will initially show all submitted tasks as "Pending..." or "Running..."
+                # We don't have individual future status from the pool directly here
+                _update_active_tasks_display(active_tasks_panel, active_tasks_runtime_map, len(tasks_to_run_configs), is_initial_call=False)
+                live.refresh()
+
+                for future in as_completed(future_to_task_map):
+                    if SHUTDOWN_REQUESTED and not future.done(): # Check if we need to cancel
+                        if future.cancel():
+                             live.console.print(f"[yellow]Cancelled task: {future_to_task_map[future]['id']}[/yellow]")
+                        # If cancel() returns False, it might be too late (running or finished)
                     
-                    current_case_result = CaseResult(
-                        level=level_rel_path,
-                        strategy=strat_args,
-                        solution=["WIP"], # TODO: Parse actual solution if needed
-                    )
-                    raw_output_for_parsing_error = None # Store raw output if parsing fails
+                    task_config = future_to_task_map[future]
+                    level_name = os.path.basename(task_config["level_path_relative"])
+                    strategy_name = task_config["strategy_args"]
+                    
+                    # Remove from active tasks map as it's completing
+                    if future in active_tasks_runtime_map:
+                        del active_tasks_runtime_map[future]
 
                     try:
-                        status_code, result_data, duration = future.result()
-                        current_case_result.duration_seconds = duration
+                        status, data, duration = future.result()
+                        
+                        case_status = "Unknown"
+                        error_msg = None
+                        metrics_data = {}
+                        solution_data = []
 
-                        if status_code == "success":
+                        if status == "success" and data is not None:
                             try:
-                                current_case_result.metrics = parse_cpp_output(result_data)
-                                current_case_result.status = "Success"
-                                details_text = Text(json.dumps(current_case_result.metrics), style="green")
-                            except (ValueError, IndexError) as e_parse: # Parsing errors
-                                current_case_result.status = "Failed (Parse Err)"
-                                current_case_result.error_message = str(e_parse)
-                                raw_output_for_parsing_error = result_data
-                                details_text = Text(str(e_parse) + (f"\nOutput: {raw_output_for_parsing_error[:200]}..." if raw_output_for_parsing_error else ""), style="red")
-                        elif status_code == "file_not_found":
-                            current_case_result.status = "Skipped (File NF)"
-                            current_case_result.error_message = result_data
-                            details_text = Text(result_data if result_data else "File not found", style="yellow")
-                        elif status_code == "timeout":
-                            current_case_result.status = "Timeout"
-                            current_case_result.error_message = result_data
-                            details_text = Text(result_data if result_data else "Timeout occurred", style="orange_red1")
-                        elif status_code == "called_process_error":
-                            current_case_result.status = "Failed (Exit Code)"
-                            current_case_result.error_message = result_data
-                            details_text = Text(result_data if result_data else "Subprocess error", style="red")
-                        elif status_code == "os_error":
-                            current_case_result.status = "Failed (OS Error)"
-                            current_case_result.error_message = result_data
-                            details_text = Text(result_data if result_data else "OS error", style="red")
-                        else: # "other_error" or any unexpected status_code
-                            current_case_result.status = f"Failed ({status_code})"
-                            current_case_result.error_message = result_data
-                            details_text = Text(result_data if result_data else "Unknown error from worker", style="bold red")
-                    
-                    except Exception as e_future: # For truly unexpected errors from future.result() itself
-                        current_case_result.status = "Failed (Future Error)"
-                        current_case_result.error_message = str(e_future)
-                        details_text = Text(str(e_future), style="bold red")
-                        # duration might not be set if future.result() failed catastrophically
-                        if current_case_result.duration_seconds is None:
-                            current_case_result.duration_seconds = 0.0 # Or some indicator like -1
-                    
-                    all_results.cases.append(current_case_result)
-                    
-                    # Add row to table
-                    status_style = "green" if current_case_result.status == "Success" else \
-                                   "yellow" if "Skipped" in current_case_result.status else \
-                                   "orange_red1" if current_case_result.status == "Timeout" else "red"
-                    time_str = f"{current_case_result.duration_seconds:.2f}" if current_case_result.duration_seconds is not None else "N/A"
-                    
-                    results_table = Table(title="Active Benchmark Cases", expand=True)
-                    results_table.add_column("Level", style="dim cyan", max_width=30, overflow="fold")
-                    results_table.add_column("Strategy", style="magenta", max_width=25, overflow="fold")
-                    results_table.add_column("Status", justify="center", style="bold")
-                    results_table.add_column("Details", max_width=50, overflow="fold") # Adjusted width
+                                metrics_data = parse_cpp_output(data)
+                                # Assuming solution lines do not start with '#'
+                                solution_data = [line for line in data.strip().split('\n') if not line.strip().startswith('#')]
+                                case_status = "Success"
+                                live.console.print(f"[green]Completed:[/green] Level: {level_name}, Strategy: {strategy_name}, Duration: {duration:.2f}s, Status: {case_status}")
+                            except ValueError as e:
+                                case_status = "ParseError"
+                                error_msg = f"Failed to parse output: {e}"
+                                live.console.print(f"[red]Parse Error:[/red] Level: {level_name}, Strategy: {strategy_name}, Duration: {duration:.2f}s, Error: {error_msg}")
+                        
+                        elif status == "timeout":
+                            case_status = "Timeout"
+                            error_msg = data
+                            live.console.print(f"[red]Timeout:[/red] Level: {level_name}, Strategy: {strategy_name}, Duration: {duration:.2f}s")
+                        elif status == "cancelled": # This would be if future.cancel() worked and it raised CancelledError
+                            case_status = "Cancelled"
+                            error_msg = "Task was cancelled due to shutdown request."
+                            live.console.print(f"[yellow]Cancelled:[/yellow] Level: {level_name}, Strategy: {strategy_name}")
+                        else: # file_not_found, called_process_error, os_error, other_error
+                            case_status = status.replace('_', ' ').title() # e.g. "Called Process Error"
+                            error_msg = data
+                            live.console.print(f"[red]{case_status}:[/red] Level: {level_name}, Strategy: {strategy_name}, Duration: {duration:.2f}s, Error: {error_msg}")
 
-                    results_table.add_row(
-                        Text(os.path.basename(level_rel_path)), 
-                        Text(strat_args), 
-                        Text(current_case_result.status, style=status_style), 
-                        details_text
-                    )
-                    initial_active_tasks_table.renderable = results_table # Update the table in the layout
-                    overall_progress.update(overall_task_id, completed=completed_count)
-                    # live.update(layout) # Not strictly needed, Live refreshes periodically
+                        all_results.cases.append(CaseResult(
+                            level=level_name,
+                            strategy=strategy_name,
+                            solution=solution_data,
+                            metrics=metrics_data,
+                            status=case_status,
+                            error_message=error_msg,
+                            duration_seconds=duration
+                        ))
+                    except CancelledError:
+                        live.console.print(f"[yellow]Task cancelled (as_completed): {task_config['id']}[/yellow]")
+                        all_results.cases.append(CaseResult(
+                            level=level_name,
+                            strategy=strategy_name,
+                            status="Cancelled",
+                            error_message="Task cancelled due to shutdown request."
+                        ))
+                    except Exception as exc:
+                        live.console.print(f"[bold red]Exception for task {task_config['id']}: {exc}[/bold red]")
+                        all_results.cases.append(CaseResult(
+                            level=level_name,
+                            strategy=strategy_name,
+                            status="UnhandledException",
+                            error_message=str(exc)
+                        ))
+                    finally:
+                        overall_progress.update(task_id_progress, advance=1)
+                        # Update the table of active tasks
+                        _update_active_tasks_display(active_tasks_panel, active_tasks_runtime_map, \
+                                                     len(tasks_to_run_configs), is_initial_call=False, \
+                                                     shutting_down=SHUTDOWN_REQUESTED)
+                        live.refresh()
+                
+                if SHUTDOWN_REQUESTED:
+                    live.console.print("[bold yellow]Benchmark run interrupted by user. Shutting down worker processes...[/bold yellow]")
+                    # Attempt to cancel any futures that might not have been processed by as_completed yet
+                    # This is mostly for futures that were submitted but not yet started or picked by as_completed
+                    for fut in future_to_task_map.keys():
+                        if not fut.done():
+                            fut.cancel()
+                
+                # Shutdown the executor
+                # For Python 3.9+, cancel_futures=True can be used.
+                # For older versions, this just waits for running tasks or previously cancelled ones.
+                if sys.version_info >= (3, 9):
+                    executor.shutdown(wait=True, cancel_futures=True)
+                else:
+                    executor.shutdown(wait=True) # For older Pythons, doesn't have cancel_futures
+                
+                live.console.print("[bold green]All benchmark tasks finished or cancelled.[/bold green]")
+                _update_active_tasks_display(active_tasks_panel, {}, len(tasks_to_run_configs), is_initial_call=False, shutting_down=True) # Clear active tasks
+                live.refresh()
 
-                    _update_active_tasks_display(active_tasks_panel, active_futures, len(tasks_to_run_configs), is_initial_call=False)
 
-    except KeyboardInterrupt:
-        # Access live console safely
-        console_to_print_interrupt = Console()
-        if 'live' in locals() and live.is_started:
-            console_to_print_interrupt = live.console
-        console_to_print_interrupt.print("\n[bold yellow]Benchmark run interrupted by user.[/bold yellow]")
-        # Perform a more graceful shutdown of the executor
-        # Note: executor.shutdown(wait=False, cancel_futures=True) might be available in newer Python/concurrent.futures
-        # but cancel_futures is Python 3.9+. For broader compatibility, just letting it exit.
-        # The ProcessPoolExecutor context manager handles shutdown.
+    except KeyboardInterrupt: # Catches Ctrl+C
+        console.print("\n[bold red]KeyboardInterrupt caught (Ctrl+C). Shutting down abruptly.[/bold red]")
+        SHUTDOWN_REQUESTED = True 
+        # Executor shutdown will be attempted by the finally block of the ProcessPoolExecutor context manager
+        # or if we add an explicit shutdown here.
+        # The 'with ProcessPoolExecutor() as executor:' handles shutdown on exit/exception.
     finally:
-        # Ensure the Live display is stopped, especially if an unhandled exception occurred inside the Live context
-        # This is mostly handled by `transient=True` and the context manager, but can be explicit if needed.
-        pass # Live display stops automatically on exiting the 'with' block or if transient=True
+        if listener_thread and listener_thread.is_alive():
+            SHUTDOWN_REQUESTED = True 
+            listener_thread.join(timeout=1)
 
-    if all_results.cases:
-        save_benchmark_results(all_results, output_dir)
-    else:
-        Console().print("[red]\nNo benchmark results were successfully collected.[/red]", file=sys.stderr)
+        if ORIGINAL_TERMIOS_SETTINGS and sys.stdin.isatty():
+            termios.tcsetattr(sys.stdin.fileno(), termios.TCSADRAIN, ORIGINAL_TERMIOS_SETTINGS)
+            # Print to stderr as the Live console is gone
+            print("\nTerminal settings restored.", flush=True, file=sys.stderr)
+        
+        if not all_results.cases:
+            console.print("[yellow]No benchmark results were recorded.[/yellow]")
+        else:
+            save_benchmark_results(all_results, output_dir)
+
+    console.print("[bold blue]Benchmark script finished.[/bold blue]")
 
 
 if __name__ == "__main__":

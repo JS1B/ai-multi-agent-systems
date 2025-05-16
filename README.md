@@ -44,9 +44,90 @@ Or, from the project root:
 cat levels/warmup/MAPF00.lvl | ./searchclient_cpp/searchclient
 ```
 
+The client supports various command-line arguments to control its behavior:
+*   `-s <strategy>`: Specifies the search strategy. Available strategies include `bfs`, `dfs`, `astar`, `wastar`, `greedy`.
+*   `-hc <heuristic_calculator>`: Specifies the heuristic calculator.
+    *   Available calculators: `zero`, `mds` (Manhattan Distance for agents), `sic` (Sum of Individual Costs for agents to their goals), `bgm` (Box-Goal Manhattan Distance), `maxof` (uses a combination of mds, sic, bgm).
+    *   For Saturated Cost Partitioning (SCP), use the format: `scp:<sub_heuristic1>,<sub_heuristic2>,...`
+        *   Example: `-hc scp:sic,pdb_all` or `-hc scp:pdb_all,sic,mds`
+        *   Available sub-heuristics for SCP: `sic`, `pdb_all` (all single-box pattern databases), `bgm`, `mds`, `zero`.
+        *   The order of sub-heuristics in the SCP string matters for the partitioning.
+
+Example with strategy and specific heuristic:
+```bash
+cat levels/warmup/MAPF00.lvl | ./searchclient_cpp/searchclient -s astar -hc sic
+```
+Example with SCP:
+```bash
+cat levels/warmup/MAPF00.lvl | ./searchclient_cpp/searchclient -s astar -hc scp:sic,pdb_all
+```
+
 You can also use it with the server:
 ```bash
-java -jar server.jar -c "./searchclient_cpp/searchclient" -l "levels/warmup/MAPF00.lvl" -g
+java -jar server.jar -c "./searchclient_cpp/searchclient -s astar -hc scp:sic,pdb_all" -l "levels/warmup/MAPF00.lvl" -g
+```
+
+### Benchmarking
+
+The `searchclient_cpp` project includes a Python-based benchmarking script located at `benchmarks/run_benchmarks.py`. This script automates running the C++ client against multiple levels and strategy/heuristic combinations.
+
+**Prerequisites:**
+*   Python 3.x
+*   The `rich` Python library: `pip install rich`
+
+**Configuration:**
+Benchmark cases are defined in `benchmarks/benchmarks.json`. This file specifies:
+*   `levels_dir`: The directory containing level files.
+*   `output_dir`: Where to save benchmark result JSON files.
+*   `cases`: A list of test cases, each specifying:
+    *   `input`: The relative path to the level file (from `levels_dir`).
+    *   `strategies`: A list of command-line argument strings to pass to the C++ client (e.g., `"-s astar -hc sic"`, `"-s wastar -hc scp:pdb_all,sic"`).
+*   `timeout_seconds_per_case` (optional): Timeout in seconds for each individual run (defaults to 600s).
+
+**Running Benchmarks:**
+The recommended way to run the benchmarks is using the `Makefile` target from within the `searchclient_cpp` directory. This ensures the C++ client is compiled first.
+
+```bash
+cd searchclient_cpp
+make run_benchmark
+```
+
+This command will:
+*   Build the `searchclient` executable if it's outdated.
+*   Change to the benchmark directory (assumed to be `../benchmarks` relative to `searchclient_cpp`).
+*   Execute the `run_benchmarks.py` script (e.g., using `uv run run_benchmarks.py` as per the current Makefile).
+
+The script will then:
+*   Read `benchmarks.json` (expected to be in the directory where `run_benchmarks.py` resides).
+*   Run the C++ client in parallel for each configured case.
+*   Display a live progress table using `rich`.
+*   Save results (including metrics parsed from the C++ client and timing information) to a timestamped JSON file in the `output_dir` (specified in `benchmarks.json`).
+*   You can press 'q' during the run to request a graceful shutdown (pending tasks will be cancelled, running tasks will complete or timeout).
+
+If you need to run the script manually (e.g., for development or if not using `make`):
+1. Ensure the C++ client (`searchclient_cpp/searchclient`) is already compiled.
+2. Navigate to the directory containing `run_benchmarks.py` (e.g., `cd benchmarks` from the project root).
+3. Run the script: `python3 run_benchmarks.py` (or `uv run run_benchmarks.py`).
+   Make sure `benchmarks.json` is in this directory, and adjust `CPP_EXECUTABLE_PATH` in `run_benchmarks.py` if necessary.
+
+**Example `benchmarks.json` structure:**
+```json
+{
+    "levels_dir": "../levels",
+    "output_dir": "benchmark_results",
+    "timeout_seconds_per_case": 300,
+    "cases": [
+        {
+            "input": "warmup/MAPF00.lvl",
+            "strategies": [
+                "-s astar -hc zero",
+                "-s astar -hc scp:pdb_all,sic",
+                "-s wastar -hc scp:sic,pdb_all"
+            ]
+        },
+        // ... more cases
+    ]
+}
 ```
 
 ### Cleaning Build Files

@@ -175,10 +175,23 @@ Level loadLevel(std::istream &serverMessages) {
     if (!findSection("#initial")) { /* Already exited */ }
     std::vector<std::string> initial_layout_lines;
     initial_layout_lines.reserve(100); 
-    while (getline(serverMessages, line)) {
-        if (line.empty() || line.rfind('#', 0) == 0) break; 
-        initial_layout_lines.push_back(line); // Keep original lines for now
-    }
+    serverMessages.clear(); // Clear any EOF or error flags before reading initial layout
+    { // New scope for temp_line for reading initial content
+        std::string temp_line;
+        while (getline(serverMessages, temp_line)) {
+            fprintf(stderr, "DEBUG_LEVEL_LOAD: Read initial line: '%s' (length %zu)\n", temp_line.c_str(), temp_line.length());
+            if (temp_line.empty() || temp_line.rfind('#', 0) == 0) {
+                line = temp_line; // Store the break-causing line (e.g. "#goal") in the outer 'line'
+                fprintf(stderr, "DEBUG_LEVEL_LOAD: Initial loop breaking on line: '%s'\n", line.c_str());
+                break; 
+            }
+            initial_layout_lines.push_back(temp_line); 
+        }
+        // If getline failed (not just EOF), 'line' (outer) retains its value from findSection (e.g. "#initial")
+        // or from a previous successful read if the loop ran at least once.
+        // If the stream is just at EOF, 'line' would hold the last successfully processed header.
+    } // End scope for temp_line
+
     if (initial_layout_lines.empty()) {
         fprintf(stderr, "Error: #initial section is empty.\n"); std::exit(EXIT_FAILURE);
     }
@@ -222,10 +235,19 @@ Level loadLevel(std::istream &serverMessages) {
     if (!findSection("#goal")) { /* Already exited */ }
     std::vector<std::string> goal_layout_lines;
     goal_layout_lines.reserve(100);
-    while (getline(serverMessages, line)) {
-        if (line.empty() || line.rfind('#', 0) == 0) break;
-        goal_layout_lines.push_back(line);
-    }
+    serverMessages.clear(); // Clear any EOF or error flags before reading goal layout
+    { // New scope for temp_line for reading goal content
+        std::string temp_line;
+        while (getline(serverMessages, temp_line)) {
+            if (temp_line.empty() || temp_line.rfind('#', 0) == 0) {
+                line = temp_line; // Store break-causing line (e.g. "#map" or other) in outer 'line'
+                break;
+            }
+            goal_layout_lines.push_back(temp_line);
+        }
+        // Similar logic for 'line' (outer) as in the #initial block.
+    } // End scope for temp_line
+    
     if (goal_layout_lines.empty()) {
         fprintf(stderr, "Error: #goal section is empty.\n"); std::exit(EXIT_FAILURE);
     }

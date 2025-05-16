@@ -11,8 +11,8 @@ std::mt19937 State::g_rd_(rd_());
 
 State::State(const Level& level_ref) 
     : level_(level_ref), 
-      currentAgents_(level_ref.agentsMap), 
-      currentBoxes_(level_ref.boxesMap), 
+      currentAgents_(level_ref.agentsMap.begin(), level_ref.agentsMap.end()), 
+      currentBoxes_(level_ref.boxesMap.begin(), level_ref.boxesMap.end()), 
       parent(nullptr), 
       g_(0) {
     // Initial hash can be calculated here if desired, or lazily as before.

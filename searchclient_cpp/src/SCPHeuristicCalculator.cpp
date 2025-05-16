@@ -1,73 +1,84 @@
 #include "SCPHeuristicCalculator.hpp"
 // #include "common.hpp" // Removed non-existent common.hpp
-#include <algorithm> // For std::max
+#include <algorithm> // For std::max, std::find_if
+#include "HeuristicCalculator.hpp" // Ensure base class definition is available
 
 // Note: HeuristicCalculator.hpp (included by SCPHeuristicCalculator.hpp) brings in the HeuristicCalculators namespace
 // so we don't need 'using namespace HeuristicCalculators;' here, members are accessed via this-> or explicitly.
 
-SCPHeuristicCalculator::SCPHeuristicCalculator(Level& level)
-    : HeuristicCalculators::HeuristicCalculator(level), // Explicitly call base constructor
-      sic_sub_calculator_(level), 
-      bgm_sub_calculator_(level) {}
+namespace HeuristicCalculators {
 
-int SCPHeuristicCalculator::calculateH(const State& state) {
-    int total_h = 0;
-    std::map<ActionType, int> saturated_costs; // Stores how much cost (0 or 1) is saturated for each action type
-                                               // Initially all 0 (unsaturated)
+SCPHeuristicCalculator::SCPHeuristicCalculator(const Level& level_ref,
+                                           std::vector<std::unique_ptr<HeuristicCalculator>> ordered_sub_calculators_to_own)
+    : HeuristicCalculator(level_ref), // Call base constructor
+      owned_ordered_sub_calculators_(std::move(ordered_sub_calculators_to_own)) {
+    // Constructor body: member is initialized by move
+}
 
-    // Agent processing: Paths contribute to h_total and saturate action costs
-    for (char agent_char : state.getAgentChars()) {
-        // Define the current action cost function based on saturated_costs
-        // An action costs 1 if not saturated, 0 if saturated.
-        std::function<int(ActionType)> current_action_cost_fn = 
-            [&saturated_costs](ActionType type) {
-                if (saturated_costs.count(type) && saturated_costs[type] >= 1) {
-                    return 0; // Cost is 0 if saturated
-                }
-                return 1; // Default cost is 1 if not saturated
-            };
+int SCPHeuristicCalculator::calculateH(const State& state, const ActionCostMap& initial_total_costs) const {
+    int total_h_value = 0;
+    ActionCostMap current_remaining_budget = initial_total_costs;
 
-        std::pair<int, std::vector<const Action*>> path_info =
-            this->sic_sub_calculator_.calculateSingleAgentPath(state, agent_char, current_action_cost_fn, this->currentLevel_);
+    for (const auto& sub_calculator_ptr : owned_ordered_sub_calculators_) {
+        if (!sub_calculator_ptr) continue; // Should not happen if vector is managed well
+        HeuristicCalculator& sub_calculator = *sub_calculator_ptr;
 
-        int agent_h_contribution = path_info.first;
-        const std::vector<const Action*>& agent_path = path_info.second;
-
-        if (agent_h_contribution == HeuristicCalculators::HeuristicCalculator::MAX_HEURISTIC_VALUE) {
-            // If any single agent cannot reach its goal even with potentially free actions,
-            // the state is considered unsolvable by SCP.
-            return HeuristicCalculators::HeuristicCalculator::MAX_HEURISTIC_VALUE;
-        }
+        ActionCostMap consumed_by_sub = sub_calculator.saturate(state, current_remaining_budget);
         
-        total_h += agent_h_contribution; // Add the cost of this agent's path (using current available costs)
+        // The sub-calculator's h-value should be based on the costs *it claims it can use*,
+        // which are effectively represented by 'consumed_by_sub' in terms of cost values,
+        // or rather, it should be based on the current_remaining_budget to see what it *can* achieve.
+        // Let's refine this. The sub-calculator.calculateH should take the current_remaining_budget.
+        // And its saturate method already told us what it would consume from that budget.
+        // The h_contribution should be calculated based on what it *would* consume from the current budget.
+        // The previous SCP impl passed consumed_by_sub to calculateH, which seems more correct for SCP.
+        // calculateH(state, budget_for_this_calc)
+        // Let's assume sub_calculator.calculateH is designed to take the budget it *can* use.
+        // The crucial part is that `consumed_by_sub` tells us what it *would* take from `current_remaining_budget`.
+        // If a sub-heuristic (like SIC or PDB) calculates its h-value from its `saturate` output 
+        // (i.e., the costs it identified it needs), that value should be correct.
+        // However, the traditional HeuristicCalculator::calculateH takes a general ActionCostMap.
+        // For SCP, the budget passed to calculateH should be the one *after* this sub_calculator has notionally paid.
+        // No, that's not right. It should be calculated with the *currently available costs*.
+        // The `consumed_by_sub` is what it *would* consume. The `h_contribution` is its estimate.
 
-        // Saturate the costs of actions used in this agent's path
-        // If an action was on the path, its original cost (1) is considered saturated.
-        for (const Action* action_on_path : agent_path) {
-            if (action_on_path != nullptr) { // Should always be true if path is valid
-                 // Mark this action type as saturated (cost 1 consumed)
-                 // If it was already saturated, this has no further effect on saturated_costs[type]
-                 // but current_action_cost_fn would have made it free for this BFS.
-                saturated_costs[action_on_path->type] = 1;
-            }
+        // The sub-calculator should calculate its H value based on the costs *it was given* (current_remaining_budget)
+        // and its saturate() method determined what portion of those costs it would ideally consume.
+        // The h_value should be calculated based on `current_remaining_budget` before it's reduced by `consumed_by_sub`.
+        // However, the original SCP logic in this file did: h_contribution = sic_sub_calculator_.calculateH(state, consumed_by_sub);
+        // This means the sub-heuristic calculated its h-value based on the costs it *actually consumed*.
+        // This seems more aligned with the idea of cost partitioning.
+        // Let's stick to: calculateH for a sub-heuristic takes the cost map representing what it *did* consume.
+        int h_contribution = sub_calculator.calculateH(state, consumed_by_sub); 
+
+        if (h_contribution == HeuristicCalculator::MAX_HEURISTIC_VALUE) {
+            return HeuristicCalculator::MAX_HEURISTIC_VALUE;
         }
+        total_h_value += h_contribution;
+        current_remaining_budget = HeuristicCalculators::subtractCosts(current_remaining_budget, consumed_by_sub);
     }
 
-    // Box processing (simplified for this version): 
-    // Manhattan distance, does not use or saturate action costs.
-    // Its contribution is simply added.
-    for (char box_char : state.getBoxChars()) {
-        int box_h_contribution = 
-            this->bgm_sub_calculator_.calculateSingleBoxManhattanDistance(state, box_char, this->currentLevel_);
-        
-        if (box_h_contribution == HeuristicCalculators::HeuristicCalculator::MAX_HEURISTIC_VALUE) {
-            // This case implies box not found by calculateSingleBoxManhattanDistance, should be rare if getBoxChars is correct.
-            // Or, if we adapt it to return MAX_H for other reasons (e.g. truly unreachable goal for a box by any means)
-            return HeuristicCalculators::HeuristicCalculator::MAX_HEURISTIC_VALUE;
+    return total_h_value;
+}
+
+ActionCostMap SCPHeuristicCalculator::saturate(const State& state, const ActionCostMap& available_costs) const {
+    ActionCostMap total_consumed_costs_by_scp;
+    ActionCostMap current_remaining_budget = available_costs;
+
+    for (const auto& sub_calculator_ptr : owned_ordered_sub_calculators_) {
+        if (!sub_calculator_ptr) continue;
+        HeuristicCalculator& sub_calculator = *sub_calculator_ptr;
+
+        ActionCostMap consumed_by_this_sub = sub_calculator.saturate(state, current_remaining_budget);
+
+        for (const auto& pair : consumed_by_this_sub) {
+            total_consumed_costs_by_scp[pair.first] += pair.second;
         }
-        // If a box has no goal, calculateSingleBoxManhattanDistance returns 0, which is fine.
-        total_h += box_h_contribution;
+        current_remaining_budget = HeuristicCalculators::subtractCosts(current_remaining_budget, consumed_by_this_sub);
     }
-    
-    return total_h;
-} 
+    return total_consumed_costs_by_scp;
+}
+
+} // namespace HeuristicCalculators
+
+// ... any other helper methods, ensure they use this->level_ ... 

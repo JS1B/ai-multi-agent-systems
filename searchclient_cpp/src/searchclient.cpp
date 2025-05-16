@@ -18,10 +18,11 @@
 #include "graphsearch.hpp"
 #include "helpers.hpp"
 #include "heuristic.hpp"
-#include "HeuristicCalculator.hpp"
+#include "HeuristicCalculator.hpp" // This brings in SIC, BGM, MDS, Zero definitions
 #include "level.hpp"
 #include "state.hpp"
 #include "SCPHeuristicCalculator.hpp"
+#include "SingleBoxPDBHeuristicCalculator.hpp"  // For PDBs (separate file)
 
 /*
 For a text to be treated as a comment, it must be sent via:
@@ -60,25 +61,24 @@ std::string formatJointAction(const std::vector<const Action *> &joint_action) {
 }
 
 // Map string to strategy factory functions
-// These will now take an initial_state and a heuristic_calculator
-using HeuristicStrategyFactory = std::function<Frontier*(State*, std::unique_ptr<HeuristicCalculators::HeuristicCalculator>)>;
+// Update to accept a vector of calculators
+using HeuristicStrategyFactory = std::function<Frontier*(State*, std::vector<std::unique_ptr<HeuristicCalculators::HeuristicCalculator>>)>;
 std::unordered_map<std::string, HeuristicStrategyFactory> strategy_factory_map = {
-    {"bfs", [](State* /*initial_state*/, std::unique_ptr<HeuristicCalculators::HeuristicCalculator> /*calc*/) {
+    {"bfs", [](State* /*initial_state*/, std::vector<std::unique_ptr<HeuristicCalculators::HeuristicCalculator>> /*calcs*/) {
         return new FrontierBFS();
     }},
-    {"dfs", [](State* /*initial_state*/, std::unique_ptr<HeuristicCalculators::HeuristicCalculator> /*calc*/) {
+    {"dfs", [](State* /*initial_state*/, std::vector<std::unique_ptr<HeuristicCalculators::HeuristicCalculator>> /*calcs*/) {
         return new FrontierDFS();
     }},
-    {"astar", [](State* initial_state, std::unique_ptr<HeuristicCalculators::HeuristicCalculator> calc) {
-        return new FrontierBestFirst(new HeuristicAStar(*initial_state, std::move(calc)));
+    {"astar", [](State* initial_state, std::vector<std::unique_ptr<HeuristicCalculators::HeuristicCalculator>> calcs) {
+        return new FrontierBestFirst(new HeuristicAStar(*initial_state, std::move(calcs)));
     }},
-    {"wastar", [](State* initial_state, std::unique_ptr<HeuristicCalculators::HeuristicCalculator> calc) {
-        // Default weight for WA*, can be made configurable too
+    {"wastar", [](State* initial_state, std::vector<std::unique_ptr<HeuristicCalculators::HeuristicCalculator>> calcs) {
         int weight = 3; 
-        return new FrontierBestFirst(new HeuristicWeightedAStar(*initial_state, weight, std::move(calc)));
+        return new FrontierBestFirst(new HeuristicWeightedAStar(*initial_state, weight, std::move(calcs)));
     }},
-    {"greedy", [](State* initial_state, std::unique_ptr<HeuristicCalculators::HeuristicCalculator> calc) {
-        return new FrontierBestFirst(new HeuristicGreedy(*initial_state, std::move(calc)));
+    {"greedy", [](State* initial_state, std::vector<std::unique_ptr<HeuristicCalculators::HeuristicCalculator>> calcs) {
+        return new FrontierBestFirst(new HeuristicGreedy(*initial_state, std::move(calcs)));
     }}
 };
 
@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
 
     // Default values
     std::string strategy_name = "bfs";
-    std::string heuristic_calc_name = "zero"; // Default heuristic for A*/Greedy
+    std::string heuristic_calc_name = "maxof"; // Default to maxof
 
     // Parse command line arguments
     for (int i = 1; i < argc; ++i) {
@@ -143,9 +143,8 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "End Debug Level Info.\n");
 
     // Create initial state
-    // State *initial_state = new State(level);
-    State initial_state_obj(level); // Stack allocate State
-    State* initial_state = &initial_state_obj; // Use pointer for existing interfaces
+    State initial_state_obj(level); 
+    State* initial_state = &initial_state_obj; 
 
     fprintf(stderr, "DEBUG: initial_state pointer (to stack obj) = %p\n", (void*)initial_state);
     if (initial_state) {
@@ -153,50 +152,108 @@ int main(int argc, char *argv[]) {
                 initial_state->currentAgents_.size(), level.agentsMap.size());
     }
 
-    // Create Heuristic Calculator instance
-    std::unique_ptr<HeuristicCalculators::HeuristicCalculator> calculator;
-    if (heuristic_calc_name == "mds") {
-        calculator = std::make_unique<HeuristicCalculators::ManhattanDistanceCalculator>(level);
-        fprintf(stderr, "DEBUG: Directly after creating MDC, calculator.get() = %p\n", (void*)calculator.get());
-        if (calculator) {
-             fprintf(stderr, "DEBUG: MDC Name via direct unique_ptr: %s\n", calculator->getName().c_str());
+    // Create Heuristic Calculator instance(s)
+    std::vector<std::unique_ptr<HeuristicCalculators::HeuristicCalculator>> calculators_for_heuristic_wrapper;
+
+    if (heuristic_calc_name.rfind("scp:", 0) == 0) { // Check for "scp:" prefix
+        fprintf(stderr, "Using SCP (Saturated Cost Partitioning) with specified sub-heuristics: %s\n", heuristic_calc_name.c_str());
+        std::vector<std::unique_ptr<HeuristicCalculators::HeuristicCalculator>> scp_sub_calculators;
+        
+        std::string sub_heuristics_str = heuristic_calc_name.substr(4); // Get string after "scp:"
+        std::stringstream ss(sub_heuristics_str);
+        std::string item;
+        std::vector<std::string> sub_heuristic_names;
+        while (std::getline(ss, item, ',')) {
+            sub_heuristic_names.push_back(item);
         }
+
+        for (const auto& name : sub_heuristic_names) {
+            fprintf(stderr, "  Adding sub-heuristic: %s\n", name.c_str());
+            if (name == "sic") {
+                scp_sub_calculators.push_back(std::make_unique<HeuristicCalculators::SumOfIndividualCostsCalculator>(level));
+            } else if (name == "pdb_all") {
+                const auto& box_ids = level.getSortedBoxIds(); 
+                const auto& goals_map = level.getGoalsMap();
+
+                for (char box_id : box_ids) {
+                    char goal_char_for_box = ' '; 
+                    bool found_goal_for_box = false;
+                    
+                    for(const auto& goal_pair : goals_map){
+                        const Goal& goal_obj = goal_pair.second;
+                        if(toupper(goal_obj.id()) == toupper(box_id)){
+                            goal_char_for_box = goal_obj.id();
+                            found_goal_for_box = true;
+                            break;
+                        }
+                    }
+
+                    if (found_goal_for_box) {
+                        fprintf(stderr, "    Creating PDB for box %c, targeting goal %c.\n", box_id, goal_char_for_box);
+                        scp_sub_calculators.push_back(
+                            std::make_unique<HeuristicCalculators::SingleBoxPDBHeuristicCalculator>(level, box_id, goal_char_for_box)
+                        );
+                    } else {
+                        fprintf(stderr, "Warning: Could not find a matching goal for box %c. PDB for this box will not be created for %s.\n", box_id, name.c_str());
+                    }
+                }
+            } else if (name == "bgm") {
+                scp_sub_calculators.push_back(std::make_unique<HeuristicCalculators::BoxGoalManhattanDistanceCalculator>(level));
+            } else if (name == "mds") { // Added mds as a potential sub-heuristic
+                scp_sub_calculators.push_back(std::make_unique<HeuristicCalculators::ManhattanDistanceCalculator>(level));
+            } else if (name == "zero") { // Added zero as a potential sub-heuristic
+                scp_sub_calculators.push_back(std::make_unique<HeuristicCalculators::ZeroHeuristicCalculator>(level));
+            }
+            else {
+                fprintf(stderr, "Warning: Unknown sub-heuristic '%s' for SCP. Skipping.\n", name.c_str());
+            }
+        }
+        
+        if (scp_sub_calculators.empty()) {
+            fprintf(stderr, "Warning: No valid sub-heuristics provided for SCP. Defaulting to ZeroHeuristic inside SCP.\n");
+            // Fallback to a single ZeroHeuristic within SCP if no valid sub-heuristics were parsed
+             scp_sub_calculators.push_back(std::make_unique<HeuristicCalculators::ZeroHeuristicCalculator>(level));
+        }
+        
+        calculators_for_heuristic_wrapper.push_back(
+            std::make_unique<HeuristicCalculators::SCPHeuristicCalculator>(level, std::move(scp_sub_calculators))
+        );
+
+    } else if (heuristic_calc_name == "maxof") {
+        fprintf(stderr, "Using MaxOf combination of heuristics.\n");
+        calculators_for_heuristic_wrapper.push_back(std::make_unique<HeuristicCalculators::ManhattanDistanceCalculator>(level));
+        calculators_for_heuristic_wrapper.push_back(std::make_unique<HeuristicCalculators::SumOfIndividualCostsCalculator>(level));
+        calculators_for_heuristic_wrapper.push_back(std::make_unique<HeuristicCalculators::BoxGoalManhattanDistanceCalculator>(level));
+        // Optionally add ZeroHeuristicCalculator if others might be negative or to ensure a baseline
+        // calculators_for_heuristic_wrapper.push_back(std::make_unique<HeuristicCalculators::ZeroHeuristicCalculator>(level));
+    } else if (heuristic_calc_name == "mds") {
+        calculators_for_heuristic_wrapper.push_back(std::make_unique<HeuristicCalculators::ManhattanDistanceCalculator>(level));
     } else if (heuristic_calc_name == "sic") {
-        calculator = std::make_unique<HeuristicCalculators::SumOfIndividualCostsCalculator>(level);
-        fprintf(stderr, "DEBUG: Directly after creating SIC, calculator.get() = %p\n", (void*)calculator.get());
-        if (calculator) {
-             fprintf(stderr, "DEBUG: SIC Name via direct unique_ptr: %s\n", calculator->getName().c_str());
-        }
+        calculators_for_heuristic_wrapper.push_back(std::make_unique<HeuristicCalculators::SumOfIndividualCostsCalculator>(level));
     } else if (heuristic_calc_name == "bgm") {
-        calculator = std::make_unique<HeuristicCalculators::BoxGoalManhattanDistanceCalculator>(level);
-        // Add similar debug prints if needed for BGM
-    } else if (heuristic_calc_name == "zero") {
-        calculator = std::make_unique<HeuristicCalculators::ZeroHeuristicCalculator>(level);
-        // Add similar debug prints if needed for Zero
-    } else if (heuristic_calc_name == "scp") {
-        calculator = std::make_unique<SCPHeuristicCalculator>(level);
-        // Add similar debug prints if needed for SCP
-    } else {
-        fprintf(stderr, "Warning: Unknown heuristic calculator '%s'. Defaulting to ZeroHeuristic.\n", heuristic_calc_name.c_str());
-        calculator = std::make_unique<HeuristicCalculators::ZeroHeuristicCalculator>(level);
-        fprintf(stderr, "DEBUG: Directly after creating Zero (default), calculator.get() = %p\n", (void*)calculator.get());
-        if (calculator) {
-             fprintf(stderr, "DEBUG: Zero (default) Name via direct unique_ptr: %s\n", calculator->getName().c_str());
+        calculators_for_heuristic_wrapper.push_back(std::make_unique<HeuristicCalculators::BoxGoalManhattanDistanceCalculator>(level));
+    } else { // Default to ZeroHeuristic for "zero" or unknown
+        if (heuristic_calc_name != "zero") {
+             fprintf(stderr, "Warning: Unknown heuristic calculator '%s'. Defaulting to ZeroHeuristic.\n", heuristic_calc_name.c_str());
         }
+        calculators_for_heuristic_wrapper.push_back(std::make_unique<HeuristicCalculators::ZeroHeuristicCalculator>(level));
+    }
+    
+    // Debug print for created calculators
+    fprintf(stderr, "DEBUG: Number of calculators created: %zu\n", calculators_for_heuristic_wrapper.size());
+    for(const auto& calc : calculators_for_heuristic_wrapper){
+        if(calc) fprintf(stderr, "DEBUG: Calculator Name: %s, Pointer: %p\n", calc->getName().c_str(), (void*)calc.get());
     }
 
     Frontier *frontier;
     try {
-        // Get the factory function from the map
         auto factory_it = strategy_factory_map.find(strategy_name);
         if (factory_it == strategy_factory_map.end()) {
             throw std::runtime_error("Unknown strategy: " + strategy_name);
         }
-        // Call the factory, passing the initial_state and the chosen calculator
-        frontier = factory_it->second(initial_state, std::move(calculator));
+        frontier = factory_it->second(initial_state, std::move(calculators_for_heuristic_wrapper)); // Pass vector
     } catch (const std::exception &e) {
         fprintf(stderr, "Error initializing strategy: %s\n", e.what());
-        // delete initial_state; // No longer deleting initial_state if it was stack based and factory failed early
         return 1;
     }
 
@@ -243,6 +300,5 @@ int main(int argc, char *argv[]) {
 #endif
 
     delete frontier;
-    // delete initial_state; // initial_state is now a pointer to a stack object, no delete needed
     return 0;
 }

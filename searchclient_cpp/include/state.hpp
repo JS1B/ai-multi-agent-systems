@@ -9,7 +9,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include <unordered_map>
+#include "third_party/emhash/hash_table8.hpp"
 
 #include "action.hpp"
 #include "color.hpp"
@@ -23,8 +23,8 @@ class State {
     const Level& level_;
 
     // New members to store the current, mutable positions of agents and boxes for this state
-    std::unordered_map<char, Agent> currentAgents_;
-    std::unordered_map<char, Box> currentBoxes_;
+    emhash8::HashMap<char, Agent> currentAgents_;
+    emhash8::HashMap<char, Box> currentBoxes_;
 
     [[nodiscard]] static void *operator new(std::size_t number_of_states);
     static void operator delete(void *ptr) noexcept;

@@ -9,17 +9,20 @@
                 "-s astar -hc mds",
                 "-s astar -hc sic",
                 "-s astar -hc bgm",
-                "-s astar -hc scp",
+                "-s astar -hc scp:pdb_all,sic",
+                "-s astar -hc scp:sic,pdb_all",
                 "-s wastar -hc zero",
                 "-s wastar -hc mds",
                 "-s wastar -hc sic",
                 "-s wastar -hc bgm",
-                "-s wastar -hc scp",
+                "-s wastar -hc scp:pdb_all,sic",
+                "-s wastar -hc scp:sic,pdb_all",
                 "-s greedy -hc zero",
                 "-s greedy -hc mds",
                 "-s greedy -hc sic",
                 "-s greedy -hc bgm",
-                "-s greedy -hc scp",
+                "-s greedy -hc scp:pdb_all,sic",
+                "-s greedy -hc scp:sic,pdb_all",
                 "-s bfs",
                 "-s dfs"
             ]
@@ -28,14 +31,16 @@
             "input": "warmup/MAPF01.lvl",
             "strategies": [
                 "-s bfs",
-                "-s dfs"
+                "-s astar -hc scp:pdb_all,sic",
+                "-s astar -hc scp:sic,pdb_all"
             ]
         },
         {
             "input": "warmup/MAPF02.lvl",
             "strategies": [
                 "-s bfs",
-                "-s dfs"
+                "-s astar -hc scp:pdb_all,sic",
+                "-s astar -hc scp:sic,pdb_all"
             ]
         },
         {
@@ -45,17 +50,21 @@
                 "-s astar -hc mds",
                 "-s astar -hc sic",
                 "-s astar -hc bgm",
-                "-s astar -hc scp",
+                "-s astar -hc scp:pdb_all,sic",
+                "-s astar -hc scp:sic,pdb_all",
+                "-s astar -hc scp:pdb_all,mds",
                 "-s wastar -hc zero",
                 "-s wastar -hc mds",
                 "-s wastar -hc sic",
                 "-s wastar -hc bgm",
-                "-s wastar -hc scp",
+                "-s wastar -hc scp:pdb_all,sic",
+                "-s wastar -hc scp:sic,pdb_all",
                 "-s greedy -hc zero",
                 "-s greedy -hc mds",
                 "-s greedy -hc sic",
                 "-s greedy -hc bgm",
-                "-s greedy -hc scp",
+                "-s greedy -hc scp:pdb_all,sic",
+                "-s greedy -hc scp:sic,pdb_all",
                 "-s bfs",
                 "-s dfs"
             ]
@@ -64,14 +73,72 @@
             "input": "warmup/MAPFslidingpuzzle.lvl",
             "strategies": [
                 "-s bfs",
-                "-s dfs"
+                "-s astar -hc scp:pdb_all,sic",
+                "-s astar -hc scp:sic,pdb_all"
             ]
         },
         {
             "input": "warmup/BFSFriendly.lvl",
             "strategies": [
                 "-s bfs",
-                "-s dfs"
+                "-s astar -hc scp:pdb_all,sic",
+                "-s astar -hc scp:sic,pdb_all"
+            ]
+        },
+        {
+            "input": "custom/basic00.lvl",
+            "strategies": [
+                "-s astar -hc scp:pdb_all,sic",
+                "-s astar -hc scp:sic,pdb_all",
+                "-s wastar -hc scp:pdb_all,sic",
+                "-s wastar -hc scp:sic,pdb_all",
+                "-s bfs"
+            ]
+        },
+        {
+            "input": "custom/basic01.lvl",
+            "strategies": [
+                "-s astar -hc scp:pdb_all,sic",
+                "-s astar -hc scp:sic,pdb_all",
+                "-s wastar -hc scp:pdb_all,sic",
+                "-s wastar -hc scp:sic,pdb_all",
+                "-s bfs"
+            ]
+        },
+        {
+            "input": "comp/AAAFUN.lvl",
+            "strategies": [
+                "-s astar -hc scp:pdb_all,sic",
+                "-s astar -hc scp:sic,pdb_all",
+                "-s wastar -hc scp:pdb_all,sic",
+                "-s wastar -hc scp:sic,pdb_all",
+                "-s greedy -hc scp:pdb_all,sic",
+                "-s greedy -hc scp:sic,pdb_all",
+                "-s bfs"
+            ]
+        },
+        {
+            "input": "comp/Eighty.lvl",
+            "strategies": [
+                "-s astar -hc scp:pdb_all,sic",
+                "-s astar -hc scp:sic,pdb_all",
+                "-s wastar -hc scp:pdb_all,sic",
+                "-s wastar -hc scp:sic,pdb_all",
+                "-s greedy -hc scp:pdb_all,sic",
+                "-s greedy -hc scp:sic,pdb_all",
+                "-s bfs"
+            ]
+        },
+        {
+            "input": "comp/MSPaint.lvl",
+            "strategies": [
+                "-s astar -hc scp:pdb_all,sic",
+                "-s astar -hc scp:sic,pdb_all",
+                "-s wastar -hc scp:pdb_all,sic",
+                "-s wastar -hc scp:sic,pdb_all",
+                "-s greedy -hc scp:pdb_all,sic",
+                "-s greedy -hc scp:sic,pdb_all",
+                "-s bfs"
             ]
         }
     ]

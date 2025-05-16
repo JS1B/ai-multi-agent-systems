@@ -7,7 +7,8 @@
 #include <unordered_set>
 #include <vector>
 #include <map>
-#include <unordered_map>
+
+#include "third_party/emhash/hash_table8.hpp"
 
 #include "heuristic.hpp"
 #include "state.hpp"
@@ -181,5 +182,5 @@ class FrontierBestFirst : public Frontier {
 private:
     Heuristic *heuristic_;
     std::multimap<int, State *> open_set_; // Key: f-value, Value: State pointer
-    std::unordered_map<const State *, int, StatePtrHash, StatePtrEqual> closed_set_; // Key: State pointer, Value: f-value when closed
+    emhash8::HashMap<const State *, int, StatePtrHash, StatePtrEqual> closed_set_; // Key: State pointer, Value: f-value when closed
 };
