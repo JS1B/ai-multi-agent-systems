@@ -5,6 +5,7 @@
 #include <iostream>
 #include <unordered_set>
 #include <vector>
+#include <optional>
 
 #include "action.hpp"
 #include "frontier.hpp"
@@ -14,11 +15,15 @@
 // Global start time
 static auto start_time = std::chrono::high_resolution_clock::now();
 
-void printSearchStatus(const std::unordered_set<State *, StatePtrHash, StatePtrEqual> &explored, const Frontier &frontier) {
+void printSearchStatus(
+    const std::unordered_set<State *, StatePtrHash, StatePtrEqual> &explored,
+    const Frontier &frontier,
+    std::optional<size_t> plan_size_opt = std::nullopt
+) {
     static bool first_time = true;
     if (first_time) {
         first_time = false;
-        printf("#Expanded, Frontier, Generated, Time[s], Alloc[MB], MaxAlloc[MB]\n");
+        printf("#SolutionLength,Expanded,Frontier,Generated,Time[s],Alloc[MB],MaxAlloc[MB]\n");
     }
 
     const auto now = std::chrono::high_resolution_clock::now();
@@ -27,8 +32,17 @@ void printSearchStatus(const std::unordered_set<State *, StatePtrHash, StatePtrE
     const size_t size_explored = explored.size();
     const size_t size_frontier = frontier.size();
 
-    printf("#%8zu, %8zu, %9zu, %7.3f, %9u, %12u\n", size_explored, size_frontier, size_explored + size_frontier, elapsed_time,
-           Memory::getUsage(), Memory::maxUsage);
+    if (plan_size_opt.has_value()) {
+        printf("#%14zu,%8zu,%8zu,%9zu,%7.3f,%9u,%12u\n",
+               plan_size_opt.value(),
+               size_explored, size_frontier, size_explored + size_frontier, elapsed_time,
+               Memory::getUsage(), Memory::maxUsage);
+    } else {
+        printf("#%14s,%8zu,%8zu,%9zu,%7.3f,%9u,%12u\n",
+               "N/A",
+               size_explored, size_frontier, size_explored + size_frontier, elapsed_time,
+               Memory::getUsage(), Memory::maxUsage);
+    }
 }
 
 std::vector<std::vector<const Action *>> search(State *initial_state_param, Frontier *frontier) {
@@ -106,9 +120,9 @@ std::vector<std::vector<const Action *>> search(State *initial_state_param, Fron
         State *state = frontier->pop();
 
         if (state->isGoalState()) {
-            printSearchStatus(explored, *frontier);
             goal_found_state = state; 
             std::vector<std::vector<const Action *>> plan = state->extractPlan();
+            printSearchStatus(explored, *frontier, plan.size());
             cleanupStates(goal_found_state); 
             if (goal_found_state != initial_state_param) {
                 delete goal_found_state;

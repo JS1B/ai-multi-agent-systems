@@ -283,6 +283,15 @@ int main(int argc, char *argv[]) {
 
     fprintf(stderr, "Found solution of length %zu.\n", plan.size());
 
+    // --- BEGIN MODIFIED BENCHMARK OUTPUT ---
+    // We are now only printing solution_length. 
+    // Other metrics like expanded_nodes are assumed to be printed elsewhere
+    // or would require modifying where the primary benchmark line is generated.
+    // fprintf(stdout, "#solution_length\\n"); // BENCHMARK HEADER
+    // fprintf(stdout, "#%zu\\n", plan.size());    // BENCHMARK DATA
+    // fflush(stdout);
+    // --- END MODIFIED BENCHMARK OUTPUT ---
+
 #ifdef DISABLE_ACTION_PRINTING
 #else
     std::string s;

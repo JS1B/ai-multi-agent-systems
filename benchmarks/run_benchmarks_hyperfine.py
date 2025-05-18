@@ -30,8 +30,8 @@ MAX_WORKERS_COUNT: Optional[int] = None
 
 BENCHMARK_CONFIG_FILE = "benchmarks.json"
 CPP_EXECUTABLE_PATH = "../searchclient_cpp/searchclient"
-DEFAULT_TIMEOUT_SECONDS_DIRECT_RUN = 60 # Timeout for the single direct run to get app metrics
-DEFAULT_HYPERFINE_TIMEOUT_SECONDS = 600 # Timeout for the entire hyperfine command
+DEFAULT_TIMEOUT_SECONDS_DIRECT_RUN = 30 # Timeout for the single direct run to get app metrics
+DEFAULT_HYPERFINE_TIMEOUT_SECONDS = 300 # Timeout for the entire hyperfine command
 DEFAULT_HYPERFINE_RUNS = 5 # Default runs for hyperfine, can be overridden in config
 DEFAULT_HYPERFINE_WARMUP = 1 # Default warmup for hyperfine, can be overridden in config
 
@@ -642,7 +642,7 @@ def main():
     future_to_level_task_map: Dict[Any, Dict[str, Any]] = {} 
 
     try:
-        with Live(layout, console=console, refresh_per_second=2, vertical_overflow="visible") as live:
+        with Live(layout, console=console, refresh_per_second=2, vertical_overflow="crop") as live:
             progress_task_id = overall_progress.add_task("[cyan]Overall Progress (Levels)", total=len(tasks_to_run_configs_final))
             
             # Initial display update - show all tasks as pending initially
@@ -697,7 +697,7 @@ def main():
                         all_results_collector.level_run_info.append(level_run_summary_dict)
                         all_results_collector.cases.extend(strategy_results_list)
                         
-                        # Log summary for the completed level
+                        # Log summary for the completed level - THIS IS NOT PRINTED TO CONSOLE IN THE LOOP
                         status_color = "green"
                         final_level_status = level_run_summary_dict.get("hyperfine_run_status", "Unknown")
                         if "Error" in final_level_status or "Timeout" in final_level_status or "Fail" in final_level_status or "Exception" in final_level_status or "NotFound" in final_level_status :
