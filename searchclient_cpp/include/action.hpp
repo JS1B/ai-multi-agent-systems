@@ -68,3 +68,5 @@ class Action {
 
     static const std::array<const Action *, 29> &allValues();
 };
+
+std::string formatJointAction(const std::vector<const Action *> &joint_action, bool with_bubble = true);

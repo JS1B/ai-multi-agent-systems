@@ -2,11 +2,13 @@
 
 #include <random>
 
+#include "action.hpp"
 #include "feature_flags.hpp"
 #include "helpers.hpp"
 
 std::random_device State::rd_;
-std::mt19937 State::g_rd_(rd_());
+//std::mt19937 State::g_rd_(rd_());
+std::mt19937 State::g_rd_(1234); // make it deterministic
 
 State::State(Level level) : level(level), parent(nullptr), g_(0) {}
 
@@ -63,6 +65,18 @@ std::vector<State *> State::getExpandedStates() const {
         }
 
         if (!isConflicting(currentJointAction)) {
+            if (false && currentJointAction[0]->type == ActionType::Pull && currentJointAction[1]->type == ActionType::Move && g_ == 1
+                && currentJointAction[0]->agentDelta == Point2D(1, 0)
+                && currentJointAction[0]->boxDelta == Point2D(0, -1)
+                && currentJointAction[1]->agentDelta == Point2D(0, 1)) 
+            {
+                fprintf(stderr, "Pull and Push: %s\n", toString().c_str());
+                fprintf(stderr, "Plan: %s\n", formatJointAction(currentJointAction, false).c_str());
+                fprintf(stderr, "currentJointAction[0]->boxDelta: %d %d\n", currentJointAction[0]->boxDelta.x(), currentJointAction[0]->boxDelta.y());
+                fprintf(stderr, "currentJointAction[0]->agentDelta: %d %d\n", currentJointAction[0]->agentDelta.x(), currentJointAction[0]->agentDelta.y());
+                isConflicting(currentJointAction, true);
+            }
+
             expandedStates.push_back(new State(this, currentJointAction));
         }
 
@@ -141,11 +155,12 @@ bool State::isApplicable(const Agent &agent, const Action &action) const {
             if (boxIdConsidered == 0) return false;
 
             const Box &box = level.boxesMap.at(boxIdConsidered);
-            return agent.color() == box.color() && cellIsFree(boxPosition);
+            agentDestination = box.position() + action.boxDelta;
+            return agent.color() == box.color() && cellIsFree(agentDestination);
         }
 
         case ActionType::Pull: {
-            boxPosition = agent.position() - action.agentDelta;
+            boxPosition = agent.position() - action.boxDelta;
             boxIdConsidered = boxIdAt(boxPosition);
             if (boxIdConsidered == 0) return false;
 
@@ -154,6 +169,7 @@ bool State::isApplicable(const Agent &agent, const Action &action) const {
             return agent.color() == box.color() && cellIsFree(agentDestination);
         }
         default:
+            fprintf(stderr, "Invalid action type: %d\n", action.type);
             throw std::invalid_argument("Invalid action type");
     }
 }
@@ -176,7 +192,7 @@ bool State::isGoalState() const {
     return true;
 }
 
-bool State::isConflicting(const std::vector<const Action *> &jointAction) const {
+bool State::isConflicting(const std::vector<const Action *> &jointAction, const bool debug) const {
     size_t numAgents = level.agentsMap.size();
     std::vector<Point2D> destinations(numAgents);
     // std::vector<Point2D> boxPositions(numAgents);
@@ -203,14 +219,20 @@ bool State::isConflicting(const std::vector<const Action *> &jointAction) const 
                 break;
 
             case ActionType::Pull:
-                destBoxPos = agent.position() - action->boxDelta;
-                destinations[agentIndex] = destBoxPos + action->agentDelta;
+                //destBoxPos = agent.position() - action->boxDelta;
+                destinations[agentIndex] = agent.position() + action->agentDelta;
                 // boxPositions[agentIndex] = destBoxPos;
                 break;
 
             default:
                 throw std::invalid_argument("Invalid action type");
                 // return false;
+        }
+    }
+
+    if (debug) {
+        for (size_t agent = 0; agent < numAgents; ++agent) {
+            fprintf(stderr, "agent: %d %d\n", agent, destinations[agent].x(), destinations[agent].y());
         }
     }
 
@@ -287,7 +309,7 @@ State::State(const State *parent, std::vector<const Action *> jointAction)
             }
 
             case ActionType::Pull: {
-                const Point2D boxPosition = agent.position() - action->agentDelta;
+                const Point2D boxPosition = agent.position() - action->boxDelta;
                 const char boxId = boxIdAt(boxPosition);
                 if (boxId == 0) {
                     throw std::invalid_argument("Box not found");

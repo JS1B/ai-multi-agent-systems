@@ -47,3 +47,17 @@ const std::array<const Action *, 29> &Action::allValues() {
         &Action::PullEN, &Action::PullES, &Action::PullWW, &Action::PullWN, &Action::PullWS};
     return allActions;
 }
+
+std::string formatJointAction(const std::vector<const Action *> &joint_action, bool with_bubble) {
+    static const size_t max_action_string_length = 20;
+
+    std::string result;
+    result.reserve(joint_action.size() * max_action_string_length);
+
+    for (const auto &action : joint_action) {
+        result += action->name + (with_bubble ? "@" + action->name : "");
+        result += "|";
+    }
+    result.pop_back();
+    return result;
+}
