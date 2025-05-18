@@ -38,7 +38,7 @@ class State {
 
     bool isGoalState() const;
     bool isApplicable(const Agent &agent, const Action &action) const;
-    bool isConflicting(const std::vector<const Action *> &jointAction) const;
+    bool isConflicting(const std::vector<const Action *> &jointAction, const bool debug = false) const;
 
     std::string toString() const;
 

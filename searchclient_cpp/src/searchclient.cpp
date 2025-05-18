@@ -27,20 +27,6 @@ For a text to be treated as a comment, it must be sent via:
 - stdout - starting with #
 */
 
-std::string formatJointAction(const std::vector<const Action *> &joint_action, bool with_bubble = true) {
-    static const size_t max_action_string_length = 20;
-
-    std::string result;
-    result.reserve(joint_action.size() * max_action_string_length);
-
-    for (const auto &action : joint_action) {
-        result += action->name + (with_bubble ? "@" + action->name : "");
-        result += "|";
-    }
-    result.pop_back();
-    return result;
-}
-
 // Map string to strategy
 std::unordered_map<std::string, std::function<Frontier *()>> strategy_map = {
     {"bfs", []() { return new FrontierBFS(); }}, {"dfs", []() { return new FrontierDFS(); }},
@@ -89,6 +75,9 @@ int main(int argc, char *argv[]) {
     }
 
     fprintf(stderr, "Found solution of length %zu.\n", plan.size());
+    for (const auto &joint_action : plan) {
+        fprintf(stderr, "Plan: %s\n", formatJointAction(joint_action, false).c_str());
+    }
 
 #ifdef DISABLE_ACTION_PRINTING
 #else
