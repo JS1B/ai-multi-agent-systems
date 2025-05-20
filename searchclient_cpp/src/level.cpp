@@ -181,10 +181,10 @@ Level loadLevel(std::istream &serverMessages) {
     { // New scope for temp_line for reading initial content
         std::string temp_line;
         while (getline(serverMessages, temp_line)) {
-            fprintf(stderr, "DEBUG_LEVEL_LOAD: Read initial line: '%s' (length %zu)\n", temp_line.c_str(), temp_line.length());
+            //fprintf(stderr, "DEBUG_LEVEL_LOAD: Read initial line: '%s' (length %zu)\n", temp_line.c_str(), temp_line.length());
             if (temp_line.empty() || temp_line.rfind('#', 0) == 0) {
                 line = temp_line; // Store the break-causing line (e.g. "#goal") in the outer 'line'
-                fprintf(stderr, "DEBUG_LEVEL_LOAD: Initial loop breaking on line: '%s'\n", line.c_str());
+                //fprintf(stderr, "DEBUG_LEVEL_LOAD: Initial loop breaking on line: '%s'\n", line.c_str());
                 break; 
             }
             initial_layout_lines.push_back(temp_line); 

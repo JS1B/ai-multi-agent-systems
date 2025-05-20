@@ -14,7 +14,7 @@
 #define EMPTY_FLAG_STR ""
 
 // Define feature string parts conditionally
-#ifdef USE_STATE_MEMORY_POOL
+#ifdef USE_STATE_MEMORY_POOLs
 #define _FF_PART1 FLAG_USE_STATE_MEMORY_POOL_STR
 #else
 #define _FF_PART1 EMPTY_FLAG_STR

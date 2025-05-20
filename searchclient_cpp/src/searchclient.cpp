@@ -124,33 +124,33 @@ int main(int argc, char *argv[]) {
     // Parse the level from stdin
     Level level = loadLevel(std::cin);
     fprintf(stderr, "Loaded %s\n", level.toString().c_str());
-    fprintf(stderr, "Debug Level Info:\n");
-    fprintf(stderr, "  Domain: '%s', Name: '%s'\n", level.getDomain().c_str(), level.getName().c_str());
-    fprintf(stderr, "  Rows: %d, Cols: %d\n", level.getRows(), level.getCols());
-    fprintf(stderr, "  Walls size: %zu (first row size: %zu)\n", 
-            level.getWalls().size(), 
-            (level.getRows() > 0 && !level.getWalls().empty()) ? level.getWalls()[0].size() : 0);
-    fprintf(stderr, "  AgentsMap size: %zu, BoxesMap size: %zu, GoalsMap size: %zu\n", 
-            level.agentsMap.size(), level.boxesMap.size(), level.getGoalsMap().size());
-    fprintf(stderr, "  SortedAgentIds size: %zu, SortedBoxIds size: %zu\n", 
-            level.getSortedAgentIds().size(), level.getSortedBoxIds().size());
-    if (!level.getSortedAgentIds().empty()) {
-        fprintf(stderr, "  First sorted agent ID: %c\n", level.getSortedAgentIds()[0]);
-    }
-     if (!level.getSortedBoxIds().empty()) {
-        fprintf(stderr, "  First sorted box ID: %c\n", level.getSortedBoxIds()[0]);
-    }
-    fprintf(stderr, "End Debug Level Info.\n");
+    //fprintf(stderr, "Debug Level Info:\n");
+    //fprintf(stderr, "  Domain: '%s', Name: '%s'\n", level.getDomain().c_str(), level.getName().c_str());
+    //fprintf(stderr, "  Rows: %d, Cols: %d\n", level.getRows(), level.getCols());
+    //fprintf(stderr, "  Walls size: %zu (first row size: %zu)\n", 
+    //        level.getWalls().size(), 
+    //        (level.getRows() > 0 && !level.getWalls().empty()) ? level.getWalls()[0].size() : 0);
+    //fprintf(stderr, "  AgentsMap size: %zu, BoxesMap size: %zu, GoalsMap size: %zu\n", 
+    //        level.agentsMap.size(), level.boxesMap.size(), level.getGoalsMap().size());
+    //fprintf(stderr, "  SortedAgentIds size: %zu, SortedBoxIds size: %zu\n", 
+    //        level.getSortedAgentIds().size(), level.getSortedBoxIds().size());
+    //if (!level.getSortedAgentIds().empty()) {
+    //    fprintf(stderr, "  First sorted agent ID: %c\n", level.getSortedAgentIds()[0]);
+    //}
+    // if (!level.getSortedBoxIds().empty()) {
+    //    fprintf(stderr, "  First sorted box ID: %c\n", level.getSortedBoxIds()[0]);
+    //}
+    //fprintf(stderr, "End Debug Level Info.\n");
 
     // Create initial state
     State initial_state_obj(level); 
     State* initial_state = &initial_state_obj; 
 
-    fprintf(stderr, "DEBUG: initial_state pointer (to stack obj) = %p\n", (void*)initial_state);
-    if (initial_state) {
-        fprintf(stderr, "DEBUG: initial_state agents size = %zu (expected %zu)\n", 
-                initial_state->currentAgents_.size(), level.agentsMap.size());
-    }
+    // fprintf(stderr, "DEBUG: initial_state pointer (to stack obj) = %p\n", (void*)initial_state);
+    // if (initial_state) {
+    //     fprintf(stderr, "DEBUG: initial_state agents size = %zu (expected %zu)\n", 
+    //             initial_state->currentAgents_.size(), level.agentsMap.size());
+    // }
 
     // Create Heuristic Calculator instance(s)
     std::vector<std::unique_ptr<HeuristicCalculators::HeuristicCalculator>> calculators_for_heuristic_wrapper;
@@ -240,10 +240,10 @@ int main(int argc, char *argv[]) {
     }
     
     // Debug print for created calculators
-    fprintf(stderr, "DEBUG: Number of calculators created: %zu\n", calculators_for_heuristic_wrapper.size());
-    for(const auto& calc : calculators_for_heuristic_wrapper){
-        if(calc) fprintf(stderr, "DEBUG: Calculator Name: %s, Pointer: %p\n", calc->getName().c_str(), (void*)calc.get());
-    }
+    // fprintf(stderr, "DEBUG: Number of calculators created: %zu\n", calculators_for_heuristic_wrapper.size());
+    // for(const auto& calc : calculators_for_heuristic_wrapper){
+    //     if(calc) fprintf(stderr, "DEBUG: Calculator Name: %s, Pointer: %p\n", calc->getName().c_str(), (void*)calc.get());
+    // }
 
     Frontier *frontier;
     try {
@@ -253,7 +253,7 @@ int main(int argc, char *argv[]) {
         }
         frontier = factory_it->second(initial_state, std::move(calculators_for_heuristic_wrapper)); // Pass vector
     } catch (const std::exception &e) {
-        fprintf(stderr, "Error initializing strategy: %s\n", e.what());
+        //fprintf(stderr, "Error initializing strategy: %s\n", e.what());
         return 1;
     }
 
@@ -262,7 +262,7 @@ int main(int argc, char *argv[]) {
     FrontierBestFirst* best_first_frontier_ptr = dynamic_cast<FrontierBestFirst*>(frontier);
     if (best_first_frontier_ptr) {
         const Heuristic* heuristic_obj_ptr = best_first_frontier_ptr->getHeuristic();
-        fprintf(stderr, "DEBUG: best_first_frontier_ptr = %p, heuristic_obj_ptr = %p\n", (void*)best_first_frontier_ptr, (const void*)heuristic_obj_ptr);
+        //fprintf(stderr, "DEBUG: best_first_frontier_ptr = %p, heuristic_obj_ptr = %p\n", (void*)best_first_frontier_ptr, (const void*)heuristic_obj_ptr);
         if (heuristic_obj_ptr) {
             heuristic_info_str = heuristic_obj_ptr->getCalculatorName();
         }
