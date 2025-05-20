@@ -53,7 +53,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 -include $(OBJECTS:.o=.d)
 
 clean:
-	rm -rf $(OBJ_DIR) $(EXECUTABLE) $(OBJECTS:.o=.d)
+	rm -rf $(OBJ_DIR) $(EXECUTABLE) $(OBJECTS:.o=.d) $(TEST_BUILD_DIR)
 
 run: $(EXECUTABLE)
 	./$(EXECUTABLE)
@@ -80,5 +80,25 @@ flamegraph: $(EXECUTABLE)
 	@echo "Step 5: Cleaning up intermediate files..."
 	rm -f $(PERF_DATA_FILE) $(PERF_SCRIPT_OUT) $(FOLDED_OUT)
 	@echo "Done. Open $(FLAMEGRAPH_SVG) in a web browser."
+
+# Unit tests
+TEST_BUILD_DIR := build_tests
+$(shell mkdir -p $(TEST_BUILD_DIR))
+
+# Test sources and corresponding executables
+TEST_INCLUDES := -Iinclude
+TEST_CPS      := $(wildcard tests/test_*.cpp)
+TEST_EXES     := $(patsubst tests/%.cpp,$(TEST_BUILD_DIR)/%,$(TEST_CPS))
+
+.PHONY: test
+test: $(TEST_EXES)
+	@for t in $(TEST_EXES); do \
+	  echo "-> running $$t"; \
+	  ./$$t; \
+	done
+
+# Compile each tests/*.cpp into build_tests/<name>
+$(TEST_BUILD_DIR)/%: tests/%.cpp $(HPP_HEADERS)
+	$(CXX) $(CXXFLAGS) $(TEST_INCLUDES) $< -o $@
 
 .PHONY: all clean run 
