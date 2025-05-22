@@ -9,7 +9,10 @@
 #include "box.hpp"
 #include "color.hpp"
 #include "goal.hpp"
+#include "chargrid.hpp"
+#include "cell2d.hpp"
 
+// constexpr would be better (modern C++)
 #define WALL '+'
 #define EMPTY ' '
 #define FIRST_AGENT '0'
@@ -22,21 +25,33 @@
 class Level {
    public:
     Level() = delete;
-    Level(const std::unordered_map<char, Agent> &agentsMap, const std::unordered_map<char, Box> &boxesMap);
+    //Level(const std::unordered_map<char, Agent> &agentsMap, const std::unordered_map<char, Box> &boxesMap);
+    Level(const std::vector<Cell2D> &agents, const CharGrid &boxes);
     Level(const Level &) = default;
     Level &operator=(const Level &) = default;
     ~Level() = default;
 
-    static std::vector<std::vector<bool>> walls;
-    static std::unordered_map<char, Goal> goalsMap;
+    bool operator==(const Level &other) const;
 
-    std::unordered_map<char, Agent> agentsMap;
-    std::unordered_map<char, Box> boxesMap;
+    //static std::vector<std::vector<bool>> walls;
+    //static std::unordered_map<char, Goal> goalsMap;
+
+    //std::unordered_map<char, Agent> agentsMap;
+    //std::unordered_map<char, Box> boxesMap;
+
+    static std::string name;
+    static std::string domain;
+
+    static CharGrid walls;
+    static CharGrid goals;
+
+    static std::vector<Color> agent_colors;
+    static std::vector<Color> box_colors;
+    
+    std::vector<Cell2D> agents;
+    CharGrid boxes;
 
     std::string toString();
-
-    static std::string domain;
-    static std::string name;
 };
 
 Level loadLevel(std::istream &serverMessages);

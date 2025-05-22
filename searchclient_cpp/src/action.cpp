@@ -2,8 +2,8 @@
 
 #include "point2d.hpp"
 
-Action::Action(const std::string &name, const ActionType type, const Point2D agentDelta, const Point2D boxDelta)
-    : name(name), type(type), agentDelta(agentDelta), boxDelta(boxDelta) {}
+Action::Action(const std::string &name, const ActionType type, const Cell2D agent_delta, const Cell2D box_delta)
+    : name(name), type(type), agent_delta(agent_delta), box_delta(box_delta) {}
 
 const Action Action::NoOp("NoOp", ActionType::NoOp, {0, 0}, {0, 0});
 
