@@ -34,3 +34,19 @@ inline Color from_string(const std::string& s) {
 
     throw std::invalid_argument("Invalid color string: " + s);
 }
+
+inline std::string colorToString(Color c) {
+    switch (c) {
+        case Color::Blue: return "blue";
+        case Color::Red: return "red";
+        case Color::Cyan: return "cyan";
+        case Color::Purple: return "purple";
+        case Color::Green: return "green";
+        case Color::Orange: return "orange";
+        case Color::Pink: return "pink";
+        case Color::Grey: return "grey";
+        case Color::Lightblue: return "lightblue";
+        case Color::Brown: return "brown";
+        default: throw std::runtime_error("Unknown color enum"); // Or return a default string
+    }
+}

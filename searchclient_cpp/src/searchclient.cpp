@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <map>
 
 // C related
 #include <cctype>
@@ -118,11 +119,94 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "Warning: Unknown argument: %s\n", arg.c_str());
         }
     }
-    
-    fprintf(stderr, "Strategy: %s, Heuristic Calculator: %s\n", strategy_name.c_str(), heuristic_calc_name.c_str());
 
     // Parse the level from stdin
     Level level = loadLevel(std::cin);
+
+    // Print the detailed level specification to stdout
+    fprintf(stdout, "#domain\n");
+    fprintf(stdout, "%s\n", level.getDomain().c_str());
+    fprintf(stdout, "#levelname\n");
+    fprintf(stdout, "%s\n", level.getName().c_str());
+
+    fprintf(stdout, "#colors\n");
+    std::map<Color, std::vector<char>> agent_ids_by_color; // std::map sorts by Color key
+    for (const auto& agent_pair : level.agentsMap) { // level.agentsMap is std::unordered_map<char, Agent>
+        const Agent& agent_object = agent_pair.second; // Get the Agent object
+        // Assuming Agent object has a method like .color() that returns a Color enum/type
+        // And agent_pair.first is the char ID of the agent
+        agent_ids_by_color[agent_object.color()].push_back(agent_pair.first); 
+    }
+
+    // Sort agent IDs within each color vector for consistent output
+    for (auto& entry : agent_ids_by_color) {
+        std::sort(entry.second.begin(), entry.second.end());
+    }
+
+    for (const auto& color_entry : agent_ids_by_color) { // Iterate through sorted map
+        if (color_entry.second.empty()) continue;
+        // Assuming colorToString(Color) exists from color.hpp
+        fprintf(stdout, "%s:", colorToString(color_entry.first).c_str()); 
+        for (size_t i = 0; i < color_entry.second.size(); ++i) {
+            fprintf(stdout, "%c%s", color_entry.second[i], (i == color_entry.second.size() - 1) ? "" : ",");
+        }
+        fprintf(stdout, "\n");
+    }
+    
+    fprintf(stdout, "#initial\n");
+    std::vector<std::string> initial_grid(level.getRows(), std::string(level.getCols(), ' '));
+    for (int r = 0; r < level.getRows(); ++r) {
+        for (int c = 0; c < level.getCols(); ++c) {
+            if (level.getWalls()[r][c]) {
+                initial_grid[r][c] = '+';
+            }
+        }
+    }
+    for (const auto& agent_pair : level.agentsMap) { // agentsMap is std::unordered_map<char, Agent>
+        const Agent& agent = agent_pair.second; // Agent object
+        char agent_id = agent_pair.first;       // Agent ID (char)
+        if (agent.position().y() >= 0 && agent.position().y() < level.getRows() &&
+            agent.position().x() >= 0 && agent.position().x() < level.getCols()) {
+            initial_grid[agent.position().y()][agent.position().x()] = agent_id;
+        }
+    }
+    for (const auto& box_pair : level.boxesMap) { // boxesMap is std::unordered_map<char, Box>
+        const Box& box = box_pair.second;     // Box object
+        char box_id = box_pair.first;         // Box ID (char)
+         if (box.position().y() >= 0 && box.position().y() < level.getRows() &&
+            box.position().x() >= 0 && box.position().x() < level.getCols()) {
+            // Agents take precedence if they are at the same location
+            if (initial_grid[box.position().y()][box.position().x()] == ' ') {
+                 initial_grid[box.position().y()][box.position().x()] = box_id;
+            }
+        }
+    }
+    for (int r = 0; r < level.getRows(); ++r) {
+        fprintf(stdout, "%s\n", initial_grid[r].c_str());
+    }
+
+    fprintf(stdout, "#goal\n");
+    std::vector<std::string> goal_grid(level.getRows(), std::string(level.getCols(), ' '));
+    for (int r = 0; r < level.getRows(); ++r) {
+        for (int c = 0; c < level.getCols(); ++c) {
+            if (level.getWalls()[r][c]) {
+                goal_grid[r][c] = '+';
+            }
+        }
+    }
+    for (const auto& goal_pair : level.getGoalsMap()) { // getGoalsMap returns const reference to goalsMap_
+        const Goal& goal = goal_pair.second;
+        if (goal.position().y() >= 0 && goal.position().y() < level.getRows() &&
+            goal.position().x() >= 0 && goal.position().x() < level.getCols()) {
+            goal_grid[goal.position().y()][goal.position().x()] = goal.id();
+        }
+    }
+    for (int r = 0; r < level.getRows(); ++r) {
+        fprintf(stdout, "%s\n", goal_grid[r].c_str());
+    }
+    fprintf(stdout, "#end\n");
+    fflush(stdout); // Ensure the level details are sent
+
     fprintf(stderr, "Loaded %s\n", level.toString().c_str());
     //fprintf(stderr, "Debug Level Info:\n");
     //fprintf(stderr, "  Domain: '%s', Name: '%s'\n", level.getDomain().c_str(), level.getName().c_str());

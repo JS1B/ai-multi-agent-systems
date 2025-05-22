@@ -23,7 +23,7 @@ void printSearchStatus(
     static bool first_time = true;
     if (first_time) {
         first_time = false;
-        printf("#SolutionLength,Expanded,Frontier,Generated,Time[s],Alloc[MB],MaxAlloc[MB]\n");
+        printf("#Expanded, Frontier, Generated, Time[s], Alloc[MB], MaxAlloc[MB]\n");
     }
 
     const auto now = std::chrono::high_resolution_clock::now();
@@ -32,17 +32,9 @@ void printSearchStatus(
     const size_t size_explored = explored.size();
     const size_t size_frontier = frontier.size();
 
-    if (plan_size_opt.has_value()) {
-        printf("#%14zu,%8zu,%8zu,%9zu,%7.3f,%9u,%12u\n",
-               plan_size_opt.value(),
-               size_explored, size_frontier, size_explored + size_frontier, elapsed_time,
-               Memory::getUsage(), Memory::maxUsage);
-    } else {
-        printf("#%14s,%8zu,%8zu,%9zu,%7.3f,%9u,%12u\n",
-               "N/A",
-               size_explored, size_frontier, size_explored + size_frontier, elapsed_time,
-               Memory::getUsage(), Memory::maxUsage);
-    }
+    printf("#%8zu,%8zu,%9zu,%7.3f,%9u,%12u\n",
+           size_explored, size_frontier, size_explored + size_frontier, elapsed_time,
+           Memory::getUsage(), Memory::maxUsage);
 }
 
 std::vector<std::vector<const Action *>> search(State *initial_state_param, Frontier *frontier) {
