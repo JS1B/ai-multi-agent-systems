@@ -55,15 +55,6 @@ class State {
     // Store random device for shuffling
     static std::random_device rd_;
     static std::mt19937 g_rd_;
-
-    // Returns true if the cell at the given position is free (i.e. not a wall, box, or agent)
-    //bool cellIsFree(const Point2D &position) const;
-
-    // Returns the id of the agent at the given position, or 0
-    //char agentIdAt(const Point2D &position) const;
-
-    // Returns the id of the box at the given position, or 0
-    //char boxIdAt(const Point2D &position) const;
 };
 
 // Custom hash function for State pointers

@@ -1,7 +1,5 @@
 #include "action.hpp"
 
-#include "point2d.hpp"
-
 Action::Action(const std::string &name, const ActionType type, const Cell2D agent_delta, const Cell2D box_delta)
     : name(name), type(type), agent_delta(agent_delta), box_delta(box_delta) {}
 

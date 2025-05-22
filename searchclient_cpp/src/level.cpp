@@ -62,12 +62,6 @@ Level loadLevel(std::istream &serverMessages) {
         getline(serverMessages, line);
     }
 
-    //std::unordered_map<char, Color> agentColors;
-    //std::unordered_map<char, Color> boxColors;
-
-    //std::vector<Cell2D> agents;
-    //CharGrid boxes(Level::walls.size());
-
     for (const std::string &line : colorSection) {
         std::string colorStr, entitiesStr;
         std::stringstream ss(line);
@@ -114,10 +108,6 @@ Level loadLevel(std::istream &serverMessages) {
     const int numCols = std::max_element(levelLines.begin(), levelLines.end(), [](const std::string &a, const std::string &b) {
                             return a.length() < b.length();
                         })->length();
-    //std::vector<std::vector<bool>> walls(numRows, std::vector<bool>(numCols, false));
-
-    //std::unordered_map<char, Agent> agentsMap;
-    //std::unordered_map<char, Box> boxesMap;
 
     Level::walls = CharGrid(numRows, numCols);
     Level::box_goals = CharGrid(numRows, numCols);
@@ -142,15 +132,7 @@ Level loadLevel(std::istream &serverMessages) {
 
     agents.resize(num_agents); // from now on number of agents is stored as agents.size()
 
-    //walls.shrink_to_fit();
-    //for (auto &row : walls) {
-    //    row.shrink_to_fit();
-    //}
-
-    //Level::walls = walls;
-
     // Read goal state
-    //std::unordered_map<char, Goal> goalsMap;
     std::vector<std::string> goalLines;
     getline(serverMessages, line);  // first line of goal state
     while (line.find("#") == std::string::npos) {

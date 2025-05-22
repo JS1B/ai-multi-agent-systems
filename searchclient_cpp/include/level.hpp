@@ -2,13 +2,9 @@
 
 #include <iostream>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
-#include "agent.hpp"
-#include "box.hpp"
 #include "color.hpp"
-#include "goal.hpp"
 #include "chargrid.hpp"
 #include "cell2d.hpp"
 
@@ -25,19 +21,12 @@
 class Level {
    public:
     Level() = delete;
-    //Level(const std::unordered_map<char, Agent> &agentsMap, const std::unordered_map<char, Box> &boxesMap);
     Level(const std::vector<Cell2D> &agents, const CharGrid &boxes);
     Level(const Level &) = default;
     Level &operator=(const Level &) = default;
     ~Level() = default;
 
     bool operator==(const Level &other) const;
-
-    //static std::vector<std::vector<bool>> walls;
-    //static std::unordered_map<char, Goal> goalsMap;
-
-    //std::unordered_map<char, Agent> agentsMap;
-    //std::unordered_map<char, Box> boxesMap;
 
     static std::string name;
     static std::string domain;
