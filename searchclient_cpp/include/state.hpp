@@ -43,15 +43,15 @@ class State {
     bool isConflicting(const std::vector<const Action *> &jointAction, const bool debug = false) const;
 
     bool is_cell_free(const Cell2D &cell) const;
-    
+
     std::string toString() const;
 
+    mutable size_t hash_ = 0;
    private:
     // Creates a new state from a parent state and a joint action performed in that state.
     State(const State *parent, std::vector<const Action *> jointAction);
 
     const int g_;  // Cost of reaching this state
-    mutable size_t hash_ = 0;
     // Store random device for shuffling
     static std::random_device rd_;
     static std::mt19937 g_rd_;
@@ -72,7 +72,8 @@ struct StatePtrHash {
         if (!state_ptr) {
             return 0;
         }
-        return state_ptr->getHash();
+        //return state_ptr->getHash();
+        return state_ptr->hash_;
     }
 };
 

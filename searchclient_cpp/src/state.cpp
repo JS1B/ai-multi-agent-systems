@@ -10,7 +10,9 @@ std::random_device State::rd_;
 //std::mt19937 State::g_rd_(rd_());
 std::mt19937 State::g_rd_(1234); // make it deterministic
 
-State::State(Level level) : level(level), parent(nullptr), g_(0) {}
+State::State(Level level) : level(level), parent(nullptr), g_(0) {
+    hash_ = getHash();
+}
 
 [[nodiscard]] void *State::operator new(std::size_t size) {
 #ifdef USE_STATE_MEMORY_POOL
@@ -153,7 +155,8 @@ bool State::operator==(const State &other) const {
     return true;
     */
 
-    return level == other.level;
+    //return level == other.level;
+    return level.agents == other.level.agents && level.boxes == other.level.boxes;
 }
 
 bool State::isApplicable(int agent_idx, const Action &action) const {
@@ -496,6 +499,8 @@ State::State(const State *parent, std::vector<const Action *> jointAction)
                 throw std::invalid_argument("Invalid action type");
         }
     }
+
+    hash_ = getHash();
 }
 
 /*
