@@ -42,6 +42,8 @@ class State {
 
     bool isConflicting(const std::vector<const Action *> &jointAction, const bool debug = false) const;
 
+    bool is_cell_free(const Cell2D &cell) const;
+    
     std::string toString() const;
 
    private:
@@ -56,7 +58,6 @@ class State {
 
     // Returns true if the cell at the given position is free (i.e. not a wall, box, or agent)
     //bool cellIsFree(const Point2D &position) const;
-    bool is_cell_free(const Cell2D &cell) const;
 
     // Returns the id of the agent at the given position, or 0
     //char agentIdAt(const Point2D &position) const;

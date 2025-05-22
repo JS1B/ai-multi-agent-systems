@@ -251,14 +251,34 @@ bool State::isGoalState() const {
     */
 
     // Check first if all agents are on goals (as this is very likely to fail and cut the computation short)
+    /*
+    // This is not correct
+    // TODO: implement an agent_goals vector to quickly check agent goals
     for (size_t agent_idx = 0; agent_idx < level.agents.size(); ++agent_idx) {
-        if (level.goals(level.agents[agent_idx]) != agent_idx + '0') {
+        if (level.goals(level.agents[agent_idx]) && level.goals(level.agents[agent_idx]) != agent_idx + '0') {
+            return false;
+        }
+    }
+    */
+
+    /*
+    for (size_t i = 0; i < level.goals.data.size(); ++i) {
+        if (FIRST_BOX <= level.goals.data[i] && level.goals.data[i] <= LAST_BOX && level.goals.data[i] != level.boxes.data[i]) {
+            return false;
+        }
+    }
+    */
+
+   // Check first if all agents are on goals (as this is very likely to fail and cut the computation short)
+    for (size_t agent_idx = 0; agent_idx < level.agents.size(); ++agent_idx) {
+        if (level.agent_goals[agent_idx].r != 0 && level.agent_goals[agent_idx] != level.agents[agent_idx]) {
             return false;
         }
     }
 
-    for (size_t i = 0; i < level.goals.data.size(); ++i) {
-        if (FIRST_BOX <= level.goals.data[i] && level.goals.data[i] <= LAST_BOX && level.goals.data[i] != level.boxes.data[i]) {
+    for (size_t i = 0; i < level.box_goals.data.size(); ++i) {
+        // We do not need to check if the char is a letter, as it is guaranteed to be a box
+        if (level.box_goals.data[i] && level.box_goals.data[i] != level.boxes.data[i]) {
             return false;
         }
     }
@@ -327,7 +347,7 @@ bool State::isConflicting(const std::vector<const Action *> &jointAction, const 
 
             case ActionType::Pull:
             {
-                Cell2D box_position = level.agents[agent_idx] - jointAction[agent_idx]->box_delta;
+                //Cell2D box_position = level.agents[agent_idx] - jointAction[agent_idx]->box_delta;
                 destinations[agent_idx] = level.agents[agent_idx] + jointAction[agent_idx]->agent_delta;
                 break;
             }
@@ -336,7 +356,7 @@ bool State::isConflicting(const std::vector<const Action *> &jointAction, const 
 
     if (debug) {
         for (size_t agent = 0; agent < level.agents.size(); ++agent) {
-            fprintf(stderr, "agent: %d %d %d\n", agent, destinations[agent].r, destinations[agent].c);
+            fprintf(stderr, "agent: %zu %d %d\n", agent, destinations[agent].r, destinations[agent].c);
         }
     }
 
@@ -357,7 +377,7 @@ bool State::isConflicting(const std::vector<const Action *> &jointAction, const 
 std::string State::toString() const {
     CharGrid grid = level.walls;
     for (size_t i = 0; i < level.boxes.data.size(); ++i) {
-        grid.data[i] &= level.boxes.data[i];
+        grid.data[i] |= level.boxes.data[i];
     }
 
     for (size_t agent_idx = 0; agent_idx < level.agents.size(); ++agent_idx) {
@@ -456,8 +476,8 @@ State::State(const State *parent, std::vector<const Action *> jointAction)
 
             case ActionType::Push:
             {
-                level.agents[agent_idx] += jointAction[agent_idx]->agent_delta;
                 Cell2D box_position = level.agents[agent_idx] + jointAction[agent_idx]->agent_delta;
+                level.agents[agent_idx] += jointAction[agent_idx]->agent_delta;
                 level.boxes(box_position + jointAction[agent_idx]->box_delta) = level.boxes(box_position);
                 level.boxes(box_position) = 0;
                 break;
@@ -465,8 +485,8 @@ State::State(const State *parent, std::vector<const Action *> jointAction)
 
             case ActionType::Pull:
             {
-                level.agents[agent_idx] += jointAction[agent_idx]->agent_delta;
                 Cell2D box_position = level.agents[agent_idx] - jointAction[agent_idx]->box_delta;
+                level.agents[agent_idx] += jointAction[agent_idx]->agent_delta;
                 level.boxes(box_position + jointAction[agent_idx]->box_delta) = level.boxes(box_position);
                 level.boxes(box_position) = 0;
                 break;

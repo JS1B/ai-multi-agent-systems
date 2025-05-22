@@ -69,7 +69,9 @@ int main(int argc, char *argv[]) {
     std::vector<std::vector<const Action *>> plan = search(initial_state, frontier);
 
     // Print initial state:
-    fprintf(stderr, "Initial state: %s\n", initial_state->toString().c_str());
+    //fprintf(stderr, "Initial state:\n %s\n", initial_state->toString().c_str());
+    std::cerr << "Initial state:" << std::endl;
+    std::cerr << initial_state->toString() << std::endl;
 
     // Print plan to server
     if (plan.empty()) {

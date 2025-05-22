@@ -43,7 +43,8 @@ class Level {
     static std::string domain;
 
     static CharGrid walls;
-    static CharGrid goals;
+    static CharGrid box_goals;
+    static std::vector<Cell2D> agent_goals;
 
     static std::vector<Color> agent_colors;
     static std::vector<Color> box_colors;
