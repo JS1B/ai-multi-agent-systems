@@ -10,15 +10,12 @@
 struct CharGrid {
     size_t rows, cols;
     std::vector<char> data;
-    mutable size_t hash_value; // TODO: In the future change to this and manage the hash value manually
-    mutable bool hash_dirty = true; // TODO: In the future change to this and manage the hash value manually
 
     CharGrid(size_t rows, size_t cols) : rows(rows), cols(cols), data(rows * cols, 0) {}
     CharGrid(const Cell2D& size) : rows(size.r), cols(size.c), data(size.r * size.c, 0) {}
 
     char& operator()(size_t row, size_t col) // [] operator cannot accept 2 arguments, so we use () instead
     { 
-        hash_dirty = true; // TODO: In the future change to this and manage the hash value manually
         return data[row * cols + col]; 
     }
 
@@ -29,7 +26,6 @@ struct CharGrid {
 
     char& operator()(const Cell2D& cell)
     {
-        hash_dirty = true; // TODO: In the future change to this and manage the hash value manually
         return data[cell.r * cols + cell.c];
     }
 
@@ -38,16 +34,9 @@ struct CharGrid {
         return data[cell.r * cols + cell.c];
     }
 
-    size_t compute_hash() const {
-        auto sv = std::string_view{ data.data(), data.size() };
-        hash_value   = std::hash<std::string_view>()(sv);
-        hash_dirty   = false;
-        return hash_value;
-    }
-
     size_t get_hash() const {
-        return hash_dirty ? compute_hash() : hash_value;
-        //return hash_value; // TODO: In the future change to this and manage the hash value manually
+        auto sv = std::string_view{ data.data(), data.size() };
+        return std::hash<std::string_view>()(sv);
     }
 
     bool operator==(const CharGrid& other) const { return data == other.data; }
