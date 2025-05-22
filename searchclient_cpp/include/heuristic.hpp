@@ -21,7 +21,7 @@ class Heuristic {
 
     // Calculates the heuristic estimate h(n)
     // Default implementation returns 0, derived classes can override.
-    virtual int h(const State& state) const {
+    virtual int h(const State&) const {
         // Basic Manhattan distance example (assuming single agent/goal for simplicity)
         // Needs proper implementation based on actual goals and boxes.
         // This is just a placeholder.

@@ -66,7 +66,26 @@ std::vector<std::vector<const Action *>> search(State *initial_state, Frontier *
 
         explored.insert(state);
 
+        //std::cerr << "Expanded states: " << state->getExpandedStates().size() << std::endl;
         for (State *child : state->getExpandedStates()) {
+            //std::cerr << "Child:\n" << child->toString() << std::endl;
+
+            /*
+            // Detect the state where box disappears
+            if (child->level.boxes(child->level.agents[0]) != 0) {
+                std::cerr << "Box disappears!" << std::endl;
+                std::cerr << "Action:\n" << formatJointAction(child->jointAction, false) << std::endl;
+                std::cerr << "Child box:\n" << child->toString() << std::endl;
+            }
+            */
+
+            if (false &&child->level.boxes(2, 1) != 0) {
+                std::cerr << "This should be goal state!" << std::endl;
+                std::cerr << "Action:\n" << formatJointAction(child->jointAction, false) << std::endl;
+                std::cerr << "Is goal state: " << child->isGoalState() << std::endl;
+                std::cerr << "Child:\n" << child->toString() << std::endl;
+            }
+
             if (explored.find(child) == explored.end() && !frontier->contains(child)) {
                 frontier->add(child);
                 continue;

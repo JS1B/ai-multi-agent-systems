@@ -11,7 +11,8 @@
 std::string Level::name;
 std::string Level::domain;
 CharGrid Level::walls(0, 0);
-CharGrid Level::goals(0, 0);
+CharGrid Level::box_goals(0, 0);
+std::vector<Cell2D> Level::agent_goals(10, Cell2D(0, 0));
 std::vector<Color> Level::agent_colors(10);
 std::vector<Color> Level::box_colors(26);
 
@@ -28,6 +29,14 @@ std::string Level::toString() {
 }
 
 Level loadLevel(std::istream &serverMessages) {
+    // Reset static members
+    Level::domain = "";
+    Level::name = "";
+    Level::walls = CharGrid(0, 0);
+    Level::box_goals = CharGrid(0, 0);
+    Level::agent_goals = std::vector<Cell2D>(10, Cell2D(0, 0));
+    Level::agent_colors = std::vector<Color>(10);
+    Level::box_colors = std::vector<Color>(26);
     // Read domain (skip)
     std::string line;
     getline(serverMessages, line);  // #domain
@@ -111,7 +120,7 @@ Level loadLevel(std::istream &serverMessages) {
     //std::unordered_map<char, Box> boxesMap;
 
     Level::walls = CharGrid(numRows, numCols);
-    Level::goals = CharGrid(numRows, numCols);
+    Level::box_goals = CharGrid(numRows, numCols);
     std::vector<Cell2D> agents(10);
     CharGrid boxes(numRows, numCols);
 
@@ -153,8 +162,10 @@ Level loadLevel(std::istream &serverMessages) {
         const std::string &line = goalLines[row];
         for (int col = 0; col < (int)line.length(); col++) {
             char c = line[col];
-            if ((FIRST_BOX <= c && c <= LAST_BOX) || (FIRST_AGENT <= c && c <= LAST_AGENT)) {
-                Level::goals(row, col) = c;
+            if ((FIRST_BOX <= c && c <= LAST_BOX)) {
+                Level::box_goals(row, col) = c;
+            } else if (FIRST_AGENT <= c && c <= LAST_AGENT) {
+                Level::agent_goals[c - '0'] = Cell2D(row, col);
             }
         }
     }

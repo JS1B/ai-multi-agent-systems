@@ -80,18 +80,18 @@ void test_loadLevel() {
 
     // Goals: static Level::goals must have '1' at (1,1), 'A' at (1,4),(1,5);
     //                     '0' at (3,1), 'B' at (3,4),(3,5)
-    assert(Level::goals(1,1) == '1');
-    assert(Level::goals(1,4) == 'A');
-    assert(Level::goals(1,5) == 'A');
-    assert(Level::goals(3,1) == '0');
-    assert(Level::goals(3,4) == 'B');
-    assert(Level::goals(3,5) == 'B');
+    assert(Level::agent_goals[1] == Cell2D(1,1));
+    assert(Level::box_goals(1,4) == 'A');
+    assert(Level::box_goals(1,5) == 'A');
+    assert(Level::agent_goals[0] == Cell2D(3,1));
+    assert(Level::box_goals(3,4) == 'B');
+    assert(Level::box_goals(3,5) == 'B');
     // And interior zeros
-    assert(Level::goals(2,2) == 0);
-    assert(Level::goals(1,2) == 0);
-    assert(Level::goals(1,3) == 0);
-    assert(Level::goals(3,2) == 0);
-    assert(Level::goals(3,3) == 0);
+    assert(Level::box_goals(2,2) == 0);
+    assert(Level::box_goals(1,2) == 0);
+    assert(Level::box_goals(1,3) == 0);
+    assert(Level::box_goals(3,2) == 0);
+    assert(Level::box_goals(3,3) == 0);
 
     std::cout << "test_loadLevel passed!" << std::endl;
 }
