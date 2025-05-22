@@ -8,17 +8,22 @@
 
 #include "helpers.hpp"
 
-std::vector<std::vector<bool>> Level::walls;
-std::unordered_map<char, Goal> Level::goalsMap;
-std::string Level::domain;
 std::string Level::name;
+std::string Level::domain;
+CharGrid Level::walls(0, 0);
+CharGrid Level::goals(0, 0);
+std::vector<Color> Level::agent_colors(10);
+std::vector<Color> Level::box_colors(26);
 
-Level::Level(const std::unordered_map<char, Agent> &agentsMap, const std::unordered_map<char, Box> &boxesMap)
-    : agentsMap(agentsMap), boxesMap(boxesMap) {}
+//Level::Level(const std::unordered_map<char, Agent> &agentsMap, const std::unordered_map<char, Box> &boxesMap)
+//    : agentsMap(agentsMap), boxesMap(boxesMap) {}
+
+Level::Level(const std::vector<Cell2D> &agents, const CharGrid &boxes)
+    : agents(agents), boxes(boxes) {}
 
 std::string Level::toString() {
     std::stringstream ss;
-    ss << "Level(" << domain << ", " << name << ", " << walls.size() << "x" << walls[0].size() << ")";
+    ss << "Level(" << domain << ", " << name << ", " << walls.size_rows() << "x" << walls.size_cols() << ")";
     return ss.str();
 }
 
@@ -48,8 +53,11 @@ Level loadLevel(std::istream &serverMessages) {
         getline(serverMessages, line);
     }
 
-    std::unordered_map<char, Color> agentColors;
-    std::unordered_map<char, Color> boxColors;
+    //std::unordered_map<char, Color> agentColors;
+    //std::unordered_map<char, Color> boxColors;
+
+    //std::vector<Cell2D> agents;
+    //CharGrid boxes(Level::walls.size());
 
     for (const std::string &line : colorSection) {
         std::string colorStr, entitiesStr;
@@ -72,12 +80,12 @@ Level loadLevel(std::istream &serverMessages) {
 
             const char entityChar = entity[0];
             if (FIRST_AGENT <= entityChar && entityChar <= LAST_AGENT) {
-                agentColors.insert({entityChar, color});
+                Level::agent_colors[entityChar - '0'] = color;
                 continue;
             }
 
             if (FIRST_BOX <= entityChar && entityChar <= LAST_BOX) {
-                boxColors.insert({entityChar, color});
+                Level::box_colors[entityChar - 'A'] = color;
                 continue;
             }
         }
@@ -97,34 +105,43 @@ Level loadLevel(std::istream &serverMessages) {
     const int numCols = std::max_element(levelLines.begin(), levelLines.end(), [](const std::string &a, const std::string &b) {
                             return a.length() < b.length();
                         })->length();
-    std::vector<std::vector<bool>> walls(numRows, std::vector<bool>(numCols, false));
+    //std::vector<std::vector<bool>> walls(numRows, std::vector<bool>(numCols, false));
 
-    std::unordered_map<char, Agent> agentsMap;
-    std::unordered_map<char, Box> boxesMap;
+    //std::unordered_map<char, Agent> agentsMap;
+    //std::unordered_map<char, Box> boxesMap;
 
+    Level::walls = CharGrid(numRows, numCols);
+    Level::goals = CharGrid(numRows, numCols);
+    std::vector<Cell2D> agents(10);
+    CharGrid boxes(numRows, numCols);
+
+    int num_agents = 0;
     for (int row = 0; row < numRows; row++) {
         const std::string &line = levelLines[row];
         for (int col = 0; col < (int)line.length(); col++) {
             const char c = line[col];
             if (FIRST_AGENT <= c && c <= LAST_AGENT) {
-                agentsMap.insert({c, Agent(c, row, col, agentColors[c])});
+                agents[c - '0'] = Cell2D(row, col);
+                num_agents++;
             } else if (FIRST_BOX <= c && c <= LAST_BOX) {
-                boxesMap.insert({c, Box(c, row, col, boxColors[c])});
+                boxes(row, col) = c;
             } else if (c == WALL) {
-                walls[row][col] = true;
+                Level::walls(row, col) = c;
             }
         }
     }
 
-    walls.shrink_to_fit();
-    for (auto &row : walls) {
-        row.shrink_to_fit();
-    }
+    agents.resize(num_agents); // from now on number of agents is stored as agents.size()
 
-    Level::walls = walls;
+    //walls.shrink_to_fit();
+    //for (auto &row : walls) {
+    //    row.shrink_to_fit();
+    //}
+
+    //Level::walls = walls;
 
     // Read goal state
-    std::unordered_map<char, Goal> goalsMap;
+    //std::unordered_map<char, Goal> goalsMap;
     std::vector<std::string> goalLines;
     getline(serverMessages, line);  // first line of goal state
     while (line.find("#") == std::string::npos) {
@@ -137,11 +154,14 @@ Level loadLevel(std::istream &serverMessages) {
         for (int col = 0; col < (int)line.length(); col++) {
             char c = line[col];
             if ((FIRST_BOX <= c && c <= LAST_BOX) || (FIRST_AGENT <= c && c <= LAST_AGENT)) {
-                goalsMap.insert({c, Goal(c, row, col)});
+                Level::goals(row, col) = c;
             }
         }
     }
 
-    Level::goalsMap = goalsMap;
-    return Level(agentsMap, boxesMap);
+    return Level(agents, boxes);
+}
+
+bool Level::operator==(const Level &other) const {
+    return agents == other.agents && boxes == other.boxes;
 }

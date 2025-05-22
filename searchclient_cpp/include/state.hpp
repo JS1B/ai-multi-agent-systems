@@ -37,7 +37,9 @@ class State {
     bool operator<(const State &other) const;
 
     bool isGoalState() const;
-    bool isApplicable(const Agent &agent, const Action &action) const;
+    //bool isApplicable(const Agent &agent, const Action &action) const;
+    bool isApplicable(int agent_idx, const Action &action) const;
+
     bool isConflicting(const std::vector<const Action *> &jointAction, const bool debug = false) const;
 
     std::string toString() const;
@@ -53,13 +55,14 @@ class State {
     static std::mt19937 g_rd_;
 
     // Returns true if the cell at the given position is free (i.e. not a wall, box, or agent)
-    bool cellIsFree(const Point2D &position) const;
+    //bool cellIsFree(const Point2D &position) const;
+    bool is_cell_free(const Cell2D &cell) const;
 
     // Returns the id of the agent at the given position, or 0
-    char agentIdAt(const Point2D &position) const;
+    //char agentIdAt(const Point2D &position) const;
 
     // Returns the id of the box at the given position, or 0
-    char boxIdAt(const Point2D &position) const;
+    //char boxIdAt(const Point2D &position) const;
 };
 
 // Custom hash function for State pointers

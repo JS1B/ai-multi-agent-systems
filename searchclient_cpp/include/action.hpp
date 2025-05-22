@@ -4,13 +4,14 @@
 #include <string>
 #include <vector>
 
-#include "point2d.hpp"
+//#include "point2d.hpp"
+#include "cell2d.hpp"
 
 enum class ActionType { NoOp, Move, Push, Pull };
 
 class Action {
    private:
-    Action(const std::string &name, const ActionType type, const Point2D agentDelta, const Point2D boxDelta);
+    Action(const std::string &name, const ActionType type, const Cell2D agent_delta, const Cell2D box_delta);
 
    public:
     Action(const Action &) = delete;
@@ -19,12 +20,13 @@ class Action {
     // Member variables
     const std::string name;
     const ActionType type;
-    const Point2D agentDelta;
-    const Point2D boxDelta;
+    const Cell2D agent_delta;
+    const Cell2D box_delta;
 
     // Comparison operators
     bool operator==(const Action &other) const {
-        return type == other.type && agentDelta == other.agentDelta && boxDelta == other.boxDelta;
+        //return type == other.type && agent_delta == other.agent_delta && box_delta == other.box_delta;
+        return agent_delta == other.agent_delta && box_delta == other.box_delta; // this is enough, checking the type is redundant
     }
 
     bool operator!=(const Action &other) const { return !(*this == other); }

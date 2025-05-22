@@ -68,6 +68,9 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "Starting %s.\n", frontier->getName().c_str());
     std::vector<std::vector<const Action *>> plan = search(initial_state, frontier);
 
+    // Print initial state:
+    fprintf(stderr, "Initial state: %s\n", initial_state->toString().c_str());
+
     // Print plan to server
     if (plan.empty()) {
         fprintf(stderr, "Unable to solve level.\n");
