@@ -39,3 +39,8 @@ devenv.local.nix
 
 # pre-commit
 .pre-commit-config.yaml
+/benchmarks_emil/.venv/
+/benchmarks_emil/benchmark_results/*
+/benchmarks_emil/output/
+.flox
+benchmarks/benchmark_results/*
