@@ -265,7 +265,7 @@ State::State(const State *parent, std::vector<const Action *> jointAction)
     hash_ = getHash();
 }
 
-inilne bool State::is_cell_free(const Cell2D &cell) const {
+inline bool State::is_cell_free(const Cell2D &cell) const {
     if (level.walls(cell) || level.boxes(cell))
         return false;
 
