@@ -40,11 +40,11 @@ std::vector<std::vector<const Action *>> search(State *initial_state, Frontier *
 
     while (true) {
         iterations++;
-        if (iterations % 10000 == 0) {  // 10000
+        if (iterations % 100000 == 0) {  // 10000
             printSearchStatus(explored, *frontier);
         }
 
-        if (iterations % 1000 == 0) {
+        if (iterations % 100000 == 0) {
             if (Memory::getUsage() > Memory::maxUsage) {
                 printSearchStatus(explored, *frontier);
                 fprintf(stderr, "Maximum memory usage exceeded.\n");

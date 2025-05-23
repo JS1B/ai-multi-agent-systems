@@ -42,7 +42,7 @@ class State {
 
     bool isConflicting(const std::vector<const Action *> &jointAction, const bool debug = false) const;
 
-    bool is_cell_free(const Cell2D &cell) const;
+    inline bool is_cell_free(const Cell2D &cell) const;
 
     std::string toString() const;
 

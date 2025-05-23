@@ -14,37 +14,37 @@ struct CharGrid {
     CharGrid(size_t rows, size_t cols) : rows(rows), cols(cols), data(rows * cols, 0) {}
     CharGrid(const Cell2D& size) : rows(size.r), cols(size.c), data(size.r * size.c, 0) {}
 
-    char& operator()(size_t row, size_t col) // [] operator cannot accept 2 arguments, so we use () instead
+    inline char& operator()(size_t row, size_t col) // [] operator cannot accept 2 arguments, so we use () instead
     { 
         return data[row * cols + col]; 
     }
 
-    const char& operator()(size_t row, size_t col) const
+    inline const char& operator()(size_t row, size_t col) const
     { 
         return data[row * cols + col]; 
     }
 
-    char& operator()(const Cell2D& cell)
+    inline char& operator()(const Cell2D& cell)
     {
         return data[cell.r * cols + cell.c];
     }
 
-    const char& operator()(const Cell2D& cell) const
+    inline const char& operator()(const Cell2D& cell) const
     {
         return data[cell.r * cols + cell.c];
     }
 
-    size_t get_hash() const {
+    inline size_t get_hash() const {
         auto sv = std::string_view{ data.data(), data.size() };
         return std::hash<std::string_view>()(sv);
     }
 
-    bool operator==(const CharGrid& other) const { return data == other.data; }
-    bool operator!=(const CharGrid& other) const { return data != other.data; }
+    inline bool operator==(const CharGrid& other) const { return data == other.data; }
+    inline bool operator!=(const CharGrid& other) const { return data != other.data; }
 
-    size_t size_rows() const { return rows; }
-    size_t size_cols() const { return cols; }
-    Cell2D size() const { return Cell2D(rows, cols); }
+    inline size_t size_rows() const { return rows; }
+    inline size_t size_cols() const { return cols; }
+    inline Cell2D size() const { return Cell2D(rows, cols); }
 
     std::string to_string() const {
         std::string result;

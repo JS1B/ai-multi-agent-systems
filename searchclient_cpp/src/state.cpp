@@ -63,6 +63,8 @@ std::vector<State *> State::getExpandedStates() const {
 
     while (true) {
         std::vector<const Action *> currentJointAction;
+        currentJointAction.reserve(level.agents.size());
+
         for (size_t agent_idx = 0; agent_idx < level.agents.size(); ++agent_idx) {
             currentJointAction.push_back(applicableAction[agent_idx][actionsPermutation[agent_idx]]);
         }
@@ -186,7 +188,6 @@ bool State::isConflicting(const std::vector<const Action *> &jointAction, const 
 
             case ActionType::Pull:
             {
-                //Cell2D box_position = level.agents[agent_idx] - jointAction[agent_idx]->box_delta;
                 destinations[agent_idx] = level.agents[agent_idx] + jointAction[agent_idx]->agent_delta;
                 break;
             }
@@ -264,7 +265,7 @@ State::State(const State *parent, std::vector<const Action *> jointAction)
     hash_ = getHash();
 }
 
-bool State::is_cell_free(const Cell2D &cell) const {
+inilne bool State::is_cell_free(const Cell2D &cell) const {
     if (level.walls(cell) || level.boxes(cell))
         return false;
 
