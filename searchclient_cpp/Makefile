@@ -11,7 +11,7 @@ else
 endif
 
 CXX = clang++
-CXXFLAGS = -std=c++17 -Wall -Wextra $(OPT_FLAGS) -MMD -MP
+CXXFLAGS = -std=c++17 -Wall -Wextra -Weffc++ $(OPT_FLAGS) -MMD -MP
 INCLUDES = -Iinclude
 
 SRC_DIR = src
