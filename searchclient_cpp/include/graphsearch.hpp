@@ -27,8 +27,9 @@ void printSearchStatus(const std::unordered_set<State *, StatePtrHash, StatePtrE
     const size_t size_explored = explored.size();
     const size_t size_frontier = frontier.size();
 
-    printf("#%8zu, %8zu, %9zu, %7.3f, %9u, %12u\n", size_explored, size_frontier, size_explored + size_frontier, elapsed_time,
-           Memory::getUsage(), Memory::maxUsage);
+    fprintf(stdout, "#%8zu, %8zu, %9zu, %7.3f, %9u, %12u\n", size_explored, size_frontier, size_explored + size_frontier, elapsed_time,
+            Memory::getUsage(), Memory::maxUsage);
+    fflush(stdout);
 }
 
 std::vector<std::vector<const Action *>> search(State *initial_state, Frontier *frontier) {
@@ -40,11 +41,11 @@ std::vector<std::vector<const Action *>> search(State *initial_state, Frontier *
 
     while (true) {
         iterations++;
-        if (iterations % 100000 == 0) {  // 10000
+        if (iterations % 100000 == 1) {  // 10000
             printSearchStatus(explored, *frontier);
         }
 
-        if (iterations % 100000 == 0) {
+        if (iterations % 10000 == 0) {
             if (Memory::getUsage() > Memory::maxUsage) {
                 printSearchStatus(explored, *frontier);
                 fprintf(stderr, "Maximum memory usage exceeded.\n");
@@ -67,7 +68,6 @@ std::vector<std::vector<const Action *>> search(State *initial_state, Frontier *
         explored.insert(state);
 
         for (State *child : state->getExpandedStates()) {
-
             if (explored.find(child) == explored.end() && !frontier->contains(child)) {
                 frontier->add(child);
                 continue;

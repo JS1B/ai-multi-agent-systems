@@ -69,9 +69,7 @@ int main(int argc, char *argv[]) {
     std::vector<std::vector<const Action *>> plan = search(initial_state, frontier);
 
     // Print initial state:
-    //fprintf(stderr, "Initial state:\n %s\n", initial_state->toString().c_str());
-    std::cerr << "Initial state:" << std::endl;
-    std::cerr << initial_state->toString() << std::endl;
+    // fprintf(stderr, "Initial state:\n %s\n", initial_state->toString().c_str());
 
     // Print plan to server
     if (plan.empty()) {
@@ -80,9 +78,6 @@ int main(int argc, char *argv[]) {
     }
 
     fprintf(stderr, "Found solution of length %zu.\n", plan.size());
-    for (const auto &joint_action : plan) {
-        fprintf(stderr, "Plan: %s\n", formatJointAction(joint_action, false).c_str());
-    }
 
 #ifdef DISABLE_ACTION_PRINTING
 #else

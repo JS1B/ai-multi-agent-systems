@@ -11,6 +11,7 @@ git submodule update --init
 ### Useful commands
 
 Bash
+
 ```bash
 javac searchclient/*.java && java -jar ../server.jar -l ../levels/MAPF00.lvl -c "java -Xmx8g searchclient.SearchClient -heur zero -bfs" -g -s 150 -t 180 
 ```
@@ -24,6 +25,7 @@ cat levels/warmup/MAPF00.lvl | ./searchclient_cpp/searchclient
 ```
 
 Powershell
+
 ```powershell
 javac searchclient/*.java ; java -jar ../server.jar -l ../levels/MAPF00.lvl -c "java -Xmx8g searchclient.SearchClient -heur zero -bfs" -g -s 150 -t 180 
 ```

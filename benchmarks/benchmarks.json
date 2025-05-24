@@ -1,54 +1,137 @@
 {
     "levels_dir": "../levels",
     "output_dir": "output",
+    "timeout_s": 180,
     "cases": [
         {
             "input": "warmup/MAPF00.lvl",
             "strategies": [
                 "bfs",
                 "dfs"
-            ]
+            ],
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 14,
+                "time_s": 0.020,
+                "memory_mb": 52.0
+            }
         },
         {
             "input": "warmup/MAPF01.lvl",
             "strategies": [
                 "bfs",
                 "dfs"
-            ]
+            ],
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 14,
+                "time_s": 0.032,
+                "memory_mb": 51.0
+            }
         },
         {
             "input": "warmup/MAPF02.lvl",
             "strategies": [
                 "bfs",
                 "dfs"
-            ]
+            ],
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 14,
+                "time_s": 2.144,
+                "memory_mb": 51.0
+            }
         },
         {
             "input": "warmup/MAPF02C.lvl",
             "strategies": [
                 "bfs",
                 "dfs"
-            ]
+            ],
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 14,
+                "time_s": 2.153,
+                "memory_mb": 54.0
+            }
         },
         {
             "input": "warmup/MAPF03.lvl",
             "strategies": [
+                "bfs",
                 "dfs"
-            ]
+            ],
+            "best_found_solution_metrics": {
+                "strategy": "dfs",
+                "length": 14,
+                "time_s": 1937.427,
+                "memory_mb": 9999.9
+            }
+        },
+        {
+            "input": "warmup/MAPF03C.lvl",
+            "strategies": [
+                "bfs",
+                "dfs"
+            ],
+            "best_found_solution_metrics": {
+                "strategy": "dfs",
+                "length": 14,
+                "time_s": 1989.211,
+                "memory_mb": 9999.9
+            }
         },
         {
             "input": "warmup/MAPFslidingpuzzle.lvl",
             "strategies": [
                 "bfs",
                 "dfs"
-            ]
+            ],
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 28,
+                "time_s": 1.862,
+                "memory_mb": 120.0
+            }
         },
         {
             "input": "warmup/BFSFriendly.lvl",
             "strategies": [
                 "bfs",
                 "dfs"
-            ]
+            ],
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 1,
+                "time_s": 0.026,
+                "memory_mb": 52.0
+            }
+        },
+        {
+            "input": "warmup/MAcustom02.lvl",
+            "strategies": [
+                "bfs",
+                "dfs"
+            ],
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 18,
+                "time_s": 9999.0,
+                "memory_mb": 99999.0
+            }
+        },
+        {
+            "input": "custom/MAcustom02A.lvl",
+            "strategies": [
+                "bfs",
+                "dfs"
+            ],
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 18,
+                "time_s": 8.028,
+                "memory_mb": 255.0
+            }
         }
     ]
 }
