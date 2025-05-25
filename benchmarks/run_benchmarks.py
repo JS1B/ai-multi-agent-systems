@@ -15,13 +15,14 @@ except ImportError:
     WORKERS_COUNT = max(os.cpu_count() - 1, 1)
     print("Warning: psutil is not installed. Using os.cpu_count() instead (threads, not cores).", file=sys.stderr)
 
+SHORT_BENCHMARK_CASES_COUNT = 10
 
 JAVA = "java"
 SERVER_JAR = "../server.jar"
 CLIENT_EXECUTABLE_PATH = "../searchclient_cpp/searchclient" 
 
 BENCHMARK_CONFIG_FILE = "benchmarks.json"
-BENCHMARK_CONFIG_REQUIRED_KEYS = ["levels_dir", "output_dir", "cases", "strategies", "skip_best_found_strategy"]
+BENCHMARK_CONFIG_REQUIRED_KEYS = ["levels_dir", "output_dir", "cases", "strategies", "run_full_benchmark", "skip_best_found_strategy"]
 
 class bcolors(Enum):
     HEADER = '\033[95m'
@@ -241,7 +242,7 @@ def print_comparative_benchmark_results(cases: list[dict], results: BenchmarkRes
             print(f"{level_name_str:<15} | {bcolors.colorize('Prev:', bcolors.BOLD)} No previous best data to compare.", file=sys.stderr)
             continue
 
-        prev_strategy = previous_best_data.get("strategy", "N/A")[:12]
+        prev_strategy = previous_best_data.get("strategy", "N/A")[:11]
         prev_length = previous_best_data.get("length")
         prev_time_s = previous_best_data.get("time_s")
         prev_memory_mb = previous_best_data.get("memory_mb")
@@ -254,7 +255,7 @@ def print_comparative_benchmark_results(cases: list[dict], results: BenchmarkRes
         ]
 
         if not valid_new_results_for_level:
-            prev_part = f"{bcolors.colorize('Prev:', bcolors.BOLD)} S:{prev_strategy:<12} L:{prev_length:<4} T:{prev_time_s:<9} M:{prev_memory_mb:<7}"
+            prev_part = f"{bcolors.colorize('Prev:', bcolors.BOLD)} S:{prev_strategy:<11} L:{prev_length:<3} T:{prev_time_s:<8} M:{prev_memory_mb:<7}"
             print(f"{level_name_str:<15} | {prev_part} | {bcolors.colorize('New:', bcolors.BOLD)} No successful new results.")
             continue
 
@@ -323,11 +324,10 @@ def print_comparative_benchmark_results(cases: list[dict], results: BenchmarkRes
         
         overall_status_display = bcolors.colorize(f"[{overall_status_text}]", overall_color)
 
-        prev_part = f"{bcolors.colorize('Prev:', bcolors.BOLD)} S:{prev_strategy:<12} L:{prev_len_str:<4} T:{prev_time_str:<9} M:{prev_mem_str:<7}"
+        prev_part = f"{bcolors.colorize('Prev:', bcolors.BOLD)} S:{prev_strategy:<11} L:{prev_len_str:<3} T:{prev_time_str:<8} M:{prev_mem_str:<7}"
         new_part = f"{bcolors.colorize('New:', bcolors.BOLD)} S:{new_strategy:<14} L:{new_len_fmt} T:{new_time_fmt:<17} M:{new_mem_fmt:<15} {overall_status_display}"  
 
         print(f"{level_name_str:<15} | {prev_part} | {new_part}")
-
 
     print(bcolors.colorize(HEADER_SEPARATOR, bcolors.HEADER))
 
@@ -354,13 +354,19 @@ def main():
         timestamp=now_time.isoformat(),
         cases=[]
     )
+    
+    strategies = config["strategies"]
+    run_full_benchmark = config["run_full_benchmark"]
+    skip_best_found_strategy = config["skip_best_found_strategy"]
 
-    print(f"Starting benchmarks with {WORKERS_COUNT} workers...")
-
-    strategies = config.get("strategies", [])
-    skip_best_found_strategy = config.get("skip_best_found_strategy")
+    print(f"Starting benchmarks with {WORKERS_COUNT} workers, {len(cases)} cases and {len(strategies)} strategies...")
+    print(f"Enabled: {skip_best_found_strategy=} {run_full_benchmark=}")
+    
     tasks_to_run_commands = []
-    for case in cases:
+    for case_idx, case in enumerate(cases):
+        if not run_full_benchmark and case_idx > SHORT_BENCHMARK_CASES_COUNT:
+            break
+        
         level_relative_path = case.get("input")
         timeout_s = case.get("timeout_s")
 

@@ -15,21 +15,22 @@
         "wastar 1200",
         "wastar 1600"
     ],
+    "run_full_benchmark": false,
     "skip_best_found_strategy": true,
     "cases": [
         {
             "input": "warmup/MAPF00.lvl",
-            "timeout_s": 4,
+            "timeout_s": 2,
             "best_found_solution_metrics": {
-                "strategy": "bfs",
+                "strategy": "wastar 10",
                 "length": 14,
-                "time_s": 0.017,
+                "time_s": 0.016,
                 "memory_mb": 52.0
             }
         },
         {
             "input": "warmup/MAPF01.lvl",
-            "timeout_s": 4,
+            "timeout_s": 1,
             "best_found_solution_metrics": {
                 "strategy": "wastar 400",
                 "length": 14,
@@ -39,7 +40,7 @@
         },
         {
             "input": "warmup/MAPF02.lvl",
-            "timeout_s": 4,
+            "timeout_s": 1,
             "best_found_solution_metrics": {
                 "strategy": "wastar 160",
                 "length": 14,
@@ -49,7 +50,7 @@
         },
         {
             "input": "warmup/MAPF02C.lvl",
-            "timeout_s": 4,
+            "timeout_s": 1,
             "best_found_solution_metrics": {
                 "strategy": "wastar 200",
                 "length": 14,
@@ -59,17 +60,17 @@
         },
         {
             "input": "warmup/MAPF03.lvl",
-            "timeout_s": 15,
+            "timeout_s": 1,
             "best_found_solution_metrics": {
-                "strategy": "astar",
+                "strategy": "wastar 400",
                 "length": 14,
-                "time_s": 10.764,
-                "memory_mb": 260.0
+                "time_s": 0.031,
+                "memory_mb": 52.0
             }
         },
         {
             "input": "warmup/MAPF03C.lvl",
-            "timeout_s": 4,
+            "timeout_s": 1,
             "best_found_solution_metrics": {
                 "strategy": "astar",
                 "length": 14,
@@ -79,7 +80,7 @@
         },
         {
             "input": "warmup/MAPFslidingpuzzle.lvl",
-            "timeout_s": 4,
+            "timeout_s": 1,
             "best_found_solution_metrics": {
                 "strategy": "astar",
                 "length": 28,
@@ -88,23 +89,983 @@
             }
         },
         {
-            "input": "warmup/MAcustom02.lvl",
-            "timeout_s": 60,
-            "best_found_solution_metrics": {
-                "strategy": "bfs",
-                "length": 18,
-                "time_s": 9999.0,
-                "memory_mb": 99999.0
-            }
-        },
-        {
             "input": "custom/MAcustom02A.lvl",
-            "timeout_s": 15,
+            "timeout_s": 10,
             "best_found_solution_metrics": {
                 "strategy": "bfs",
                 "length": 18,
                 "time_s": 8.028,
                 "memory_mb": 255.0
+            }
+        },
+        {
+            "input": "warmup/SAWatsOn.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAtowersOfSaigon26.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAtowersOfSaigon10.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAtowersOfSaigon5.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAtowersOfSaigon05.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAtowersOfSaigon04.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAtowersOfSaigon03.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAtowersOfHoChiMinh26.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAtowersOfHoChiMinh10.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAtowersOfHoChiMinh05.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAtowersOfHoChiMinh04.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 92,
+                "time_s": 2.013,
+                "memory_mb": 163.0
+            }
+        },
+        {
+            "input": "warmup/SAtowersOfHoChiMinh03.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 56,
+                "time_s": 0.086,
+                "memory_mb": 51.0
+            }
+        },
+        {
+            "input": "warmup/SAthomasAppartment.lvl",
+            "timeout_s": 20,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SATheRedDot.lvl",
+            "timeout_s": 20,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAtest.lvl",
+            "timeout_s": 20,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAsorting.lvl",
+            "timeout_s": 20,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SASolo.lvl",
+            "timeout_s": 20,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAsokobanLevel96.lvl",
+            "timeout_s": 20,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAsoko3_128.lvl",
+            "timeout_s": 20,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAsoko3_64.lvl",
+            "timeout_s": 20,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAsoko3_32.lvl",
+            "timeout_s": 20,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAsoko3_16.lvl",
+            "timeout_s": 20,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAsoko3_08.lvl",
+            "timeout_s": 20,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAsoko3_07.lvl",
+            "timeout_s": 20,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAsoko3_06.lvl",
+            "timeout_s": 20,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAsoko3_05.lvl",
+            "timeout_s": 20,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAsoko3_04.lvl",
+            "timeout_s": 20,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAsoko2_128.lvl",
+            "timeout_s": 20,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAsoko2_64.lvl",
+            "timeout_s": 20,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAsoko2_32.lvl",
+            "timeout_s": 20,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAsoko2_16.lvl",
+            "timeout_s": 20,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAsoko2_08.lvl",
+            "timeout_s": 20,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAsoko2_04.lvl",
+            "timeout_s": 20,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAsoko1_128.lvl",
+            "timeout_s": 20,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAsoko1_64.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 62,
+                "time_s": 0.032,
+                "memory_mb": 51.0
+            }
+        },
+        {
+            "input": "warmup/SAsoko1_32.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 30,
+                "time_s": 0.029,
+                "memory_mb": 51.0
+            }
+        },
+        {
+            "input": "warmup/SAsoko1_16.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 14,
+                "time_s": 0.037,
+                "memory_mb": 52.0
+            }
+        },
+        {
+            "input": "warmup/SAsoko1_08.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 6,
+                "time_s": 0.039,
+                "memory_mb": 52.0
+            }
+        },
+        {
+            "input": "warmup/SAsoko1_04.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 2,
+                "time_s": 0.033,
+                "memory_mb": 52.0
+            }
+        },
+        {
+            "input": "warmup/SAsimple4.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 30,
+                "time_s": 0.074,
+                "memory_mb": 51.0
+            }
+        },
+        {
+            "input": "warmup/SAsimple3.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 32,
+                "time_s": 0.055,
+                "memory_mb": 51.0
+            }
+        },
+        {
+            "input": "warmup/SAsimple2.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 30,
+                "time_s": 0.063,
+                "memory_mb": 52.0
+            }
+        },
+        {
+            "input": "warmup/SAsimple1.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 6,
+                "time_s": 0.037,
+                "memory_mb": 51.0
+            }
+        },
+        {
+            "input": "warmup/SAsimple0.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 5,
+                "time_s": 0.043,
+                "memory_mb": 51.0
+            }
+        },
+        {
+            "input": "warmup/SApushing.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 20,
+                "time_s": 0.043,
+                "memory_mb": 51.0
+            }
+        },
+        {
+            "input": "warmup/SApacman.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAOptimal.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAmicromouseContest2011.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SALazarus.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAlabyrinthOfStBertin.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAlabyrinth.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAfriendofDFS.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAFirefly.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SADangerBot.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAD3.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "dfs",
+                "length": 27,
+                "time_s": 0.027,
+                "memory_mb": 52.0
+            }
+        },
+        {
+            "input": "warmup/SAD2.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "dfs",
+                "length": 13150,
+                "time_s": 0.083,
+                "memory_mb": 52.0
+            }
+        },
+        {
+            "input": "warmup/SAD1.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 19,
+                "time_s": 0.025,
+                "memory_mb": 51.0
+            }
+        },
+        {
+            "input": "warmup/SACrunch.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAchoice.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAboXboXboX.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAbotbot.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAbispebjergHospital.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/SAanagram.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/MAthomasAppartment_redpurple.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/MAthomasAppartment_redcyanpurple.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/MAthomasAppartment_redcyan.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/MAthomasAppartment_redbluepurple.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/MAthomasAppartment_redbluecyan.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/MAthomasAppartment_redblue.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/MAthomasAppartment_red.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/MAthomasAppartment_purple.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/MAthomasAppartment_cyanpurple.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/MAthomasAppartment_cyan.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/MAthomasAppartment_bluepurple.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/MAthomasAppartment_bluecyanpurple.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/MAthomasAppartment_bluecyan.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/MAthomasAppartment_blue.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/MAthomasAppartment.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/MAsimple5.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 6,
+                "time_s": 0.043,
+                "memory_mb": 52.0
+            }
+        },
+        {
+            "input": "warmup/MAsimple4.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 6,
+                "time_s": 0.038,
+                "memory_mb": 52.0
+            }
+        },
+        {
+            "input": "warmup/MAsimple3.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 38,
+                "time_s": 0.125,
+                "memory_mb": 51.0
+            }
+        },
+        {
+            "input": "warmup/MAsimple2.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 30,
+                "time_s": 0.108,
+                "memory_mb": 52.0
+            }
+        },
+        {
+            "input": "warmup/MAsimple1.lvl",
+            "timeout_s": 3,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 17,
+                "time_s": 1.187,
+                "memory_mb": 51.0
+            }
+        },
+        {
+            "input": "warmup/MAPFslidingpuzzle.lvl",
+            "timeout_s": 4,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 28,
+                "time_s": 2.576,
+                "memory_mb": 62.0
+            }
+        },
+        {
+            "input": "warmup/MAPFreorder3.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/MAPFreorder2.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/MAPFreorder.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/MAPF03B.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 14,
+                "time_s": 0.198,
+                "memory_mb": 51.0
+            }
+        },
+        {
+            "input": "warmup/MAPF02B.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 14,
+                "time_s": 0.098,
+                "memory_mb": 51.0
+            }
+        },
+        {
+            "input": "warmup/MApacman.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/MAmultiagentSort.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/MAExample.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 30,
+                "time_s": 0.074,
+                "memory_mb": 51.0
+            }
+        },
+        {
+            "input": "warmup/MAcustom03.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/MAcustom01.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 20,
+                "time_s": 3.79,
+                "memory_mb": 77.0
+            }
+        },
+        {
+            "input": "warmup/MAchallenge.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/MAbispebjergHospital.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
+            }
+        },
+        {
+            "input": "warmup/MAbispebjerg.lvl",
+            "timeout_s": 5,
+            "best_found_solution_metrics": {
+                "strategy": "",
+                "length": 999,
+                "time_s": 9999.0,
+                "memory_mb": 9999.0
             }
         }
     ]
