@@ -21,7 +21,7 @@ SERVER_JAR = "../server.jar"
 CLIENT_EXECUTABLE_PATH = "../searchclient_cpp/searchclient" 
 
 BENCHMARK_CONFIG_FILE = "benchmarks.json"
-BENCHMARK_CONFIG_REQUIRED_KEYS = ["levels_dir", "output_dir", "cases", "timeout_s"]
+BENCHMARK_CONFIG_REQUIRED_KEYS = ["levels_dir", "output_dir", "cases", "strategies", "skip_best_found_strategy"]
 
 class bcolors(Enum):
     HEADER = '\033[95m'
@@ -222,24 +222,26 @@ def print_comparative_benchmark_results(cases: list[dict], results: BenchmarkRes
         perc_change_str_colored = f" ({bcolors.colorize(perc_change_display_str, color_to_use)})".ljust(20)
         return f"{new_val_str:<{str_width}}{perc_change_str_colored}"
 
+    HEADER_SEPARATOR = "=" * 156
     
     print(bcolors.colorize("\nComparative Benchmark Summary:", bcolors.HEADER))
-    print(bcolors.colorize("=" * 160, bcolors.HEADER))
+    print(bcolors.colorize(HEADER_SEPARATOR, bcolors.HEADER))
 
     GRAY_AREA_PERCENTAGE = 5.0
 
     for case_config in cases:
         level_name = case_config.get("input")
+        level_name_str = level_name[:-4].split("/")[-1][:15]
         if not level_name:
             print(bcolors.colorize("Warning: Skipping config case (missing 'input').", bcolors.WARNING), file=sys.stderr)
             continue
 
         previous_best_data = case_config.get("best_found_solution_metrics")
         if not previous_best_data:
-            print(f"{level_name:<30} | {bcolors.colorize('Prev:', bcolors.BOLD)} No previous best data to compare.", file=sys.stderr)
+            print(f"{level_name_str:<15} | {bcolors.colorize('Prev:', bcolors.BOLD)} No previous best data to compare.", file=sys.stderr)
             continue
 
-        prev_strategy = previous_best_data.get("strategy", "N/A")[:5]
+        prev_strategy = previous_best_data.get("strategy", "N/A")[:12]
         prev_length = previous_best_data.get("length")
         prev_time_s = previous_best_data.get("time_s")
         prev_memory_mb = previous_best_data.get("memory_mb")
@@ -252,8 +254,8 @@ def print_comparative_benchmark_results(cases: list[dict], results: BenchmarkRes
         ]
 
         if not valid_new_results_for_level:
-            prev_part = f"{bcolors.colorize('Prev:', bcolors.BOLD)} S:{prev_strategy:<5} L:{prev_length:<4} T:{prev_time_s:<9} M:{prev_memory_mb:<7}"
-            print(f"{level_name:<30} | {prev_part} | {bcolors.colorize('New:', bcolors.BOLD)} No successful new results.")
+            prev_part = f"{bcolors.colorize('Prev:', bcolors.BOLD)} S:{prev_strategy:<12} L:{prev_length:<4} T:{prev_time_s:<9} M:{prev_memory_mb:<7}"
+            print(f"{level_name_str:<15} | {prev_part} | {bcolors.colorize('New:', bcolors.BOLD)} No successful new results.")
             continue
 
         new_best_run_result = min(
@@ -265,7 +267,7 @@ def print_comparative_benchmark_results(cases: list[dict], results: BenchmarkRes
             )
         )
 
-        new_strategy = new_best_run_result.strategy
+        new_strategy = new_best_run_result.strategy[:10]
         new_length = new_best_run_result.solution_length
         new_time_s = new_best_run_result.metrics.get("time[s]")
         new_memory_mb = new_best_run_result.metrics.get("alloc[mb]")
@@ -321,13 +323,13 @@ def print_comparative_benchmark_results(cases: list[dict], results: BenchmarkRes
         
         overall_status_display = bcolors.colorize(f"[{overall_status_text}]", overall_color)
 
-        prev_part = f"{bcolors.colorize('Prev:', bcolors.BOLD)} S:{prev_strategy:<5} L:{prev_len_str:<4} T:{prev_time_str:<9} M:{prev_mem_str:<7}"
-        new_part = f"{bcolors.colorize('New:', bcolors.BOLD)} S:{new_strategy:<5} L:{new_len_fmt} T:{new_time_fmt:<17} M:{new_mem_fmt:<15} {overall_status_display}"  
+        prev_part = f"{bcolors.colorize('Prev:', bcolors.BOLD)} S:{prev_strategy:<12} L:{prev_len_str:<4} T:{prev_time_str:<9} M:{prev_mem_str:<7}"
+        new_part = f"{bcolors.colorize('New:', bcolors.BOLD)} S:{new_strategy:<14} L:{new_len_fmt} T:{new_time_fmt:<17} M:{new_mem_fmt:<15} {overall_status_display}"  
 
-        print(f"{level_name:<30} | {prev_part} | {new_part}")
+        print(f"{level_name_str:<15} | {prev_part} | {new_part}")
 
 
-    print(bcolors.colorize("=" * 160, bcolors.HEADER))
+    print(bcolors.colorize(HEADER_SEPARATOR, bcolors.HEADER))
 
 def main():
     config = load_benchmark_config()
@@ -336,7 +338,6 @@ def main():
 
     levels_dir = config["levels_dir"]
     output_dir = config["output_dir"]
-    timeout_s = config["timeout_s"]
     cases = config["cases"]
 
     if not ensure_output_directory(output_dir):
@@ -354,12 +355,14 @@ def main():
         cases=[]
     )
 
-    print(f"Starting benchmarks with {WORKERS_COUNT} workers and timeout {timeout_s}s...")
+    print(f"Starting benchmarks with {WORKERS_COUNT} workers...")
 
+    strategies = config.get("strategies", [])
+    skip_best_found_strategy = config.get("skip_best_found_strategy")
     tasks_to_run_commands = []
     for case in cases:
         level_relative_path = case.get("input")
-        strategies = case.get("strategies", [])
+        timeout_s = case.get("timeout_s")
 
         if not level_relative_path:
             print(f"Warning: Skipping case due to missing 'input' level path in config.", file=sys.stderr)
@@ -376,18 +379,21 @@ def main():
              continue
 
         for strategy in strategies:
+            if skip_best_found_strategy and strategy == case.get("best_found_solution_metrics", {}).get("strategy"):
+                continue
+            
             client_command_str = f"{CLIENT_EXECUTABLE_PATH} {strategy}"
             command = [JAVA, "-jar", SERVER_JAR, 
                        "-c", client_command_str, 
                        "-l", level_full_path,
-                       "-t", str(int(config["timeout_s"]))
+                       "-t", str(timeout_s)
                        ]
             tasks_to_run_commands.append(
                 {
                     "command_list": command,
                     "level_name": level_relative_path,
                     "strategy": strategy,
-                    "timeout_s": config["timeout_s"]
+                    "timeout_s": timeout_s
                 }
             )
             
