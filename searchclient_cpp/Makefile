@@ -2,7 +2,7 @@ RELEASE ?= false
 
 # @todo: figure out where we compile 64bit
 DEBUG_FLAGS = -O0 -g
-RELEASE_FLAGS = -O3 -ffast-math -DNDEBUG -march=native -flto
+RELEASE_FLAGS = -O3 -ffast-math -march=native -flto -DNDEBUG
 
 ifeq ($(RELEASE), false)
 	OPT_FLAGS = $(DEBUG_FLAGS)

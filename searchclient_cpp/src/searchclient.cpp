@@ -28,10 +28,12 @@ For a text to be treated as a comment, it must be sent via:
 */
 
 // Map string to strategy
-std::unordered_map<std::string, std::function<Frontier *()>> strategy_map = {
-    {"bfs", []() { return new FrontierBFS(); }}, {"dfs", []() { return new FrontierDFS(); }},
-    // {"astar", new FrontierBestFirst(new HeuristicAStar(initial_state))},
-    // {"wastar", new FrontierBestFirst(new HeuristicGreedy(initial_state))},
+std::unordered_map<std::string, std::function<Frontier *(void *)>> strategy_map = {
+    {"bfs", [](void *) { return new FrontierBFS(); }},
+    {"dfs", [](void *) { return new FrontierDFS(); }},
+    {"astar", [](void *) { return new FrontierBestFirst(new HeuristicAStar()); }},
+    {"wastar", [](void *param) { return new FrontierBestFirst(new HeuristicWeightedAStar(*(int *)param)); }},
+    // {"greedy", []() { return new FrontierBestFirst(new HeuristicGreedy()); }},
 };
 
 int main(int argc, char *argv[]) {
@@ -58,7 +60,15 @@ int main(int argc, char *argv[]) {
     // Create frontier
     Frontier *frontier;
     try {
-        frontier = strategy_map.at(strategy)();
+        int w = 2;
+        if (strategy == "wastar") {
+            if (argc > 2) {
+                w = std::stoi(std::string(argv[2]));
+            }
+            frontier = strategy_map.at(strategy)(&w);
+        } else {
+            frontier = strategy_map.at(strategy)(nullptr);
+        }
     } catch (const std::exception &e) {
         fprintf(stderr, "Unknown strategy: %s\n", strategy.c_str());
         return 1;
@@ -66,6 +76,7 @@ int main(int argc, char *argv[]) {
 
     // Search for a plan
     fprintf(stderr, "Starting %s.\n", frontier->getName().c_str());
+    fflush(stderr);
     std::vector<std::vector<const Action *>> plan = search(initial_state, frontier);
 
     // Print initial state:
