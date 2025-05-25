@@ -72,7 +72,7 @@ std::vector<std::vector<const Action *>> search(State *initial_state, Frontier *
                 frontier->add(child);
                 continue;
             }
-            delete child;  // @todo: check if this is correct - may not be enough
+            delete child;
         }
     }
 }

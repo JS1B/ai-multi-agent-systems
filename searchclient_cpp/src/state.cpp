@@ -7,12 +7,9 @@
 #include "helpers.hpp"
 
 std::random_device State::rd_;
-//std::mt19937 State::g_rd_(rd_());
-std::mt19937 State::g_rd_(1234); // make it deterministic
+std::mt19937 State::g_rd_(State::rd_());
 
-State::State(Level level) : level(level), parent(nullptr), g_(0) {
-    hash_ = getHash();
-}
+State::State(Level level) : level(level), parent(nullptr), g_(0) { hash_ = getHash(); }
 
 [[nodiscard]] void *State::operator new(std::size_t size) {
 #ifdef USE_STATE_MEMORY_POOL
@@ -45,12 +42,14 @@ std::vector<std::vector<const Action *>> State::extractPlan() const {
 
 std::vector<State *> State::getExpandedStates() const {
     std::vector<State *> expandedStates;
+    expandedStates.reserve(10'000);
 
-    //size_t numAgents = level.agentsMap.size();
     std::vector<std::vector<const Action *>> applicableAction(level.agents.size());
+    for (auto &actions : applicableAction) {
+        actions.reserve(10);
+    }
 
     for (const Action *actionPtr : Action::allValues()) {
-        //for (const auto &agentPair : level.agentsMap) {
         for (size_t agent_idx = 0; agent_idx < level.agents.size(); agent_idx++) {
             if (!isApplicable(agent_idx, *actionPtr)) {
                 continue;
@@ -70,7 +69,7 @@ std::vector<State *> State::getExpandedStates() const {
         }
 
         if (!isConflicting(currentJointAction)) {
-            expandedStates.push_back(new State(this, currentJointAction)); // TODO: optimize allocation by providing a preallocated vector
+            expandedStates.push_back(new State(this, currentJointAction));  // TODO: optimize allocation by providing a preallocated vector
         }
 
         bool done = false;
@@ -94,12 +93,9 @@ std::vector<State *> State::getExpandedStates() const {
 
 size_t State::getHash() const {
     // Compute efficiently hash of agent vector
-    auto byte_ptr = reinterpret_cast<const char*>(level.agents.data());
+    auto byte_ptr = reinterpret_cast<const char *>(level.agents.data());
     auto byte_len = level.agents.size() * sizeof(Cell2D);
-    // std::hash<string_view> typically is FNV-1a or similar
-    size_t agents_hash = std::hash<std::string_view>()(
-        std::string_view{ byte_ptr, byte_len }
-    );
+    size_t agents_hash = std::hash<std::string_view>()(std::string_view{byte_ptr, byte_len});
 
     size_t boxes_hash = level.boxes.get_hash();
 
@@ -107,49 +103,46 @@ size_t State::getHash() const {
 }
 
 bool State::operator==(const State &other) const {
-    //return level == other.level;
-    return level.agents == other.level.agents && level.boxes == other.level.boxes; // this should be faster
+    // return level == other.level;
+    return level.agents == other.level.agents && level.boxes == other.level.boxes;  // this should be faster
 }
 
 bool State::isApplicable(int agent_idx, const Action &action) const {
     switch (action.type) {
         case ActionType::NoOp:
             return true;
-        
-        case ActionType::Move:
-        {
+
+        case ActionType::Move: {
             Cell2D destination = level.agents[agent_idx] + action.agent_delta;
             return is_cell_free(destination);
         }
 
-        case ActionType::Push:
-        {
+        case ActionType::Push: {
             // Box is now where the agent will be in a moment
             Cell2D box_position = level.agents[agent_idx] + action.agent_delta;
             Cell2D destination = box_position + action.box_delta;
             char box_id = level.boxes(box_position);
             return is_cell_free(destination) && box_id && level.agent_colors[agent_idx] == level.box_colors[box_id - 'A'];
         }
-            
-        case ActionType::Pull:
-        {
+
+        case ActionType::Pull: {
             // Box will be in a moment where the agent is now
             Cell2D box_position = level.agents[agent_idx] - action.box_delta;
             Cell2D destination = level.agents[agent_idx] + action.agent_delta;
             char box_id = level.boxes(box_position);
             return is_cell_free(destination) && box_id && level.agent_colors[agent_idx] == level.box_colors[box_id - 'A'];
         }
-            
+
         default:
             throw std::invalid_argument("Invalid action type");
-   }
+    }
 
     // Unreachable:
     return false;
 }
 
 bool State::isGoalState() const {
-   // Check first if all agents are on goals (as this is very likely to fail and cut the computation short)
+    // Check first if all agents are on goals (as this is very likely to fail and cut the computation short)
     for (size_t agent_idx = 0; agent_idx < level.agents.size(); ++agent_idx) {
         if (level.agent_goals[agent_idx].r != 0 && level.agent_goals[agent_idx] != level.agents[agent_idx]) {
             return false;
@@ -179,15 +172,13 @@ bool State::isConflicting(const std::vector<const Action *> &jointAction, const 
                 destinations[agent_idx] = level.agents[agent_idx] + jointAction[agent_idx]->agent_delta;
                 break;
 
-            case ActionType::Push:
-            {
+            case ActionType::Push: {
                 Cell2D box_position = level.agents[agent_idx] + jointAction[agent_idx]->agent_delta;
                 destinations[agent_idx] = box_position + jointAction[agent_idx]->box_delta;
                 break;
             }
 
-            case ActionType::Pull:
-            {
+            case ActionType::Pull: {
                 destinations[agent_idx] = level.agents[agent_idx] + jointAction[agent_idx]->agent_delta;
                 break;
             }
@@ -229,7 +220,6 @@ std::string State::toString() const {
 
 State::State(const State *parent, std::vector<const Action *> jointAction)
     : level(parent->level), parent(parent), jointAction(jointAction), g_(parent->getG() + 1) {
-
     for (size_t agent_idx = 0; agent_idx < level.agents.size(); ++agent_idx) {
         switch (jointAction[agent_idx]->type) {
             case ActionType::NoOp:
@@ -239,8 +229,7 @@ State::State(const State *parent, std::vector<const Action *> jointAction)
                 level.agents[agent_idx] += jointAction[agent_idx]->agent_delta;
                 break;
 
-            case ActionType::Push:
-            {
+            case ActionType::Push: {
                 Cell2D box_position = level.agents[agent_idx] + jointAction[agent_idx]->agent_delta;
                 level.agents[agent_idx] += jointAction[agent_idx]->agent_delta;
                 level.boxes(box_position + jointAction[agent_idx]->box_delta) = level.boxes(box_position);
@@ -248,8 +237,7 @@ State::State(const State *parent, std::vector<const Action *> jointAction)
                 break;
             }
 
-            case ActionType::Pull:
-            {
+            case ActionType::Pull: {
                 Cell2D box_position = level.agents[agent_idx] - jointAction[agent_idx]->box_delta;
                 level.agents[agent_idx] += jointAction[agent_idx]->agent_delta;
                 level.boxes(box_position + jointAction[agent_idx]->box_delta) = level.boxes(box_position);
@@ -266,12 +254,10 @@ State::State(const State *parent, std::vector<const Action *> jointAction)
 }
 
 inline bool State::is_cell_free(const Cell2D &cell) const {
-    if (level.walls(cell) || level.boxes(cell))
-        return false;
+    if (level.walls(cell) || level.boxes(cell)) return false;
 
     for (const auto &agent_position : level.agents) {
-        if (agent_position == cell)
-            return false;
+        if (agent_position == cell) return false;
     }
 
     return true;

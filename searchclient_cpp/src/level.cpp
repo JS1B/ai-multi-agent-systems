@@ -16,11 +16,7 @@ std::vector<Cell2D> Level::agent_goals(10, Cell2D(0, 0));
 std::vector<Color> Level::agent_colors(10);
 std::vector<Color> Level::box_colors(26);
 
-//Level::Level(const std::unordered_map<char, Agent> &agentsMap, const std::unordered_map<char, Box> &boxesMap)
-//    : agentsMap(agentsMap), boxesMap(boxesMap) {}
-
-Level::Level(const std::vector<Cell2D> &agents, const CharGrid &boxes)
-    : agents(agents), boxes(boxes) {}
+Level::Level(const std::vector<Cell2D> &agents, const CharGrid &boxes) : agents(agents), boxes(boxes) {}
 
 std::string Level::toString() {
     std::stringstream ss;
@@ -130,7 +126,7 @@ Level loadLevel(std::istream &serverMessages) {
         }
     }
 
-    agents.resize(num_agents); // from now on number of agents is stored as agents.size()
+    agents.resize(num_agents);  // from now on number of agents is stored as agents.size()
 
     // Read goal state
     std::vector<std::string> goalLines;
@@ -155,6 +151,4 @@ Level loadLevel(std::istream &serverMessages) {
     return Level(agents, boxes);
 }
 
-bool Level::operator==(const Level &other) const {
-    return agents == other.agents && boxes == other.boxes;
-}
+bool Level::operator==(const Level &other) const { return agents == other.agents && boxes == other.boxes; }
