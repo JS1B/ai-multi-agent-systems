@@ -1,7 +1,7 @@
 {
     "levels_dir": "../levels",
     "output_dir": "output",
-    "timeout_s": 180,
+    "timeout_s": 20,
     "cases": [
         {
             "input": "warmup/MAPF00.lvl",
@@ -12,7 +12,7 @@
             "best_found_solution_metrics": {
                 "strategy": "bfs",
                 "length": 14,
-                "time_s": 0.020,
+                "time_s": 0.030,
                 "memory_mb": 52.0
             }
         },

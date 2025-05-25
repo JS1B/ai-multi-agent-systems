@@ -5,7 +5,7 @@ import datetime
 import subprocess
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
-
+from enum import Enum
 from tqdm import tqdm
 
 try:
@@ -22,6 +22,21 @@ CLIENT_EXECUTABLE_PATH = "../searchclient_cpp/searchclient"
 
 BENCHMARK_CONFIG_FILE = "benchmarks.json"
 BENCHMARK_CONFIG_REQUIRED_KEYS = ["levels_dir", "output_dir", "cases", "timeout_s"]
+
+class bcolors(Enum):
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+    @staticmethod
+    def colorize(text: str, color: 'bcolors') -> str:
+        return f"{color.value}{text}{bcolors.ENDC.value}"
 
 @dataclass
 class CaseResult:
@@ -67,7 +82,7 @@ def parse_server_output(output_str: str) -> tuple[dict, int]:
         raise ValueError(f"Failed to parse metrics from data line '{data_line}': {e}") from e
 
     try:
-        solution_length = int(output_str.split("Actions used: ")[1].split(".")[0])
+        solution_length = int(output_str.split("Actions used: ")[1].split(".")[0].replace(",", ""))
     except (ValueError, IndexError) as e:
         raise ValueError(f"Failed to parse solution length from output: {e}") from e
 
@@ -163,38 +178,156 @@ def save_benchmark_results(results: BenchmarkResult, output_dir: str) -> bool:
     except IOError as e:
         print(f"Error: Could not write results to {output_filepath}: {e}", file=sys.stderr)
         return False
+
+
+
+def print_comparative_benchmark_results(cases: list[dict], results: BenchmarkResult):
+    def _format_new_metric_with_change(
+        prev_val,
+        new_val,
+        str_width: int,
+        unit: str = "",
+        precision: int = 0,
+        gray_area_percentage: float = 5.0
+    ):
+        new_val_str = f"{new_val:.{precision}f}{unit}" if isinstance(new_val, (int, float)) else "N/A"
+        perc_change_str_colored = ""
+
+        if not isinstance(prev_val, (int, float)) or not isinstance(new_val, (int, float)):
+            return new_val_str
+        
+        abs_change = new_val - prev_val
+        perc_change = 0.0
+        color_to_use = bcolors.OKCYAN
+
+        if prev_val != 0:
+            perc_change = (abs_change / abs(prev_val)) * 100
+        elif new_val != 0:
+            perc_change = float('inf') if new_val > 0 else float('-inf')
+
+        perc_sign = "+" if perc_change > 0 else ""
+        if perc_change == 0: perc_sign = ""
+        perc_change_display_str = f"{perc_sign}{perc_change:.1f}%"
+
+        # Determine color (lower is better)
+        if abs_change == 0:
+            color_to_use = bcolors.OKCYAN # Same
+        elif abs(perc_change) <= gray_area_percentage and prev_val != 0:
+            color_to_use = bcolors.WARNING # Neutral (gray area)
+        elif abs_change < 0: # Better
+            color_to_use = bcolors.OKGREEN
+        else: # Worse
+            color_to_use = bcolors.FAIL
+        
+        perc_change_str_colored = f" ({bcolors.colorize(perc_change_display_str, color_to_use)})".ljust(20)
+        return f"{new_val_str:<{str_width}}{perc_change_str_colored}"
+
     
-def print_better_benchmark_results(cases: list[dict], results: BenchmarkResult):
-    print("\nBetter benchmark summary:")
-    
-    for case in cases:
-        previous_best_case_result = case.get("best_found_solution_metrics", None)
-        if not previous_best_case_result:
-            print(f"Warning: No best found solution metrics for case {case.get('input')}", file=sys.stderr)
-            continue
-        
-        results_for_case = [case_result for case_result in results.cases if case.get("input") in case_result.level]
-        # Filter out timedout results
-        results_for_case = [result for result in results_for_case if result.solution_length != 0]
-        if not results_for_case:
-            print(f"Warning: No results for case {case.get('input')}", file=sys.stderr)
-            continue
-        
-        
-        # TODO: Rethink scoring
-        new_best_result_for_case = min(results_for_case, key=lambda x: (x.solution_length, x.metrics["time[s]"]))
-        if new_best_result_for_case.solution_length > previous_best_case_result["length"]:
-            continue
-        if new_best_result_for_case.solution_length == previous_best_case_result["length"] and new_best_result_for_case.metrics["time[s]"] >= previous_best_case_result["time_s"]:
+    print(bcolors.colorize("\nComparative Benchmark Summary:", bcolors.HEADER))
+    print(bcolors.colorize("=" * 160, bcolors.HEADER))
+
+    GRAY_AREA_PERCENTAGE = 5.0
+
+    for case_config in cases:
+        level_name = case_config.get("input")
+        if not level_name:
+            print(bcolors.colorize("Warning: Skipping config case (missing 'input').", bcolors.WARNING), file=sys.stderr)
             continue
 
-        print(f"{case.get('input'):^24}")
-        print(f"{"Previous best":<15}\t{"New best":<15}")
-        print(f"{previous_best_case_result['strategy']:<15}\t{new_best_result_for_case.strategy:<15}")
-        print(f"{previous_best_case_result['length']:<15}\t{new_best_result_for_case.solution_length:<15}")
-        print(f"{previous_best_case_result['time_s']:<15}\t{new_best_result_for_case.metrics['time[s]']:<15}")
-        print(f"{previous_best_case_result['memory_mb']:<15}\t{new_best_result_for_case.metrics['alloc[mb]']:<15}")
-        print()
+        previous_best_data = case_config.get("best_found_solution_metrics")
+        if not previous_best_data:
+            print(f"{level_name:<30} | {bcolors.colorize('Prev:', bcolors.BOLD)} No previous best data to compare.", file=sys.stderr)
+            continue
+
+        prev_strategy = previous_best_data.get("strategy", "N/A")[:5]
+        prev_length = previous_best_data.get("length")
+        prev_time_s = previous_best_data.get("time_s")
+        prev_memory_mb = previous_best_data.get("memory_mb")
+
+        valid_new_results_for_level = [
+            res for res in results.cases
+            if res.level == level_name and
+               res.solution_length > 0 and
+               not res.metrics.get("error")
+        ]
+
+        if not valid_new_results_for_level:
+            prev_part = f"{bcolors.colorize('Prev:', bcolors.BOLD)} S:{prev_strategy:<5} L:{prev_length:<4} T:{prev_time_s:<9} M:{prev_memory_mb:<7}"
+            print(f"{level_name:<30} | {prev_part} | {bcolors.colorize('New:', bcolors.BOLD)} No successful new results.")
+            continue
+
+        new_best_run_result = min(
+            valid_new_results_for_level,
+            key=lambda r: (
+                r.solution_length,
+                r.metrics.get("time[s]", float('inf')),
+                r.metrics.get("alloc[mb]", float('inf'))
+            )
+        )
+
+        new_strategy = new_best_run_result.strategy
+        new_length = new_best_run_result.solution_length
+        new_time_s = new_best_run_result.metrics.get("time[s]")
+        new_memory_mb = new_best_run_result.metrics.get("alloc[mb]")
+
+        # Format previous values
+        prev_len_str = f"{prev_length}"
+        prev_time_str = f"{prev_time_s:.3f}"
+        prev_mem_str = f"{prev_memory_mb:.1f}"
+
+        # Format new values with percentage changes
+        new_len_fmt = _format_new_metric_with_change(prev_length, new_length, 4, precision=0, gray_area_percentage=GRAY_AREA_PERCENTAGE)
+        new_time_fmt = _format_new_metric_with_change(prev_time_s, new_time_s, 7, precision=3, gray_area_percentage=GRAY_AREA_PERCENTAGE)
+        new_mem_fmt = _format_new_metric_with_change(prev_memory_mb, new_memory_mb, 5, precision=1, gray_area_percentage=GRAY_AREA_PERCENTAGE)
+
+        # Determine Overall Status
+        overall_status_text = "N/A"
+        overall_color = bcolors.OKBLUE
+
+        if isinstance(prev_length, int) and isinstance(new_length, int):
+            if new_length < prev_length:
+                overall_status_text = "BETTER"
+                overall_color = bcolors.OKGREEN
+            elif new_length > prev_length:
+                overall_status_text = "WORSE"
+                overall_color = bcolors.FAIL
+            else: # Lengths are the same, check time
+                if isinstance(prev_time_s, float) and isinstance(new_time_s, float):
+                    time_abs_change = new_time_s - prev_time_s
+                    time_perc_change = 0.0
+                    if prev_time_s != 0:
+                        time_perc_change = (time_abs_change / abs(prev_time_s)) * 100
+                    elif new_time_s != 0:
+                        time_perc_change = float('inf') if new_time_s > 0 else float('-inf')
+                    
+                    if abs(time_perc_change) <= GRAY_AREA_PERCENTAGE and prev_time_s != 0:
+                        overall_status_text = "NEUTRAL" # (time in gray area)
+                        overall_color = bcolors.WARNING
+                    elif time_abs_change == 0:
+                        overall_status_text = "SAME" # (time identical)
+                        overall_color = bcolors.OKCYAN
+                    elif time_abs_change < 0:
+                        overall_status_text = "BETTER" # (time improved)
+                        overall_color = bcolors.OKGREEN
+                    else:
+                        overall_status_text = "WORSE" # (time worsened)
+                        overall_color = bcolors.FAIL
+                else: # Lengths same, but time data missing for comparison
+                    overall_status_text = "SAME (L)" # Length same, time N/A
+                    overall_color = bcolors.OKCYAN
+        else: # Length data missing for comparison
+            overall_status_text = "INCONCLUSIVE"
+            overall_color = bcolors.OKBLUE
+        
+        overall_status_display = bcolors.colorize(f"[{overall_status_text}]", overall_color)
+
+        prev_part = f"{bcolors.colorize('Prev:', bcolors.BOLD)} S:{prev_strategy:<5} L:{prev_len_str:<4} T:{prev_time_str:<9} M:{prev_mem_str:<7}"
+        new_part = f"{bcolors.colorize('New:', bcolors.BOLD)} S:{new_strategy:<5} L:{new_len_fmt} T:{new_time_fmt:<17} M:{new_mem_fmt:<15} {overall_status_display}"  
+
+        print(f"{level_name:<30} | {prev_part} | {new_part}")
+
+
+    print(bcolors.colorize("=" * 160, bcolors.HEADER))
 
 def main():
     config = load_benchmark_config()
@@ -203,6 +336,7 @@ def main():
 
     levels_dir = config["levels_dir"]
     output_dir = config["output_dir"]
+    timeout_s = config["timeout_s"]
     cases = config["cases"]
 
     if not ensure_output_directory(output_dir):
@@ -220,7 +354,7 @@ def main():
         cases=[]
     )
 
-    print(f"Starting benchmarks with {WORKERS_COUNT} workers...")
+    print(f"Starting benchmarks with {WORKERS_COUNT} workers and timeout {timeout_s}s...")
 
     tasks_to_run_commands = []
     for case in cases:
@@ -279,7 +413,7 @@ def main():
         print("No benchmark results were collected.", file=sys.stderr)
     
     save_benchmark_results(all_results, output_dir)
-    print_better_benchmark_results(cases, all_results)
+    print_comparative_benchmark_results(cases, all_results)
 
 
 
