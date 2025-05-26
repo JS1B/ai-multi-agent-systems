@@ -2,18 +2,7 @@
     "levels_dir": "../levels",
     "output_dir": "output",
     "strategies": [
-        "bfs",
-        "dfs",
-        "astar",
-        "wastar 10",
-        "wastar 20",
-        "wastar 40",
-        "wastar 100",
-        "wastar 200",
-        "wastar 400",
-        "wastar 800",
-        "wastar 1200",
-        "wastar 1600"
+        "astar"
     ],
     "run_full_benchmark": false,
     "skip_best_found_strategy": true,
@@ -96,6 +85,116 @@
                 "length": 18,
                 "time_s": 8.028,
                 "memory_mb": 255.0
+            }
+        },
+        {
+            "input": "warmup/SAsoko1_64.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 62,
+                "time_s": 0.032,
+                "memory_mb": 51.0
+            }
+        },
+        {
+            "input": "warmup/SAsoko1_32.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 30,
+                "time_s": 0.029,
+                "memory_mb": 51.0
+            }
+        },
+        {
+            "input": "warmup/SAsoko1_16.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 14,
+                "time_s": 0.037,
+                "memory_mb": 52.0
+            }
+        },
+        {
+            "input": "warmup/SAsoko1_08.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 6,
+                "time_s": 0.039,
+                "memory_mb": 52.0
+            }
+        },
+        {
+            "input": "warmup/SAsoko1_04.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 2,
+                "time_s": 0.033,
+                "memory_mb": 52.0
+            }
+        },
+        {
+            "input": "warmup/SAsimple4.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 30,
+                "time_s": 0.074,
+                "memory_mb": 51.0
+            }
+        },
+        {
+            "input": "warmup/SAsimple3.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 32,
+                "time_s": 0.055,
+                "memory_mb": 51.0
+            }
+        },
+        {
+            "input": "warmup/SAsimple2.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 30,
+                "time_s": 0.063,
+                "memory_mb": 52.0
+            }
+        },
+        {
+            "input": "warmup/SAsimple1.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 6,
+                "time_s": 0.037,
+                "memory_mb": 51.0
+            }
+        },
+        {
+            "input": "warmup/SAsimple0.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 5,
+                "time_s": 0.043,
+                "memory_mb": 51.0
+            }
+        },
+        {
+            "input": "warmup/SApushing.lvl",
+            "timeout_s": 1,
+            "best_found_solution_metrics": {
+                "strategy": "bfs",
+                "length": 20,
+                "time_s": 0.043,
+                "memory_mb": 51.0
             }
         },
         {
@@ -436,116 +535,6 @@
                 "length": 999,
                 "time_s": 9999.0,
                 "memory_mb": 9999.0
-            }
-        },
-        {
-            "input": "warmup/SAsoko1_64.lvl",
-            "timeout_s": 1,
-            "best_found_solution_metrics": {
-                "strategy": "bfs",
-                "length": 62,
-                "time_s": 0.032,
-                "memory_mb": 51.0
-            }
-        },
-        {
-            "input": "warmup/SAsoko1_32.lvl",
-            "timeout_s": 1,
-            "best_found_solution_metrics": {
-                "strategy": "bfs",
-                "length": 30,
-                "time_s": 0.029,
-                "memory_mb": 51.0
-            }
-        },
-        {
-            "input": "warmup/SAsoko1_16.lvl",
-            "timeout_s": 1,
-            "best_found_solution_metrics": {
-                "strategy": "bfs",
-                "length": 14,
-                "time_s": 0.037,
-                "memory_mb": 52.0
-            }
-        },
-        {
-            "input": "warmup/SAsoko1_08.lvl",
-            "timeout_s": 1,
-            "best_found_solution_metrics": {
-                "strategy": "bfs",
-                "length": 6,
-                "time_s": 0.039,
-                "memory_mb": 52.0
-            }
-        },
-        {
-            "input": "warmup/SAsoko1_04.lvl",
-            "timeout_s": 1,
-            "best_found_solution_metrics": {
-                "strategy": "bfs",
-                "length": 2,
-                "time_s": 0.033,
-                "memory_mb": 52.0
-            }
-        },
-        {
-            "input": "warmup/SAsimple4.lvl",
-            "timeout_s": 1,
-            "best_found_solution_metrics": {
-                "strategy": "bfs",
-                "length": 30,
-                "time_s": 0.074,
-                "memory_mb": 51.0
-            }
-        },
-        {
-            "input": "warmup/SAsimple3.lvl",
-            "timeout_s": 1,
-            "best_found_solution_metrics": {
-                "strategy": "bfs",
-                "length": 32,
-                "time_s": 0.055,
-                "memory_mb": 51.0
-            }
-        },
-        {
-            "input": "warmup/SAsimple2.lvl",
-            "timeout_s": 1,
-            "best_found_solution_metrics": {
-                "strategy": "bfs",
-                "length": 30,
-                "time_s": 0.063,
-                "memory_mb": 52.0
-            }
-        },
-        {
-            "input": "warmup/SAsimple1.lvl",
-            "timeout_s": 1,
-            "best_found_solution_metrics": {
-                "strategy": "bfs",
-                "length": 6,
-                "time_s": 0.037,
-                "memory_mb": 51.0
-            }
-        },
-        {
-            "input": "warmup/SAsimple0.lvl",
-            "timeout_s": 1,
-            "best_found_solution_metrics": {
-                "strategy": "bfs",
-                "length": 5,
-                "time_s": 0.043,
-                "memory_mb": 51.0
-            }
-        },
-        {
-            "input": "warmup/SApushing.lvl",
-            "timeout_s": 1,
-            "best_found_solution_metrics": {
-                "strategy": "bfs",
-                "length": 20,
-                "time_s": 0.043,
-                "memory_mb": 51.0
             }
         },
         {

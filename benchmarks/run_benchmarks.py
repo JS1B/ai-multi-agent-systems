@@ -223,7 +223,7 @@ def print_comparative_benchmark_results(cases: list[dict], results: BenchmarkRes
         perc_change_str_colored = f" ({bcolors.colorize(perc_change_display_str, color_to_use)})".ljust(20)
         return f"{new_val_str:<{str_width}}{perc_change_str_colored}"
 
-    HEADER_SEPARATOR = "=" * 156
+    HEADER_SEPARATOR = "=" * 152
     
     print(bcolors.colorize("\nComparative Benchmark Summary:", bcolors.HEADER))
     print(bcolors.colorize(HEADER_SEPARATOR, bcolors.HEADER))
@@ -325,7 +325,7 @@ def print_comparative_benchmark_results(cases: list[dict], results: BenchmarkRes
         overall_status_display = bcolors.colorize(f"[{overall_status_text}]", overall_color)
 
         prev_part = f"{bcolors.colorize('Prev:', bcolors.BOLD)} S:{prev_strategy:<11} L:{prev_len_str:<3} T:{prev_time_str:<8} M:{prev_mem_str:<7}"
-        new_part = f"{bcolors.colorize('New:', bcolors.BOLD)} S:{new_strategy:<14} L:{new_len_fmt} T:{new_time_fmt:<17} M:{new_mem_fmt:<15} {overall_status_display}"  
+        new_part = f"{bcolors.colorize('New:', bcolors.BOLD)} S:{new_strategy:<10} L:{new_len_fmt} T:{new_time_fmt:<17} M:{new_mem_fmt:<15} {overall_status_display}"  
 
         print(f"{level_name_str:<15} | {prev_part} | {new_part}")
 
@@ -359,7 +359,9 @@ def main():
     run_full_benchmark = config["run_full_benchmark"]
     skip_best_found_strategy = config["skip_best_found_strategy"]
 
-    print(f"Starting benchmarks with {WORKERS_COUNT} workers, {len(cases)} cases and {len(strategies)} strategies...")
+    running_cases_count = len(cases) if run_full_benchmark else SHORT_BENCHMARK_CASES_COUNT
+    
+    print(f"Starting benchmarks with {WORKERS_COUNT} workers, {running_cases_count} cases and {len(strategies)} strategies...")
     print(f"Enabled: {skip_best_found_strategy=} {run_full_benchmark=}")
     
     tasks_to_run_commands = []
