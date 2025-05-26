@@ -12,7 +12,7 @@
 
 class Frontier {
    public:
-    virtual ~Frontier() = 0;
+    virtual ~Frontier() = default;
     virtual void add(State* state) = 0;
     virtual State* pop() = 0;
     virtual bool isEmpty() const = 0;

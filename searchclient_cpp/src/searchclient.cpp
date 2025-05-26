@@ -28,12 +28,10 @@ For a text to be treated as a comment, it must be sent via:
 */
 
 // Map string to strategy
-std::unordered_map<std::string, std::function<Frontier *(void *)>> strategy_map = {
-    {"bfs", [](void *) { return new FrontierBFS(); }},
-    {"dfs", [](void *) { return new FrontierDFS(); }},
-    {"astar", [](void *) { return new FrontierBestFirst(new HeuristicAStar()); }},
-    {"wastar", [](void *param) { return new FrontierBestFirst(new HeuristicWeightedAStar(*(int *)param)); }},
-    // {"greedy", []() { return new FrontierBestFirst(new HeuristicGreedy()); }},
+std::unordered_map<std::string, std::function<Frontier *()>> strategy_map = {
+    {"bfs", []() { return new FrontierBFS(); }},
+    {"dfs", []() { return new FrontierDFS(); }},
+    {"astar", []() { return new FrontierBestFirst(new HeuristicAStar()); }},
 };
 
 int main(int argc, char *argv[]) {
@@ -60,15 +58,7 @@ int main(int argc, char *argv[]) {
     // Create frontier
     Frontier *frontier;
     try {
-        int w = 2;
-        if (strategy == "wastar") {
-            if (argc > 2) {
-                w = std::stoi(std::string(argv[2]));
-            }
-            frontier = strategy_map.at(strategy)(&w);
-        } else {
-            frontier = strategy_map.at(strategy)(nullptr);
-        }
+        frontier = strategy_map.at(strategy)();
     } catch (const std::exception &e) {
         fprintf(stderr, "Unknown strategy: %s\n", strategy.c_str());
         return 1;
