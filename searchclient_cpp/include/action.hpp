@@ -1,10 +1,10 @@
 #pragma once
 
 #include <array>
+#include <map>
 #include <string>
 #include <vector>
 
-//#include "point2d.hpp"
 #include "cell2d.hpp"
 
 enum class ActionType { NoOp, Move, Push, Pull };
@@ -13,23 +13,19 @@ class Action {
    private:
     Action(const std::string &name, const ActionType type, const Cell2D agent_delta, const Cell2D box_delta);
 
+    static std::map<size_t, std::vector<std::vector<const Action *>>> cached_permutations_;
+
    public:
     Action(const Action &) = delete;
     Action &operator=(const Action &) = delete;
 
-    // Member variables
     const std::string name;
     const ActionType type;
     const Cell2D agent_delta;
     const Cell2D box_delta;
 
-    // Comparison operators
-    bool operator==(const Action &other) const {
-        //return type == other.type && agent_delta == other.agent_delta && box_delta == other.box_delta;
-        return agent_delta == other.agent_delta && box_delta == other.box_delta; // this is enough, checking the type is redundant
-    }
-
-    bool operator!=(const Action &other) const { return !(*this == other); }
+    inline bool operator==(const Action &other) const { return name == other.name; }
+    inline bool operator!=(const Action &other) const { return !(*this == other); }
 
     // Action types
     static const Action NoOp;
@@ -69,6 +65,7 @@ class Action {
     static const Action PullWS;
 
     static const std::array<const Action *, 29> &allValues();
+    static const std::vector<std::vector<const Action *>> getAllPermutations(size_t n);
 };
 
 std::string formatJointAction(const std::vector<const Action *> &joint_action, bool with_bubble = true);

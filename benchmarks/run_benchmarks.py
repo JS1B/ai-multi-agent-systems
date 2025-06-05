@@ -366,7 +366,7 @@ def main():
     
     tasks_to_run_commands = []
     for case_idx, case in enumerate(cases):
-        if not run_full_benchmark and case_idx > SHORT_BENCHMARK_CASES_COUNT:
+        if not run_full_benchmark and case_idx >= SHORT_BENCHMARK_CASES_COUNT:
             break
         
         level_relative_path = case.get("input")

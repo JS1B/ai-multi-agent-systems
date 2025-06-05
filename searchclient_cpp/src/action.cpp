@@ -1,7 +1,11 @@
 #include "action.hpp"
 
+#include <functional>
+
 Action::Action(const std::string &name, const ActionType type, const Cell2D agent_delta, const Cell2D box_delta)
     : name(name), type(type), agent_delta(agent_delta), box_delta(box_delta) {}
+
+std::map<size_t, std::vector<std::vector<const Action *>>> Action::cached_permutations_ = {};
 
 const Action Action::NoOp("NoOp", ActionType::NoOp, {0, 0}, {0, 0});
 
@@ -44,6 +48,42 @@ const std::array<const Action *, 29> &Action::allValues() {
         &Action::PullNE, &Action::PullNW, &Action::PullSS, &Action::PullSE, &Action::PullSW, &Action::PullEE,
         &Action::PullEN, &Action::PullES, &Action::PullWW, &Action::PullWN, &Action::PullWS};
     return allActions;
+}
+
+const std::vector<std::vector<const Action *>> Action::getAllPermutations(size_t n) {
+    auto it = cached_permutations_.find(n);
+    if (it != cached_permutations_.end()) {
+        return it->second;  // Return the cached result
+    }
+
+    // Generate
+    std::vector<std::vector<const Action *>> generated_permutations;
+    const auto &all_actions_values = Action::allValues();
+
+    // Vector to hold the current combination of actions for 'n' length
+    std::vector<const Action *> current_combination(n);
+
+    // Recursive helper function to generate combinations with repetition
+    std::function<void(size_t)> generateCombinations = [&](size_t k) {  // k is the current index in the combination (0 to n-1)
+        if (k == n) {
+            // Base case: a full combination for all 'n' positions has been formed
+            generated_permutations.push_back(current_combination);
+            return;
+        }
+
+        // Recursive step: for the current position (k), try each possible action
+        for (const Action *action : all_actions_values) {
+            current_combination[k] = action;
+            generateCombinations(k + 1);  // Move to the next position
+        }
+    };
+
+    generateCombinations(0);
+
+    generated_permutations.shrink_to_fit();
+    cached_permutations_.insert({n, generated_permutations});
+
+    return cached_permutations_.at(n);
 }
 
 std::string formatJointAction(const std::vector<const Action *> &joint_action, bool with_bubble) {

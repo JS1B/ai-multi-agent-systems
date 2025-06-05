@@ -5,7 +5,7 @@
         "astar"
     ],
     "run_full_benchmark": false,
-    "skip_best_found_strategy": true,
+    "skip_best_found_strategy": false,
     "cases": [
         {
             "input": "warmup/MAPF00.lvl",
