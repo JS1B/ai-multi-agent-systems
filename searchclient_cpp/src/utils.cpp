@@ -1,5 +1,7 @@
-#include "helpers.hpp"
+#include "utils.hpp"
 
+#include <algorithm>
+#include <numeric>
 #include <string>
 #include <vector>
 
@@ -33,9 +35,9 @@ std::string normalizeWhitespace(const std::string &str) {
     for (char c : str) {
         if (whitespaces.find(c) != std::string::npos) {
             result += ' ';
-        } else {
-            result += c;
+            continue;
         }
+        result += c;
     }
     return result;
 }
@@ -44,6 +46,12 @@ std::string toLower(const std::string &str) {
     std::string lowerStr = str;
     std::transform(lowerStr.begin(), lowerStr.end(), lowerStr.begin(), ::tolower);
     return lowerStr;
+}
+
+size_t SIC(const std::vector<std::vector<const Action *>> &solutions) {
+    // Sum of individual costs
+    return std::accumulate(solutions.begin(), solutions.end(), 0,
+                           [](size_t sum, const std::vector<const Action *> &plan) { return sum + plan.size(); });
 }
 
 }  // namespace utils

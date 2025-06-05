@@ -1,78 +1,122 @@
 #pragma once
 
-#include <chrono>
-#include <iomanip>
-#include <iostream>
-#include <unordered_set>
+#include <string>
 #include <vector>
 
-#include "action.hpp"
+#include "constraint.hpp"
 #include "frontier.hpp"
+#include "low_level_state.hpp"
 #include "memory.hpp"
 #include "state.hpp"
 
-// Global start time
-static auto start_time = std::chrono::high_resolution_clock::now();
+class Graphsearch {
+   private:
+    LowLevelState *initial_state_;
+    Frontier *frontier_;
+    std::unordered_set<LowLevelState *, LowLevelStatePtrHash, LowLevelStatePtrEqual> explored_;
+    std::vector<const Constraint *> constraints_;
 
-void printSearchStatus(const std::unordered_set<State *, StatePtrHash, StatePtrEqual> &explored, const Frontier &frontier) {
-    static bool first_time = true;
-    if (first_time) {
-        first_time = false;
-        printf("#Expanded, Frontier, Generated, Time[s], Alloc[MB], MaxAlloc[MB]\n");
-    }
+   public:
+    Graphsearch() = delete;
+    Graphsearch(LowLevelState *initial_state, Frontier *frontier) : initial_state_(initial_state), frontier_(frontier) {}
+    Graphsearch(const Graphsearch &) = delete;
+    Graphsearch &operator=(const Graphsearch &) = delete;
+    ~Graphsearch() = default;
 
-    const auto now = std::chrono::high_resolution_clock::now();
-    const auto elapsed_time = std::chrono::duration<double>(now - start_time).count();
+    std::vector<std::vector<const Action *>> solve() {
+        int iterations = 0;
+        frontier_->add(initial_state_);
+        explored_.reserve(10'000);
 
-    const size_t size_explored = explored.size();
-    const size_t size_frontier = frontier.size();
+        while (true) {
+            if (iterations % 1000 == 0) {
+                if (Memory::getUsage() > Memory::maxUsage) {
+                    fprintf(stderr, "Maximum memory usage exceeded.\n");
+                    return {};
+                }
+            }
 
-    fprintf(stdout, "#%8zu, %8zu, %9zu, %7.3f, %9u, %12u\n", size_explored, size_frontier, size_explored + size_frontier, elapsed_time,
-            Memory::getUsage(), Memory::maxUsage);
-    fflush(stdout);
-}
+            if (frontier_->isEmpty()) {
+                fprintf(stderr, "Frontier is empty.\n");
+                return {};
+            }
 
-std::vector<std::vector<const Action *>> search(State *initial_state, Frontier *frontier) {
-    int iterations = 0;
+            LowLevelState *state = frontier_->pop();
 
-    frontier->add(initial_state);
-    std::unordered_set<State *, StatePtrHash, StatePtrEqual> explored;
-    explored.reserve(400'000);
+            if (state->isGoalState()) {
+                return state->extractPlan();
+            }
 
-    while (true) {
-        iterations++;
-        if (iterations % 100000 == 1) {  // 10000
-            printSearchStatus(explored, *frontier);
-        }
+            explored_.insert(state);
 
-        if (iterations % 10000 == 0) {
-            if (Memory::getUsage() > Memory::maxUsage) {
-                printSearchStatus(explored, *frontier);
-                fprintf(stderr, "Maximum memory usage exceeded.\n");
-                return {};  // Return an empty plan to indicate failure
+            auto expanded_states = state->getExpandedStates();
+            for (auto child : expanded_states) {
+                if (explored_.find(child) == explored_.end() && !frontier_->contains(child)) {
+                    frontier_->add(child);
+                    continue;
+                }
+                delete child;
             }
         }
-
-        if (frontier->isEmpty()) {
-            fprintf(stderr, "Frontier is empty.\n");
-            return {};  // Return an empty plan to indicate failure
-        }
-
-        State *state = frontier->pop();
-
-        if (state->isGoalState()) {
-            printSearchStatus(explored, *frontier);
-            return state->extractPlan();
-        }
-
-        explored.insert(state);
-
-        for (State *child : state->getExpandedStates()) {
-            if (explored.find(child) == explored.end() && !frontier->contains(child)) {
-                frontier->add(child);
-                continue;
-            }
-            delete child;
-        }
     }
-}
+};
+
+// struct AgentNode {
+//     Cell2D agent_pos;
+//     CharGrid current_boxes_config;  // Boxes as modified by *this agent's* plan so far
+//     int time_offset;                // Time elapsed since this low-level plan started (0, 1, 2...)
+
+//     int g_cost;  // Actual cost (time steps) from this plan's start
+//     int h_cost;  // Heuristic to this agent's specific goal
+
+//     // For path reconstruction
+//     const LowLevelPlannerNode *parent;  // Pointer to previous node in this A* search
+//     const Action *action_taken;         // Action that led to this node
+
+//     // Details if the action_taken moved a box
+//     bool box_was_moved_by_action = false;
+//     char moved_box_id = 0;
+//     Cell2D moved_box_original_pos;
+//     Cell2D moved_box_new_pos;
+
+//     LowLevelPlannerNode(Cell2D ap, const CharGrid &bc, int to, int g, int h, const LowLevelPlannerNode *p, const Action *act)
+//         : agent_pos(ap), current_boxes_config(bc), time_offset(to), g_cost(g), h_cost(h), parent(p), action_taken(act) {}
+
+//     int f_cost() const { return g_cost + h_cost; }
+
+//     // For priority queue (min-heap)
+//     bool operator>(const LowLevelPlannerNode &other) const {
+//         if (f_cost() == other.f_cost()) {
+//             if (h_cost == other.h_cost) {
+//                 return g_cost > other.g_cost;  // Tie-break on g_cost
+//             }
+//             return h_cost > other.h_cost;  // Standard tie-breaking
+//         }
+//         return f_cost() > other.f_cost();
+//     }
+
+//     // Equality for closed set: agent_pos, time_offset, and box_config
+//     bool operator==(const LowLevelPlannerNode &other) const {
+//         return agent_pos == other.agent_pos && time_offset == other.time_offset && current_boxes_config == other.current_boxes_config;
+//     }
+// };
+
+// // Custom hash for LowLevelPlannerNode for unordered_set
+// namespace std {
+// template <>
+// struct hash<LowLevelPlannerNode> {
+//     size_t operator()(const LowLevelPlannerNode &node) const {
+//         size_t h1 = std::hash<int_fast8_t>()(node.agent_pos.r);
+//         size_t h2 = std::hash<int_fast8_t>()(node.agent_pos.c);
+//         size_t h3 = std::hash<int>()(node.time_offset);
+//         size_t h4 = node.current_boxes_config.get_hash();
+//         // Combine hashes (from utils::hashCombine or similar)
+//         size_t seed = 0;
+//         seed ^= h1 + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+//         seed ^= h2 + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+//         seed ^= h3 + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+//         seed ^= h4 + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+//         return seed;
+//     }
+// };
+// }  // namespace std

@@ -8,43 +8,43 @@
 #include <vector>
 
 #include "heuristic.hpp"
-#include "state.hpp"
+#include "low_level_state.hpp"
 
 class Frontier {
    public:
     virtual ~Frontier() = default;
-    virtual void add(State* state) = 0;
-    virtual State* pop() = 0;
+    virtual void add(LowLevelState* state) = 0;
+    virtual LowLevelState* pop() = 0;
     virtual bool isEmpty() const = 0;
     virtual size_t size() const = 0;
-    virtual bool contains(State* state) const = 0;
+    virtual bool contains(LowLevelState* state) const = 0;
     virtual std::string getName() const = 0;
 };
 
 // Breadth-First Search Frontier
 class FrontierBFS : public Frontier {
    private:
-    std::deque<State*> queue_;
-    std::unordered_set<State*, StatePtrHash, StatePtrEqual> set_;
+    std::deque<LowLevelState*> queue_;
+    std::unordered_set<LowLevelState*, LowLevelStatePtrHash, LowLevelStatePtrEqual> set_;
 
    public:
-    FrontierBFS() { set_.reserve(100'000); }
+    FrontierBFS() { set_.reserve(10'000); }
     ~FrontierBFS() {
         for (auto state : set_) {
             delete state;
         }
     }
 
-    void add(State* state) override {
+    void add(LowLevelState* state) override {
         queue_.push_back(state);
         set_.insert(state);
     }
 
-    State* pop() override {
+    LowLevelState* pop() override {
         if (isEmpty()) {
             throw std::runtime_error("Cannot pop from an empty BFS frontier.");
         }
-        State* state = queue_.front();
+        LowLevelState* state = queue_.front();
         queue_.pop_front();
         set_.erase(state);
         return state;
@@ -54,7 +54,7 @@ class FrontierBFS : public Frontier {
 
     size_t size() const override { return queue_.size(); }
 
-    bool contains(State* state) const override { return set_.count(state); }
+    bool contains(LowLevelState* state) const override { return set_.count(state); }
 
     std::string getName() const override { return "breadth-first search"; }
 };
@@ -62,27 +62,27 @@ class FrontierBFS : public Frontier {
 // Depth-First Search Frontier
 class FrontierDFS : public Frontier {
    private:
-    std::deque<State*> queue_;
-    std::unordered_set<State*, StatePtrHash, StatePtrEqual> set_;
+    std::deque<LowLevelState*> queue_;
+    std::unordered_set<LowLevelState*, LowLevelStatePtrHash, LowLevelStatePtrEqual> set_;
 
    public:
-    FrontierDFS() { set_.reserve(100'000); }
+    FrontierDFS() { set_.reserve(10'000); }
     ~FrontierDFS() {
         for (auto state : set_) {
             delete state;
         }
     }
 
-    void add(State* state) override {
+    void add(LowLevelState* state) override {
         queue_.push_front(state);
         set_.insert(state);
     }
 
-    State* pop() override {
+    LowLevelState* pop() override {
         if (isEmpty()) {
             throw std::runtime_error("Cannot pop from an empty DFS frontier.");
         }
-        State* state = queue_.front();
+        LowLevelState* state = queue_.front();
         queue_.pop_front();
         set_.erase(state);
         return state;
@@ -92,7 +92,7 @@ class FrontierDFS : public Frontier {
 
     size_t size() const override { return queue_.size(); }
 
-    bool contains(State* state) const override { return set_.count(state); }
+    bool contains(LowLevelState* state) const override { return set_.count(state); }
 
     std::string getName() const override { return "depth-first search"; }
 };
@@ -100,21 +100,21 @@ class FrontierDFS : public Frontier {
 class FrontierBestFirst : public Frontier {
    private:
     const Heuristic* heuristic_;
-    std::unordered_set<State*, StatePtrHash, StatePtrEqual> set_;
+    std::unordered_set<LowLevelState*, LowLevelStatePtrHash, LowLevelStatePtrEqual> set_;
 
     struct StateComparator {
-        const Heuristic* h;
-        StateComparator(const Heuristic* heuristic) : h(heuristic) {}
-        bool operator()(const State* lhs, const State* rhs) const {
+        const Heuristic* heur;
+        StateComparator(const Heuristic* heuristic) : heur(heuristic) {}
+        bool operator()(const LowLevelState* lhs, const LowLevelState* rhs) const {
             // Higher f-value means lower priority (further down the max-heap)
-            return h->f(*lhs) > h->f(*rhs);
+            return heur->f(*lhs) > heur->f(*rhs);
         }
     };
 
-    std::priority_queue<State*, std::vector<State*>, StateComparator> queue_;
+    std::priority_queue<LowLevelState*, std::vector<LowLevelState*>, StateComparator> queue_;
 
    public:
-    FrontierBestFirst(const Heuristic* h) : heuristic_(h), queue_(StateComparator(h)) {
+    FrontierBestFirst(const Heuristic* heuristic) : heuristic_(heuristic), queue_(StateComparator(heuristic)) {
         if (!heuristic_) {
             throw std::invalid_argument("Heuristic cannot be null for FrontierBestFirst.");
         }
@@ -126,16 +126,16 @@ class FrontierBestFirst : public Frontier {
         }
     }
 
-    void add(State* state) override {
+    void add(LowLevelState* state) override {
         queue_.push(state);
         set_.insert(state);
     }
 
-    State* pop() override {
+    LowLevelState* pop() override {
         if (isEmpty()) {
             throw std::runtime_error("Cannot pop from an empty BestFirst frontier.");
         }
-        State* state = queue_.top();
+        LowLevelState* state = queue_.top();
         queue_.pop();
         set_.erase(state);
         return state;
@@ -145,7 +145,7 @@ class FrontierBestFirst : public Frontier {
 
     size_t size() const override { return set_.size(); }
 
-    bool contains(State* state) const override { return set_.count(state); }
+    bool contains(LowLevelState* state) const override { return set_.count(state); }
 
     std::string getName() const override { return "best-first search using " + heuristic_->getName(); }
 };

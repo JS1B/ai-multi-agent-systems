@@ -11,15 +11,15 @@
 #include <cctype>
 
 // Own code
-#include "action.hpp"
-#include "color.hpp"
+// #include "action.hpp"
+#include "cbs.hpp"
+// #include "color.hpp"
 #include "feature_flags.hpp"
-#include "frontier.hpp"
-#include "graphsearch.hpp"
-#include "helpers.hpp"
-#include "heuristic.hpp"
+// #include "frontier.hpp"
+// #include "graphsearch.hpp"
+// #include "helpers.hpp"
+// #include "heuristic.hpp"
 #include "level.hpp"
-#include "state.hpp"
 
 /*
 For a text to be treated as a comment, it must be sent via:
@@ -27,14 +27,12 @@ For a text to be treated as a comment, it must be sent via:
 - stdout - starting with #
 */
 
-// Map string to strategy
-std::unordered_map<std::string, std::function<Frontier *()>> strategy_map = {
-    {"bfs", []() { return new FrontierBFS(); }},
-    {"dfs", []() { return new FrontierDFS(); }},
-    {"astar", []() { return new FrontierBestFirst(new HeuristicAStar()); }},
-};
+Level *level_instance = nullptr;
 
 int main(int argc, char *argv[]) {
+    (void)argc;
+    (void)argv;
+
     fprintf(stderr, "C++ SearchClient initializing.\n");
 
     // Send client name to server.
@@ -42,42 +40,19 @@ int main(int argc, char *argv[]) {
 
     fprintf(stderr, "Feature flags: %s\n", getFeatureFlags());
 
-    // Parse command line arguments (e.g., for specifying search strategy)
-    std::string strategy = "bfs";
-    if (argc > 1) {
-        strategy = std::string(argv[1]);
-    }
+    level_instance = new Level(loadLevel(std::cin));
+    fprintf(stderr, "Loaded %s\n", level_instance->toString().c_str());
 
-    // Parse the level from stdin
-    Level level = loadLevel(std::cin);
-    fprintf(stderr, "Loaded %s\n", level.toString().c_str());
-
-    // Create initial state
-    State *initial_state = new State(level);
-
-    // Create frontier
-    Frontier *frontier;
-    try {
-        frontier = strategy_map.at(strategy)();
-    } catch (const std::exception &e) {
-        fprintf(stderr, "Unknown strategy: %s\n", strategy.c_str());
-        return 1;
-    }
-
-    // Search for a plan
-    fprintf(stderr, "Starting %s.\n", frontier->getName().c_str());
+    fprintf(stderr, "Starting CBS...\n");
     fflush(stderr);
-    std::vector<std::vector<const Action *>> plan = search(initial_state, frontier);
-
-    // Print initial state:
-    // fprintf(stderr, "Initial state:\n %s\n", initial_state->toString().c_str());
+    CBS *cbs = new CBS(*level_instance);
+    std::vector<std::vector<const Action *>> plan = cbs->solve();
 
     // Print plan to server
     if (plan.empty()) {
         fprintf(stderr, "Unable to solve level.\n");
         return 0;
     }
-
     fprintf(stderr, "Found solution of length %zu.\n", plan.size());
 
 #ifdef DISABLE_ACTION_PRINTING
@@ -94,8 +69,6 @@ int main(int argc, char *argv[]) {
         getline(std::cin, response);
     }
 #endif
-
-    delete frontier;
-    delete initial_state;
+    delete cbs;
     return 0;
 }
