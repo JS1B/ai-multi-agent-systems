@@ -3,13 +3,15 @@
 #include <cstdint>
 
 struct Cell2D {
-    int_fast8_t r, c;  // row and column
+    uint_fast8_t r, c;  // row and column
 
     Cell2D() = default;
     Cell2D(int row, int col) : r(row), c(col) {}
 
     inline bool operator==(const Cell2D& o) const { return r == o.r && c == o.c; }
     inline bool operator!=(const Cell2D& o) const { return r != o.r || c != o.c; }
+
+    inline bool operator<(const Cell2D& o) const { return r < o.r || (r == o.r && c < o.c); }
 
     inline Cell2D& operator+=(const Cell2D& o) {
         r += o.r;
@@ -25,3 +27,10 @@ struct Cell2D {
     inline Cell2D operator+(const Cell2D& o) const { return Cell2D(r + o.r, c + o.c); }
     inline Cell2D operator-(const Cell2D& o) const { return Cell2D(r - o.r, c - o.c); }
 };
+
+namespace std {
+template <>
+struct hash<Cell2D> {
+    size_t operator()(const Cell2D& cell) const { return hash<int>()(cell.r) ^ hash<int>()(cell.c); }
+};
+}  // namespace std

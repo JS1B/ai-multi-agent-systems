@@ -48,10 +48,17 @@ std::string toLower(const std::string &str) {
     return lowerStr;
 }
 
-size_t SIC(const std::vector<std::vector<const Action *>> &solutions) {
-    // Sum of individual costs
-    return std::accumulate(solutions.begin(), solutions.end(), 0,
-                           [](size_t sum, const std::vector<const Action *> &plan) { return sum + plan.size(); });
+/*
+    Sum of Individual Costs (SIC) is the sum of the number of actions in all plans.
+    It is used to measure the quality of a solution.
+    The lower the SIC, the better.
+*/
+size_t SIC(const std::vector<std::vector<std::vector<const Action *>>> &solutions) {
+    size_t sum_of_individual_costs = 0;
+    for (const auto &agent_plans : solutions) {
+        sum_of_individual_costs += agent_plans.size();
+    }
+    return sum_of_individual_costs;
 }
 
 }  // namespace utils

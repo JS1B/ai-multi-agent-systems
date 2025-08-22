@@ -5,11 +5,10 @@
 #include <string>
 #include <vector>
 
-#include "entity_bulk.hpp"
 #include "utils.hpp"
 
-StaticLevel::StaticLevel(std::string name, std::string domain, CharGrid walls, std::unordered_map<char, Color> agent_colors,
-                         std::unordered_map<char, Color> box_colors)
+StaticLevel::StaticLevel(std::string name, std::string domain, CharGrid walls, std::map<char, Color> agent_colors,
+                         std::map<char, Color> box_colors)
     : name_(name), domain_(domain), walls_(walls), agent_colors_(agent_colors), box_colors_(box_colors) {}
 
 bool StaticLevel::isCellFree(const Cell2D &cell) const {
@@ -28,11 +27,11 @@ std::string StaticLevel::toString() const {
     return ss.str();
 }
 
-Level::Level(StaticLevel static_level, std::vector<EntityBulk> agent_bulks) : static_level(static_level), agent_bulks(agent_bulks) {}
+Level::Level(StaticLevel static_level, std::vector<Agent> agents) : static_level(static_level), agents(agents) {}
 
 std::string Level::toString() const {
     std::stringstream ss;
-    ss << "Level(" << static_level.toString() << ", " << agent_bulks.size() << ")";
+    ss << "Level(" << static_level.toString() << ", " << agents.size() << ")";
     return ss.str();
 }
 
@@ -62,8 +61,8 @@ Level loadLevel(std::istream &serverMessages) {
         getline(serverMessages, line);
     }
 
-    std::unordered_map<char, Color> agent_colors;
-    std::unordered_map<char, Color> box_colors;
+    std::map<char, Color> agent_colors;
+    std::map<char, Color> box_colors;
 
     for (const std::string &line : colorSection) {
         std::string colorStr, entitiesStr;
@@ -115,11 +114,11 @@ Level loadLevel(std::istream &serverMessages) {
     CharGrid walls(numRows, numCols);
     // Level::box_goals = CharGrid(numRows, numCols);
     // std::vector<Cell2D> agents(LAST_AGENT - FIRST_AGENT + 1);
-    std::vector<EntityBulk> agents_bulks;
-    agents_bulks.reserve(LAST_AGENT - FIRST_AGENT + 1);
+    std::vector<Agent> agents;
+    agents.reserve(LAST_AGENT - FIRST_AGENT + 1);
 
-    std::unordered_map<char, std::vector<Cell2D>> agent_positions;
-    std::unordered_map<char, std::vector<Cell2D>> agent_goals;
+    std::map<char, Cell2D> agent_positions;
+    std::map<char, std::vector<Cell2D>> agent_goals;
     // std::unordered_map<Color, CharGrid> boxes_map;
     // for (int i = FIRST_BOX; i <= LAST_BOX; i++) {
     //     boxes_map.insert({Level::box_colors[i - FIRST_BOX], CharGrid(numRows, numCols)});
@@ -130,7 +129,7 @@ Level loadLevel(std::istream &serverMessages) {
         for (size_t col = 0; col < line.length(); col++) {
             const char c = line[col];
             if (FIRST_AGENT <= c && c <= LAST_AGENT) {
-                agent_positions[c].push_back(Cell2D(row, col));
+                agent_positions[c] = Cell2D(row, col);
                 continue;
             }
             if (FIRST_BOX <= c && c <= LAST_BOX) {
@@ -180,9 +179,9 @@ Level loadLevel(std::istream &serverMessages) {
         }
     }
 
-    for (const auto &[agent_char, positions] : agent_positions) {
-        agents_bulks.push_back(EntityBulk(positions, agent_goals[agent_char], agent_colors[agent_char], agent_char));
+    for (const auto &[agent_char, agent_color] : agent_colors) {
+        agents.push_back(Agent(agent_positions[agent_char], agent_goals[agent_char], agent_color, agent_char));
     }
 
-    return Level(StaticLevel(name, domain, walls, agent_colors, box_colors), agents_bulks);
+    return Level(StaticLevel(name, domain, walls, agent_colors, box_colors), agents);
 }

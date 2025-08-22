@@ -4,25 +4,27 @@
 #include <vector>
 
 #include "action.hpp"
-#include "entity_bulk.hpp"
+#include "agent.hpp"
 #include "level.hpp"
 
 class LowLevelState {
    private:
-    const int g_;
+    const size_t g_;
     const StaticLevel &static_level_;
     mutable size_t hash_ = 0;
 
    public:
     LowLevelState() = delete;
-    LowLevelState(EntityBulk agent_bulk, const StaticLevel &static_level)
-        : g_(0), static_level_(static_level), agent_bulk(agent_bulk), parent(nullptr) {}
+    LowLevelState(std::vector<Agent> agents, const StaticLevel &static_level)
+        : g_(0), static_level_(static_level), agents(agents), parent(nullptr) {
+        agents.shrink_to_fit();
+    }
 
-    EntityBulk agent_bulk;
+    std::vector<Agent> agents;
     const LowLevelState *parent;
     std::vector<const Action *> actions;
 
-    inline int getG() const { return g_; }
+    inline size_t getG() const { return g_; }
 
     std::vector<std::vector<const Action *>> extractPlan() const {
         std::vector<std::vector<const Action *>> plan;
@@ -37,22 +39,10 @@ class LowLevelState {
         return plan;
     }
 
-    // std::vector<const AgentState *> extractStates() const {
-    //     std::vector<const AgentState *> states;
-    //     states.reserve(g_);
-    //     const AgentState *current = this;
-    //     while (current != nullptr) {
-    //         states.push_back(current);
-    //         current = current->parent;
-    //     }
-    //     // std::reverse(states.begin(), states.end());
-    //     return states;
-    // }
-
     std::vector<LowLevelState *> getExpandedStates() const {
-        auto actions_permutations = Action::getAllPermutations(agent_bulk.size());
+        auto actions_permutations = Action::getAllPermutations(agents.size());
         std::vector<LowLevelState *> expanded_states;
-        expanded_states.reserve(actions_permutations.size() * agent_bulk.size());
+        expanded_states.reserve(actions_permutations.size() * agents.size());
 
         for (const auto &actions_permutation : actions_permutations) {
             if (!isApplicable(actions_permutation)) {
@@ -67,20 +57,25 @@ class LowLevelState {
         if (hash_ != 0) {
             return hash_;
         }
-        hash_ = agent_bulk.getHash();
+        for (const auto &agent : agents) {
+            hash_ = hash_ * 31 + agent.getHash();
+        }
+        hash_ = hash_ * 31 + g_;
         return hash_;
     }
 
-    bool operator==(const LowLevelState &other) const { return agent_bulk == other.agent_bulk; }
-    bool isGoalState() const { return agent_bulk.reachedGoal(); }
+    bool operator==(const LowLevelState &other) const { return agents == other.agents && g_ == other.g_; }
+    bool isGoalState() const {
+        return std::all_of(agents.begin(), agents.end(), [](const Agent &agent) { return agent.reachedGoal(); });
+    }
 
     bool isApplicable(const std::vector<const Action *> &joint_actions) const {
-        assert(joint_actions.size() == agent_bulk.size());
+        assert(joint_actions.size() == agents.size());
 
         bool is_applicable = false;
         for (size_t i = 0; i < joint_actions.size(); i++) {
             const Action *action = joint_actions[i];
-            Cell2D agent_pos = agent_bulk.getPosition(i);
+            Cell2D agent_pos = agents[i].getPosition();
 
             switch (action->type) {
                 case ActionType::NoOp:
@@ -133,14 +128,12 @@ class LowLevelState {
         return is_applicable;
     }
 
-   private:
-    LowLevelState(const LowLevelState *parent, const std::vector<const Action *> actions)
-        : g_(parent->g_ + 1), static_level_(parent->static_level_), agent_bulk(parent->agent_bulk), parent(parent), actions(actions) {
-        assert(actions.size() == agent_bulk.size());
+    void applyActions(const std::vector<const Action *> &joint_actions) {
+        assert(joint_actions.size() == agents.size());
 
-        for (size_t i = 0; i < actions.size(); i++) {
-            const Action *action = actions[i];
-            Cell2D &agent_pos_ref = agent_bulk.position(i);
+        for (size_t i = 0; i < joint_actions.size(); i++) {
+            const Action *action = joint_actions[i];
+            Cell2D &agent_pos_ref = agents[i].position();
 
             switch (action->type) {
                 case ActionType::NoOp:
@@ -172,11 +165,17 @@ class LowLevelState {
         }
     }
 
+   private:
+    LowLevelState(const LowLevelState *parent, const std::vector<const Action *> joint_actions)
+        : g_(parent->g_ + 1), static_level_(parent->static_level_), agents(parent->agents), parent(parent), actions(joint_actions) {
+        applyActions(joint_actions);
+    }
+
     bool isCellFree(const Cell2D &cell) const {
         if (!static_level_.isCellFree(cell)) return false;
 
-        for (size_t i = 0; i < agent_bulk.size(); i++) {
-            if (agent_bulk.getPosition(i) == cell) {
+        for (size_t i = 0; i < agents.size(); i++) {
+            if (agents[i].getPosition() == cell) {
                 return false;
             }
         }

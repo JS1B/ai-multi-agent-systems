@@ -32,7 +32,6 @@ Level *level_instance = nullptr;
 int main(int argc, char *argv[]) {
     (void)argc;
     (void)argv;
-
     fprintf(stderr, "C++ SearchClient initializing.\n");
 
     // Send client name to server.
@@ -70,5 +69,6 @@ int main(int argc, char *argv[]) {
     }
 #endif
     delete cbs;
+    delete level_instance;
     return 0;
 }

@@ -1,14 +1,15 @@
 #pragma once
 
 #include <iostream>
+#include <map>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
+#include "agent.hpp"
+#include "box_bulk.hpp"
 #include "cell2d.hpp"
 #include "chargrid.hpp"
 #include "color.hpp"
-#include "entity_bulk.hpp"
 
 #define WALL '+'
 #define EMPTY ' '
@@ -23,13 +24,12 @@ class StaticLevel {
     std::string domain_;
     CharGrid walls_;
 
-    std::unordered_map<char, Color> agent_colors_;
-    std::unordered_map<char, Color> box_colors_;
+    std::map<char, Color> agent_colors_;
+    std::map<char, Color> box_colors_;
 
    public:
     StaticLevel() = delete;
-    StaticLevel(std::string name, std::string domain, CharGrid walls, std::unordered_map<char, Color> agent_colors,
-                std::unordered_map<char, Color> box_colors);
+    StaticLevel(std::string name, std::string domain, CharGrid walls, std::map<char, Color> agent_colors, std::map<char, Color> box_colors);
     ~StaticLevel() = default;
 
     bool isCellFree(const Cell2D &cell) const;
@@ -43,10 +43,10 @@ class StaticLevel {
 class Level {
    public:
     StaticLevel static_level;
-    std::vector<EntityBulk> agent_bulks;
-    // std::vector<EntityBulk> box_bulks;
+    std::vector<Agent> agents;
+    // std::vector<BoxBulk> boxes;
 
-    Level(StaticLevel static_level, std::vector<EntityBulk> agent_bulks);
+    Level(StaticLevel static_level, std::vector<Agent> agents);
     ~Level() = default;
 
     std::string toString() const;

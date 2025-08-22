@@ -20,14 +20,13 @@ uint32_t Memory::getUsage() {
     if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc))) {
         return pmc.WorkingSetSize / (1024 * 1024);  // Convert bytes to MB
     }
-    fprintf(stderr, FAILED_TO_GET_MEMORY_MSG);
-    return 0;
 #else
     struct rusage usage;
     if (getrusage(RUSAGE_SELF, &usage) == 0) {
         return usage.ru_maxrss / 1024;  // Convert KB to MB
     }
+#endif
+
     fprintf(stderr, FAILED_TO_GET_MEMORY_MSG);
     return 0;
-#endif
 }
