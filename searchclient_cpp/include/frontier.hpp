@@ -118,12 +118,14 @@ class FrontierBestFirst : public Frontier {
         if (!heuristic_) {
             throw std::invalid_argument("Heuristic cannot be null for FrontierBestFirst.");
         }
+        set_.reserve(1'000);
     }
 
     ~FrontierBestFirst() {
         for (auto state : set_) {
             delete state;
         }
+        delete heuristic_;
     }
 
     void add(LowLevelState* state) override {

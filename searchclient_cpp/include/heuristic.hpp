@@ -32,9 +32,9 @@ class HeuristicAStar : public Heuristic {
         int total_distance = 0;
 
         // Calculate Manhattan distance for agents to their goals
-        for (size_t i = 0; i < state.agent_bulk.size(); i++) {
-            Cell2D agent_pos = state.agent_bulk.getPosition(i);
-            Cell2D agent_goal = state.agent_bulk.getGoal(i);
+        for (size_t i = 0; i < state.agents.size(); i++) {
+            Cell2D agent_pos = state.agents[i].getPosition();
+            Cell2D agent_goal = state.agents[i].getGoalPositions()[0];
             total_distance += std::abs(agent_pos.r - agent_goal.r) + std::abs(agent_pos.c - agent_goal.c);
         }
 
