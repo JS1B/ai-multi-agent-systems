@@ -61,4 +61,30 @@ size_t SIC(const std::vector<std::vector<std::vector<const Action *>>> &solution
     return sum_of_individual_costs;
 }
 
+size_t makespan(const std::vector<std::vector<std::vector<const Action *>>> &solutions) {
+    size_t makespan = 0;
+    for (const auto &agent_plans : solutions) {
+        makespan = std::max(makespan, agent_plans.size());
+    }
+    return makespan;
+}
+
+size_t fuel_used(const std::vector<std::vector<std::vector<const Action *>>> &solutions) {
+    size_t fuel_used = 0;
+    for (const auto &agent_plans : solutions) {
+        for (const auto &plan : agent_plans) {
+            for (const auto &action : plan) {
+                if (action->type != ActionType::NoOp) {
+                    fuel_used += 1;
+                }
+            }
+        }
+    }
+    return fuel_used;
+}
+
+size_t CBS_cost(const std::vector<std::vector<std::vector<const Action *>>> &solutions) {
+    return 10 * makespan(solutions) + SIC(solutions);
+}
+
 }  // namespace utils

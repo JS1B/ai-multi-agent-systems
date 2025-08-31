@@ -20,6 +20,11 @@ class LowLevelState {
         agents.shrink_to_fit();
     }
 
+    LowLevelState(const LowLevelState &other)
+        : g_(other.g_), static_level_(other.static_level_), agents(other.agents), parent(other.parent), actions(other.actions) {}
+
+    LowLevelState *clone() const { return new LowLevelState(*this); }
+
     std::vector<Agent> agents;
     const LowLevelState *parent;
     std::vector<const Action *> actions;
@@ -89,25 +94,26 @@ class LowLevelState {
                 }
 
                 case ActionType::Push: {
-                    Cell2D box_position = agent_pos + action->agent_delta;
-                    // char box_id = level.all_boxes(box_position);
+                    Cell2D current_box_position = agent_pos + action->agent_delta;
+
+                    // char box_id = static_level_.all_boxes(current_box_position);
                     // if (!box_id) {
                     //     return false;
                     // }
 
                     // Cell2D destination = box_position + action->box_delta;
-                    // if (!level.isCellFree(destination)) {
+                    // if (!static_level_.isCellFree(destination)) {
                     //     return false;
                     // }
-                    // return level.agent_colors[level.agent_idx] == level.box_colors[box_id - FIRST_BOX];
+                    // return static_level_.agent_colors[static_level_.agent_idx] == static_level_.box_colors[box_id - FIRST_BOX];
                     is_applicable = false;
                     break;
                 }
 
                 case ActionType::Pull: {
                     // Box will be in a moment where the agent is now
-                    Cell2D box_position = agent_pos - action->box_delta;
-                    // char box_id = level.all_boxes(box_position);
+                    // Cell2D box_position = agent_pos - action->box_delta;
+                    // char box_id = static_level_.all_boxes(box_position);
                     // if (!box_id) {
                     //     return false;
                     // }
@@ -145,7 +151,7 @@ class LowLevelState {
 
                 case ActionType::Push: {
                     Cell2D box_pos = agent_pos_ref + action->agent_delta;
-                    agent_pos_ref += action->agent_delta;
+                    // agent_pos_ref += action->agent_delta;
                     // agent_bulk.all_boxes(box_pos + action->box_delta) = agent_bulk.all_boxes(box_pos);
                     // agent_bulk.all_boxes(box_pos) = 0;
                     break;
@@ -153,7 +159,7 @@ class LowLevelState {
 
                 case ActionType::Pull: {
                     Cell2D box_pos = agent_pos_ref - action->box_delta;
-                    agent_pos_ref += action->agent_delta;
+                    // agent_pos_ref += action->agent_delta;
                     // agent_bulk.all_boxes(box_pos + action->box_delta) = agent_bulk.all_boxes(box_pos);
                     // agent_bulk.all_boxes(box_pos) = 0;
                     break;

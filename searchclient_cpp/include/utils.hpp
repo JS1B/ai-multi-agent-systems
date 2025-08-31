@@ -14,6 +14,9 @@ std::string normalizeWhitespace(const std::string &str);
 std::string toLower(const std::string &str);
 
 size_t SIC(const std::vector<std::vector<std::vector<const Action *>>> &solutions);
+size_t makespan(const std::vector<std::vector<std::vector<const Action *>>> &solutions);
+size_t fuel_used(const std::vector<std::vector<std::vector<const Action *>>> &solutions);
+size_t CBS_cost(const std::vector<std::vector<std::vector<const Action *>>> &solutions);
 
 template <typename T>
 std::vector<std::vector<T>> transpose(const std::vector<std::vector<T>> &vector2d) {

@@ -46,24 +46,27 @@ class Graphsearch {
 
     std::vector<std::vector<const Action *>> solve(const std::vector<Constraint> &constraints) {
         int iterations = 0;
+
+        // Clear frontier and explored set for new search
+        frontier_->clear();
+        explored_.clear();
+
         frontier_->add(initial_state_);
 
         while (true) {
-            if (iterations % 1000 == 0) {
-                if (Memory::getUsage() > Memory::maxUsage) {
-                    fprintf(stderr, "Maximum memory usage exceeded low level search.\n");
-                    return {};
-                }
+            if (iterations % 1000 == 0 && Memory::getUsage() > Memory::maxUsage) {
+                fprintf(stderr, "Maximum memory usage exceeded low level search.\n");
+                return {};
             }
 
             if (frontier_->isEmpty()) {
-                fprintf(stderr, "Frontier is empty.\n");
+                // fprintf(stderr, "Frontier is empty.\n");
                 return {};
             }
 
             LowLevelState *state = frontier_->pop();
 
-            if (state->isGoalState()) {
+            if (state->isGoalState() && areConstraintsSatisfied(state, constraints)) {
                 return state->extractPlan();
             }
 
@@ -71,15 +74,17 @@ class Graphsearch {
 
             auto expanded_states = state->getExpandedStates();
             for (auto child : expanded_states) {
-                if (explored_.find(child) == explored_.end() && !frontier_->contains(child) &&
-                    areConstraintsSatisfied(child, constraints)) {
+                bool explored = explored_.find(child) != explored_.end();
+                bool in_frontier = frontier_->contains(child);
+                bool constraints_satisfied = areConstraintsSatisfied(child, constraints);
+                if (!explored && !in_frontier && constraints_satisfied) {
                     frontier_->add(child);
                     continue;
                 }
                 delete child;
             }
-        }
 
-        iterations++;
+            iterations++;
+        }
     }
 };
