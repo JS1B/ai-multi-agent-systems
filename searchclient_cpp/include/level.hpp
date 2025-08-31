@@ -44,7 +44,7 @@ class Level {
    public:
     StaticLevel static_level;
     std::vector<Agent> agents;
-    // std::vector<BoxBulk> boxes;
+    std::vector<BoxBulk> boxes;
 
     Level(StaticLevel static_level, std::vector<Agent> agents);
     ~Level() = default;

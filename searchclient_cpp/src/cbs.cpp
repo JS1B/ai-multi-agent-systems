@@ -55,7 +55,6 @@ std::vector<std::vector<const Action *>> CBS::solve() {
     std::vector<Graphsearch *> agent_searches;
     agent_searches.reserve(initial_agents_states_.size());
     for (auto agent_state : initial_agents_states_) {
-        // TODO fix leaks
         agent_searches.push_back(new Graphsearch(agent_state, new FrontierBestFirst(new HeuristicAStar())));
     }
 
@@ -81,56 +80,78 @@ std::vector<std::vector<const Action *>> CBS::solve() {
 
         CTNode *node = cbs_frontier.pop();
 
-        if (iterations % 100 == 1 && Memory::getUsage() > Memory::maxUsage) {
+        // Check for duplicate constraint sets
+        if (visited_constraint_sets_.find(node->one_sided_conflicts) != visited_constraint_sets_.end()) {
+            delete node;
+            continue;
+        }
+        visited_constraint_sets_.insert(node->one_sided_conflicts);
+
+        if (Memory::getUsage() > Memory::maxUsage) {
             fprintf(stderr, "Maximum memory usage exceeded.\n");
+            for (auto agent_search : agent_searches) {
+                delete agent_search;
+            }
             return {};
         }
 
         std::vector<std::vector<const Action *>> merged_plans = mergePlans(node->solutions);
-        Conflict conflict = findFirstConflict(merged_plans);
+        FullConflict conflict = findFirstConflict(merged_plans);
         if (conflict.a1_symbol == 0 && conflict.a2_symbol == 0) {
+            for (auto agent_search : agent_searches) {
+                delete agent_search;
+            }
             return merged_plans;
         }
 
-        fprintf(stderr, "Conflict (%c %c) in (%i %i) at %lu\n", conflict.a1_symbol, conflict.a2_symbol, conflict.constraint.vertex.r,
-                conflict.constraint.vertex.c, conflict.constraint.g);
+        // fprintf(stderr, "Conflict (%c %c) in (%i %i) at %lu\t", conflict.a1_symbol, conflict.a2_symbol, conflict.constraint.vertex.r,
+        //         conflict.constraint.vertex.c, conflict.constraint.g);
+        // fprintf(stderr, "One-sided conflicts: %zu, Node cost: %zu\n", node->one_sided_conflicts.size(), node->cost);
         fflush(stderr);
 
         for (auto agent_symbol : {conflict.a1_symbol, conflict.a2_symbol}) {
             size_t agent_idx = agent_symbol - FIRST_AGENT;
 
             CTNode *child = new CTNode(*node);
-            child->conflicts.push_back(conflict);
+
+            auto [osc1, osc2] = conflict.split();
+            if (osc1.a1_symbol == agent_symbol) {
+                child->one_sided_conflicts.insert(osc1);
+            }
+            if (osc2.a1_symbol == agent_symbol) {
+                child->one_sided_conflicts.insert(osc2);
+            }
 
             // Get constraints from conflicts of an agent
             std::vector<Constraint> constraints;
-            for (const auto &conflict : child->conflicts) {
-                if (conflict.a1_symbol == agent_symbol || conflict.a2_symbol == agent_symbol) {
+            constraints.reserve(child->one_sided_conflicts.size());
+            for (const auto &conflict : child->one_sided_conflicts) {
+                if (conflict.a1_symbol == agent_symbol) {
                     constraints.push_back(conflict.constraint);
                 }
             }
 
-            auto agent_search = Graphsearch(initial_agents_states_[agent_idx], new FrontierBestFirst(new HeuristicAStar()));
+            auto agent_search = Graphsearch(initial_agents_states_[agent_idx]->clone(), new FrontierBestFirst(new HeuristicAStar()));
             auto plan = agent_search.solve(constraints);
-            if (plan.empty()) {
-                child->cost = SIZE_MAX;
-            }
-
             child->solutions[agent_idx] = plan;
-            child->cost = utils::SIC(child->solutions);
-            if (child->cost < SIZE_MAX && !cbs_frontier.contains(child)) {
+            if (plan.empty())
+                child->cost = SIZE_MAX;
+            else
+                child->cost = utils::CBS_cost(child->solutions);
+
+            if (child->cost < SIZE_MAX) {
                 cbs_frontier.add(child);
             } else {
                 delete child;
             }
         }
 
-        // if (iterations % 100000 == 1) {
-        //     printSearchStatus(agent_searches_);
-        // }
         iterations++;
     }
 
+    for (auto agent_search : agent_searches) {
+        delete agent_search;
+    }
     return {};
 }
 
@@ -164,7 +185,7 @@ std::vector<std::vector<const Action *>> CBS::mergePlans(std::vector<std::vector
     return merged_plans;
 }
 
-Conflict CBS::findFirstConflict(const std::vector<std::vector<const Action *>> &solutions) const {
+FullConflict CBS::findFirstConflict(const std::vector<std::vector<const Action *>> &solutions) const {
     assert(solutions[0].size() == initial_level_.agents.size());
 
     std::vector<Cell2D> current_agent_positions(solutions[0].size());
@@ -189,7 +210,7 @@ Conflict CBS::findFirstConflict(const std::vector<std::vector<const Action *>> &
         for (size_t j = 0; j < solutions[0].size(); ++j) {
             for (size_t k = j + 1; k < solutions[0].size(); ++k) {
                 if (current_agent_positions[j] == current_agent_positions[k]) {
-                    return Conflict(j + FIRST_AGENT, k + FIRST_AGENT, Constraint(current_agent_positions[j], depth + 1));
+                    return FullConflict(j + FIRST_AGENT, k + FIRST_AGENT, Constraint(current_agent_positions[j], depth + 1));
                 }
             }
         }
@@ -197,31 +218,15 @@ Conflict CBS::findFirstConflict(const std::vector<std::vector<const Action *>> &
         // Follow/trailing conflicts
         for (size_t j = 0; j < solutions[0].size(); ++j) {
             for (size_t k = j + 1; k < solutions[0].size(); ++k) {
-                if (previous_agent_positions[j] == current_agent_positions[k]) {
-                    return Conflict(j + FIRST_AGENT, k + FIRST_AGENT, Constraint(current_agent_positions[k], depth + 1));
-                }
                 if (previous_agent_positions[k] == current_agent_positions[j]) {
-                    return Conflict(k + FIRST_AGENT, j + FIRST_AGENT, Constraint(current_agent_positions[j], depth + 1));
+                    return FullConflict(k + FIRST_AGENT, j + FIRST_AGENT, Constraint(current_agent_positions[j], depth + 1));
+                }
+                if (previous_agent_positions[j] == current_agent_positions[k]) {
+                    return FullConflict(j + FIRST_AGENT, k + FIRST_AGENT, Constraint(current_agent_positions[k], depth + 1));
                 }
             }
         }
-
-        // Edge conflicts
-        // std::unordered_map<std::pair<Cell2D, Cell2D>, size_t, PairHash> edge_traversals;
-        // for (size_t j = 0; j < solutions[0].size(); ++j) {
-        //     const Cell2D &start_pos = previous_agent_positions[j];
-        //     const Cell2D &end_pos = current_agent_positions[j];
-
-        //     if (start_pos == end_pos) continue;
-
-        //     std::pair<Cell2D, Cell2D> reverse_edge = {end_pos, start_pos};
-        //     if (edge_traversals.count(reverse_edge)) {
-        //         return Conflict(j + FIRST_AGENT, edge_traversals[reverse_edge] + FIRST_AGENT, Constraint(end_pos, depth + 1));
-        //     }
-
-        //     edge_traversals[{start_pos, end_pos}] = j;
-        // }
     }
 
-    return Conflict(0, 0, Constraint(Cell2D(0, 0), 0));
+    return FullConflict(0, 0, Constraint(Cell2D(0, 0), 0));
 }

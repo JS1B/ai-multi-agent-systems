@@ -13,5 +13,6 @@ class Constraint {
     Cell2D vertex;
     size_t g;
 
+    bool operator<(const Constraint &other) const { return vertex < other.vertex || (vertex == other.vertex && g < other.g); }
     bool operator==(const Constraint &other) const { return vertex == other.vertex && g == other.g; }
 };

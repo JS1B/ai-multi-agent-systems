@@ -18,6 +18,7 @@ class Frontier {
     virtual bool isEmpty() const = 0;
     virtual size_t size() const = 0;
     virtual bool contains(LowLevelState* state) const = 0;
+    virtual void clear() = 0;
     virtual std::string getName() const = 0;
 };
 
@@ -56,6 +57,14 @@ class FrontierBFS : public Frontier {
 
     bool contains(LowLevelState* state) const override { return set_.count(state); }
 
+    void clear() override {
+        for (auto state : set_) {
+            delete state;
+        }
+        queue_.clear();
+        set_.clear();
+    }
+
     std::string getName() const override { return "breadth-first search"; }
 };
 
@@ -93,6 +102,14 @@ class FrontierDFS : public Frontier {
     size_t size() const override { return queue_.size(); }
 
     bool contains(LowLevelState* state) const override { return set_.count(state); }
+
+    void clear() override {
+        for (auto state : set_) {
+            delete state;
+        }
+        queue_.clear();
+        set_.clear();
+    }
 
     std::string getName() const override { return "depth-first search"; }
 };
@@ -148,6 +165,15 @@ class FrontierBestFirst : public Frontier {
     size_t size() const override { return set_.size(); }
 
     bool contains(LowLevelState* state) const override { return set_.count(state); }
+
+    void clear() override {
+        for (auto state : set_) {
+            delete state;
+        }
+        // Clear the priority_queue by creating a new empty one
+        queue_ = std::priority_queue<LowLevelState*, std::vector<LowLevelState*>, StateComparator>(StateComparator(heuristic_));
+        set_.clear();
+    }
 
     std::string getName() const override { return "best-first search using " + heuristic_->getName(); }
 };
