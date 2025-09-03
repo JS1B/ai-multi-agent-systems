@@ -12,7 +12,7 @@
 #include <unistd.h>
 #endif
 
-uint32_t Memory::maxUsage = 2048;  // Default max memory usage in MB
+uint32_t Memory::maxUsage = 128;  // Max memory usage in MB
 
 uint32_t Memory::getUsage() {
 #ifdef _WIN32

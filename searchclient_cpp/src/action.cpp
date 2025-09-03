@@ -50,10 +50,10 @@ const std::array<const Action *, 29> &Action::allValues() {
     return allActions;
 }
 
-const std::vector<std::vector<const Action *>> Action::getAllPermutations(size_t n) {
+const std::vector<std::vector<const Action *>> &Action::getAllPermutations(size_t n) {
     auto it = cached_permutations_.find(n);
     if (it != cached_permutations_.end()) {
-        return it->second;  // Return the cached result
+        return it->second;  // Return const reference to cached result
     }
 
     // Generate
@@ -63,15 +63,15 @@ const std::vector<std::vector<const Action *>> Action::getAllPermutations(size_t
     // Vector to hold the current combination of actions for 'n' length
     std::vector<const Action *> current_combination(n);
 
-    // Recursive helper function to generate combinations with repetition
+    // Generate combinations with repetition
     std::function<void(size_t)> generateCombinations = [&](size_t k) {  // k is the current index in the combination (0 to n-1)
         if (k == n) {
-            // Base case: a full combination for all 'n' positions has been formed
+            // Full combination for all 'n' positions has been formed
             generated_permutations.push_back(current_combination);
             return;
         }
 
-        // Recursive step: for the current position (k), try each possible action
+        // For the current position (k), try each possible action
         for (const Action *action : all_actions_values) {
             current_combination[k] = action;
             generateCombinations(k + 1);  // Move to the next position

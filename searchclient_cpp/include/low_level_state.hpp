@@ -45,7 +45,7 @@ class LowLevelState {
     }
 
     std::vector<LowLevelState *> getExpandedStates() const {
-        auto actions_permutations = Action::getAllPermutations(agents.size());
+        const auto &actions_permutations = Action::getAllPermutations(agents.size());
         std::vector<LowLevelState *> expanded_states;
         expanded_states.reserve(actions_permutations.size() * agents.size());
 

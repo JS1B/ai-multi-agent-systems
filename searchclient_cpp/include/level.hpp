@@ -38,6 +38,7 @@ class StaticLevel {
     inline const Cell2D getSize() const { return walls_.size(); }
 
     std::string toString() const;
+    Color getAgentColor(const char &agent_symbol) const;
 };
 
 class Level {
