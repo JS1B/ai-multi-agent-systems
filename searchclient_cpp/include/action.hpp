@@ -65,7 +65,7 @@ class Action {
     static const Action PullWS;
 
     static const std::array<const Action *, 29> &allValues();
-    static const std::vector<std::vector<const Action *>> getAllPermutations(size_t n);
+    static const std::vector<std::vector<const Action *>> &getAllPermutations(size_t n);
 };
 
 std::string formatJointAction(const std::vector<const Action *> &joint_action, bool with_bubble = true);

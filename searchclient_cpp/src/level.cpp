@@ -27,6 +27,9 @@ std::string StaticLevel::toString() const {
     return ss.str();
 }
 
+// Take agents symbol return color of it
+Color StaticLevel::getAgentColor(const char &agent_symbol) const { return agent_colors_.at(agent_symbol); }
+
 Level::Level(StaticLevel static_level, std::vector<Agent> agents) : static_level(static_level), agents(agents) {}
 
 std::string Level::toString() const {
@@ -180,7 +183,7 @@ Level loadLevel(std::istream &serverMessages) {
     }
 
     for (const auto &[agent_char, agent_color] : agent_colors) {
-        agents.push_back(Agent(agent_positions[agent_char], agent_goals[agent_char], agent_color, agent_char));
+        agents.push_back(Agent(agent_positions[agent_char], agent_goals[agent_char], agent_char));
     }
 
     return Level(StaticLevel(name, domain, walls, agent_colors, box_colors), agents);

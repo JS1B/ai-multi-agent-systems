@@ -89,18 +89,12 @@ std::vector<std::vector<const Action *>> CBS::solve() {
 
         if (Memory::getUsage() > Memory::maxUsage) {
             fprintf(stderr, "Maximum memory usage exceeded.\n");
-            for (auto agent_search : agent_searches) {
-                delete agent_search;
-            }
             return {};
         }
 
         std::vector<std::vector<const Action *>> merged_plans = mergePlans(node->solutions);
         FullConflict conflict = findFirstConflict(merged_plans);
         if (conflict.a1_symbol == 0 && conflict.a2_symbol == 0) {
-            for (auto agent_search : agent_searches) {
-                delete agent_search;
-            }
             return merged_plans;
         }
 
@@ -131,8 +125,8 @@ std::vector<std::vector<const Action *>> CBS::solve() {
                 }
             }
 
-            auto agent_search = Graphsearch(initial_agents_states_[agent_idx]->clone(), new FrontierBestFirst(new HeuristicAStar()));
-            auto plan = agent_search.solve(constraints);
+            Graphsearch *agent_search = agent_searches[agent_idx];
+            auto plan = agent_search->solve(constraints);
             child->solutions[agent_idx] = plan;
             if (plan.empty())
                 child->cost = SIZE_MAX;
@@ -147,10 +141,6 @@ std::vector<std::vector<const Action *>> CBS::solve() {
         }
 
         iterations++;
-    }
-
-    for (auto agent_search : agent_searches) {
-        delete agent_search;
     }
     return {};
 }
