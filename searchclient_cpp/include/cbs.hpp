@@ -24,7 +24,7 @@ static auto start_time = std::chrono::high_resolution_clock::now();
 
 class CTNode {
    public:
-    CTNode();
+    CTNode() : cost(0) {}
     ~CTNode() = default;
 
     std::vector<std::vector<std::vector<const Action *>>> solutions;
@@ -37,7 +37,7 @@ class CTNode {
             if (a->cost != b->cost) {
                 return a->cost > b->cost;  // Lower cost has higher priority
             }
-            // Tie-breaking: prefer nodes with fewer constraints (earlier in search)
+            // Tie-breaking: prefer nodes with fewer constraints
             return a->one_sided_conflicts.size() > b->one_sided_conflicts.size();
         }
     };
@@ -83,7 +83,7 @@ class CBSFrontier {
     size_t size() const { return queue_.size(); }
 };
 
-void printSearchStatus(CBSFrontier &cbs_frontier);
+void printSearchStatus(const CBSFrontier &cbs_frontier, const size_t &generated_states_count);
 
 class CBS {
    private:

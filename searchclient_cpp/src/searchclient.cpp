@@ -43,13 +43,16 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "Loaded %s\n", level_instance->toString().c_str());
 
     fprintf(stderr, "Starting CBS...\n");
-    fflush(stderr);
     CBS *cbs = new CBS(*level_instance);
     std::vector<std::vector<const Action *>> plan = cbs->solve();
+    fflush(stdout);
+    fflush(stderr);
 
     // Print plan to server
     if (plan.empty()) {
         fprintf(stderr, "Unable to solve level.\n");
+        delete cbs;
+        delete level_instance;
         return 0;
     }
     fprintf(stderr, "Found solution of length %zu.\n", plan.size());
@@ -68,7 +71,5 @@ int main(int argc, char *argv[]) {
         getline(std::cin, response);
     }
 #endif
-    delete cbs;
-    delete level_instance;
     return 0;
 }

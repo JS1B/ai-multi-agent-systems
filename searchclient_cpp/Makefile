@@ -29,7 +29,7 @@ BENCHMARK_DIR = ../benchmarks
 # Flamegraph
 FLAMEGRAPH_DIR = ../lib/FlameGraph
 FLAMEGRAPH_STRATEGY = bfs
-LEVEL_FILE = ../levels/warmup/MAPF03C.lvl
+LEVEL_FILE = ../levels/custom/cbs03.lvl
 FLAMEGRAPH_SVG = cpu_flamegraph.svg
 PERF_FREQ = 399
 

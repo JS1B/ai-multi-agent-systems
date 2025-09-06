@@ -17,24 +17,21 @@ struct PairHash {
     }
 };
 
-CTNode::CTNode() : cost(0) {}
-
-void printSearchStatus(CBSFrontier &cbs_frontier) {
+void printSearchStatus(const CBSFrontier &cbs_frontier, const size_t &generated_states_count) {
     static bool first_time = true;
 
     if (first_time) {
-        fprintf(stdout, "#CBS fr size, Mem usage[MB]\n");
-        fflush(stdout);
+        fprintf(stdout, "#CBS fr size, Mem usage[MB], Generated states\n");
         first_time = false;
     }
 
-    fprintf(stdout, "#%11zu, %13d\n", cbs_frontier.size(), Memory::getUsage());
+    fprintf(stdout, "#%11zu, %13d, %13zu\n", cbs_frontier.size(), Memory::getUsage(), generated_states_count);
     fflush(stdout);
 }
 
 CBS::CBS(const Level &loaded_level) : initial_level_(loaded_level) {
     for (const auto &agent : loaded_level.agents) {
-        initial_agents_states_.push_back(new LowLevelState({agent}, initial_level_.static_level));
+        initial_agents_states_.push_back(new LowLevelState(initial_level_.static_level, {agent}, loaded_level.boxes));
     }
 
     agents_num_ = initial_agents_states_.size();
@@ -47,7 +44,11 @@ CBS::~CBS() {
 }
 
 std::vector<std::vector<const Action *>> CBS::solve() {
+    size_t generated_states_count = 0;
     CTNode root;
+
+    CBSFrontier cbs_frontier;
+
     // root.constraints.reserve(agents_states_.size());
     // root.solutions.reserve(agents_states_.size());
 
@@ -61,21 +62,22 @@ std::vector<std::vector<const Action *>> CBS::solve() {
     // Find a solution for each agent bulk
     for (size_t i = 0; i < agent_searches.size(); i++) {
         auto bulk_plan = agent_searches[i]->solve({});
-        if (bulk_plan.empty()) {
+        generated_states_count += agent_searches[i]->getGeneratedStatesCount();
+        if (!agent_searches[i]->wasSolutionFound()) {
+            printSearchStatus(cbs_frontier, generated_states_count);
             return {};
         }
         root.solutions.push_back(bulk_plan);
     }
 
-    root.cost = utils::SIC(root.solutions);
+    root.cost = utils::CBS_cost(root.solutions);
 
-    CBSFrontier cbs_frontier;
     cbs_frontier.add(&root);
 
-    int iterations = 0;
+    size_t iterations = 0;
     while (!cbs_frontier.isEmpty()) {
-        if (iterations % 200 == 1) {  // 10000
-            printSearchStatus(cbs_frontier);
+        if (iterations < 5 || iterations % 20 == 0) {  // 10000
+            printSearchStatus(cbs_frontier, generated_states_count);
         }
 
         CTNode *node = cbs_frontier.pop();
@@ -89,31 +91,33 @@ std::vector<std::vector<const Action *>> CBS::solve() {
 
         if (Memory::getUsage() > Memory::maxUsage) {
             fprintf(stderr, "Maximum memory usage exceeded.\n");
+            printSearchStatus(cbs_frontier, generated_states_count);
             return {};
         }
 
         std::vector<std::vector<const Action *>> merged_plans = mergePlans(node->solutions);
         FullConflict conflict = findFirstConflict(merged_plans);
         if (conflict.a1_symbol == 0 && conflict.a2_symbol == 0) {
+            printSearchStatus(cbs_frontier, generated_states_count);
             return merged_plans;
         }
 
         // fprintf(stderr, "Conflict (%c %c) in (%i %i) at %lu\t", conflict.a1_symbol, conflict.a2_symbol, conflict.constraint.vertex.r,
         //         conflict.constraint.vertex.c, conflict.constraint.g);
         // fprintf(stderr, "One-sided conflicts: %zu, Node cost: %zu\n", node->one_sided_conflicts.size(), node->cost);
-        fflush(stderr);
+        // fflush(stderr);
 
         for (auto agent_symbol : {conflict.a1_symbol, conflict.a2_symbol}) {
             size_t agent_idx = agent_symbol - FIRST_AGENT;
 
             CTNode *child = new CTNode(*node);
 
-            auto [osc1, osc2] = conflict.split();
-            if (osc1.a1_symbol == agent_symbol) {
-                child->one_sided_conflicts.insert(osc1);
+            auto osc_pair = conflict.split();
+            if (osc_pair.first.a1_symbol == agent_symbol) {
+                child->one_sided_conflicts.insert(osc_pair.first);
             }
-            if (osc2.a1_symbol == agent_symbol) {
-                child->one_sided_conflicts.insert(osc2);
+            if (osc_pair.second.a1_symbol == agent_symbol) {
+                child->one_sided_conflicts.insert(osc_pair.second);
             }
 
             // Get constraints from conflicts of an agent
@@ -127,21 +131,20 @@ std::vector<std::vector<const Action *>> CBS::solve() {
 
             Graphsearch *agent_search = agent_searches[agent_idx];
             auto plan = agent_search->solve(constraints);
+            generated_states_count += agent_search->getGeneratedStatesCount();
             child->solutions[agent_idx] = plan;
-            if (plan.empty())
+            if (!agent_search->wasSolutionFound()) {
                 child->cost = SIZE_MAX;
-            else
-                child->cost = utils::CBS_cost(child->solutions);
-
-            if (child->cost < SIZE_MAX) {
-                cbs_frontier.add(child);
-            } else {
                 delete child;
+                continue;
             }
+            child->cost = utils::CBS_cost(child->solutions);
+            cbs_frontier.add(child);
         }
 
         iterations++;
     }
+    printSearchStatus(cbs_frontier, generated_states_count);
     return {};
 }
 
