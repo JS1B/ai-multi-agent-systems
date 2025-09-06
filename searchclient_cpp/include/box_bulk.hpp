@@ -16,7 +16,7 @@ class BoxBulk {
 
    public:
     BoxBulk() = delete;
-    BoxBulk(const std::vector<Cell2D> &positions, const std::vector<Cell2D> &goals, const Color &color, char symbol)
+    BoxBulk(const std::vector<Cell2D> &positions, const std::vector<Cell2D> &goals, const Color &color, const char symbol)
         : positions_(positions), goals_positions_(goals), color_(color), symbol_(symbol) {
         positions_.shrink_to_fit();
         goals_positions_.shrink_to_fit();
@@ -62,6 +62,9 @@ class BoxBulk {
     const std::vector<Cell2D> &getPositions() const { return positions_; }
 
     const Cell2D &getGoal(size_t i) const { return goals_positions_[i]; }
+    size_t getGoalsCount() const { return goals_positions_.size(); }
+    const std::vector<Cell2D> &getGoals() const { return goals_positions_; }
+    bool hasGoals() const { return !goals_positions_.empty(); }
 
     const Color &getColor() const { return color_; }
     char getSymbol() const { return symbol_; }
@@ -70,23 +73,27 @@ class BoxBulk {
     void addGoal(const Cell2D &goal) { goals_positions_.push_back(goal); }
 
     bool reachedGoal(void) const {
-        bool reached = true;
+        // If no goals specified, box is considered already at goal
+        if (goals_positions_.empty()) {
+            return true;
+        }
+
+        // Check if all goals are occupied by boxes
         for (const auto &goal : goals_positions_) {
             if (std::find(positions_.begin(), positions_.end(), goal) == positions_.end()) {
-                reached = false;
-                break;
+                return false;
             }
         }
-        return reached;
+        return true;
     }
 
     size_t getHash() const {
-        size_t hash = 0;
+        size_t hash = 31 + int(color_) + int(symbol_);
         for (const auto &position : positions_) {
-            hash = hash * 31 + position.r ^ position.c;
+            hash = hash * 31 + (position.r ^ position.c);
         }
         for (const auto &goal : goals_positions_) {
-            hash = hash * 31 + goal.r ^ goal.c;
+            hash = hash * 31 + (goal.r ^ goal.c);
         }
         hash = hash * 31 + int(color_);
         hash = hash * 31 + int(symbol_);

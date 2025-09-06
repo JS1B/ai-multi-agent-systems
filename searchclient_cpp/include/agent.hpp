@@ -31,20 +31,23 @@ class Agent {
     }
 
     bool reachedGoal(void) const {
-        bool reached = true;
+        if (goal_positions_.empty()) {
+            return true;
+        }
+
+        // Check if agent is at any of its goals
         for (const auto &goal : goal_positions_) {
-            if (position_ != goal) {
-                reached = false;
-                break;
+            if (position_ == goal) {
+                return true;
             }
         }
-        return reached;
+        return false;
     }
 
     size_t getHash() const {
-        size_t hash = position_.r ^ position_.c ^ int(symbol_);
+        size_t hash = 31 + int(symbol_) + (position_.r ^ position_.c);
         for (const auto &goal : goal_positions_) {
-            hash = hash ^ goal.r ^ goal.c;
+            hash = hash * 31 + (goal.r ^ goal.c);
         }
         return hash;
     }

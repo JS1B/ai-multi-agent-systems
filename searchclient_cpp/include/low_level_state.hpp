@@ -5,6 +5,8 @@
 
 #include "action.hpp"
 #include "agent.hpp"
+#include "box_bulk.hpp"
+#include "constraint.hpp"
 #include "level.hpp"
 
 class LowLevelState {
@@ -15,21 +17,56 @@ class LowLevelState {
 
    public:
     LowLevelState() = delete;
-    LowLevelState(std::vector<Agent> agents, const StaticLevel &static_level)
-        : g_(0), static_level_(static_level), agents(agents), parent(nullptr) {
-        agents.shrink_to_fit();
+    LowLevelState(const StaticLevel &static_level, const std::vector<Agent> &agents, const std::vector<BoxBulk> &boxes)
+        : g_(0), static_level_(static_level), agents(agents), box_bulks(boxes), parent(nullptr) {
+        this->agents.shrink_to_fit();
+        box_bulks.shrink_to_fit();
     }
 
     LowLevelState(const LowLevelState &other)
-        : g_(other.g_), static_level_(other.static_level_), agents(other.agents), parent(other.parent), actions(other.actions) {}
+        : g_(other.g_),
+          static_level_(other.static_level_),
+          agents(other.agents),
+          box_bulks(other.box_bulks),
+          parent(other.parent),
+          actions(other.actions) {}
 
     LowLevelState *clone() const { return new LowLevelState(*this); }
 
     std::vector<Agent> agents;
+    std::vector<BoxBulk> box_bulks;
     const LowLevelState *parent;
     std::vector<const Action *> actions;
 
     inline size_t getG() const { return g_; }
+
+    // Box management methods
+    const std::vector<BoxBulk> &getBoxBulks() const { return box_bulks; }
+    std::vector<BoxBulk> &getBoxBulks() { return box_bulks; }
+    const StaticLevel &getStaticLevel() const { return static_level_; }
+
+    char getBoxAt(const Cell2D &position) const {
+        for (const auto &bulk : box_bulks) {
+            for (size_t i = 0; i < bulk.size(); i++) {
+                if (bulk.getPosition(i) == position) {
+                    return bulk.getSymbol();
+                }
+            }
+        }
+        return 0;  // No box
+    }
+
+    bool moveBox(const Cell2D &from, const Cell2D &to) {
+        for (auto &bulk : box_bulks) {
+            for (size_t i = 0; i < bulk.size(); i++) {
+                if (bulk.getPosition(i) == from) {
+                    bulk.position(i) = to;
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
     std::vector<std::vector<const Action *>> extractPlan() const {
         std::vector<std::vector<const Action *>> plan;
@@ -65,13 +102,51 @@ class LowLevelState {
         for (const auto &agent : agents) {
             hash_ = hash_ * 31 + agent.getHash();
         }
-        hash_ = hash_ * 31 + g_;
+        for (const auto &bulk : box_bulks) {
+            hash_ = hash_ * 31 + bulk.getHash();
+        }
         return hash_;
     }
 
-    bool operator==(const LowLevelState &other) const { return agents == other.agents && g_ == other.g_; }
+    bool operator==(const LowLevelState &other) const { return agents == other.agents && box_bulks == other.box_bulks; }
+
+    // Special equality method for constraint-aware comparison
+    bool temporalEquals(const LowLevelState &other, const std::vector<Constraint> &constraints) const {
+        if (agents != other.agents || box_bulks != other.box_bulks) {
+            return false;
+        }
+
+        // Check if either state has constraints at current timestep
+        bool this_has_constraints = false;
+        bool other_has_constraints = false;
+
+        for (const auto &constraint : constraints) {
+            if (constraint.g == g_) {
+                this_has_constraints = true;
+            }
+            if (constraint.g == other.g_) {
+                other_has_constraints = true;
+            }
+        }
+
+        // If either has temporal constraints, they must be at same timestep
+        if (this_has_constraints || other_has_constraints) {
+            return g_ == other.g_;
+        }
+
+        // Even without constraints, we should prefer earlier states (shorter paths)
+        // Only consider equal if at same depth to maintain CBS correctness
+        return g_ == other.g_;
+    }
+
     bool isGoalState() const {
-        return std::all_of(agents.begin(), agents.end(), [](const Agent &agent) { return agent.reachedGoal(); });
+        // Check if all agents reached their goals
+        bool agents_at_goal = std::all_of(agents.begin(), agents.end(), [](const Agent &agent) { return agent.reachedGoal(); });
+
+        // Check if all boxes reached their goals
+        bool boxes_at_goal = std::all_of(box_bulks.begin(), box_bulks.end(), [](const BoxBulk &bulk) { return bulk.reachedGoal(); });
+
+        return agents_at_goal && boxes_at_goal;
     }
 
     bool isApplicable(const std::vector<const Action *> &joint_actions) const {
@@ -94,36 +169,65 @@ class LowLevelState {
                 }
 
                 case ActionType::Push: {
-                    Cell2D current_box_position = agent_pos + action->agent_delta;
+                    Cell2D box_position = agent_pos + action->agent_delta;
+                    Cell2D box_destination = box_position + action->box_delta;
 
-                    // char box_id = static_level_.all_boxes(current_box_position);
-                    // if (!box_id) {
-                    //     return false;
-                    // }
+                    // Check if there's a box at the expected position
+                    char box_id = getBoxAt(box_position);
+                    if (!box_id) {
+                        is_applicable = false;
+                        break;
+                    }
 
-                    // Cell2D destination = box_position + action->box_delta;
-                    // if (!static_level_.isCellFree(destination)) {
-                    //     return false;
-                    // }
-                    // return static_level_.agent_colors[static_level_.agent_idx] == static_level_.box_colors[box_id - FIRST_BOX];
-                    is_applicable = false;
+                    // Check if box destination is free
+                    if (!isCellFree(box_destination)) {
+                        is_applicable = false;
+                        break;
+                    }
+
+                    // Check color compatibility (agent can only push boxes of same color)
+                    Color agent_color = static_level_.getAgentColor(agents[i].getSymbol());
+                    bool can_push = false;
+                    for (const auto &bulk : box_bulks) {
+                        if (bulk.getSymbol() == box_id && bulk.getColor() == agent_color) {
+                            can_push = true;
+                            break;
+                        }
+                    }
+                    is_applicable = can_push;
                     break;
                 }
 
                 case ActionType::Pull: {
-                    // Box will be in a moment where the agent is now
-                    // Cell2D box_position = agent_pos - action->box_delta;
-                    // char box_id = static_level_.all_boxes(box_position);
-                    // if (!box_id) {
-                    //     return false;
-                    // }
+                    Cell2D box_position = agent_pos - action->box_delta;
+                    Cell2D agent_destination = agent_pos + action->agent_delta;
+                    // Box moves to agent's current position
 
-                    // Cell2D destination = level.agent_pos + action.agent_delta;
-                    // if (!level.isCellFree(destination)) {
-                    //     return false;
-                    // }
-                    // return level.agent_colors[level.agent_idx] == level.box_colors[box_id - FIRST_BOX];
-                    is_applicable = false;
+                    // Check if there's a box at the expected position
+                    char box_id = getBoxAt(box_position);
+                    if (!box_id) {
+                        is_applicable = false;
+                        break;
+                    }
+
+                    // Check if agent destination is free
+                    if (!isCellFree(agent_destination)) {
+                        is_applicable = false;
+                        break;
+                    }
+
+                    // Box destination (agent's current position) will be free because agent is moving away
+
+                    // Check color compatibility
+                    Color agent_color = static_level_.getAgentColor(agents[i].getSymbol());
+                    bool can_pull = false;
+                    for (const auto &bulk : box_bulks) {
+                        if (bulk.getSymbol() == box_id && bulk.getColor() == agent_color) {
+                            can_pull = true;
+                            break;
+                        }
+                    }
+                    is_applicable = can_pull;
                     break;
                 }
 
@@ -151,17 +255,17 @@ class LowLevelState {
 
                 case ActionType::Push: {
                     Cell2D box_pos = agent_pos_ref + action->agent_delta;
-                    // agent_pos_ref += action->agent_delta;
-                    // agent_bulk.all_boxes(box_pos + action->box_delta) = agent_bulk.all_boxes(box_pos);
-                    // agent_bulk.all_boxes(box_pos) = 0;
+                    Cell2D new_box_pos = box_pos + action->box_delta;
+                    agent_pos_ref += action->agent_delta;
+                    moveBox(box_pos, new_box_pos);
                     break;
                 }
 
                 case ActionType::Pull: {
                     Cell2D box_pos = agent_pos_ref - action->box_delta;
-                    // agent_pos_ref += action->agent_delta;
-                    // agent_bulk.all_boxes(box_pos + action->box_delta) = agent_bulk.all_boxes(box_pos);
-                    // agent_bulk.all_boxes(box_pos) = 0;
+                    Cell2D new_box_pos = agent_pos_ref;  // Box moves to agent's current position
+                    agent_pos_ref += action->agent_delta;
+                    moveBox(box_pos, new_box_pos);
                     break;
                 }
 
@@ -172,8 +276,13 @@ class LowLevelState {
     }
 
    private:
-    LowLevelState(const LowLevelState *parent, const std::vector<const Action *> joint_actions)
-        : g_(parent->g_ + 1), static_level_(parent->static_level_), agents(parent->agents), parent(parent), actions(joint_actions) {
+    LowLevelState(const LowLevelState *parent, const std::vector<const Action *> &joint_actions)
+        : g_(parent->g_ + 1),
+          static_level_(parent->static_level_),
+          agents(parent->agents),
+          box_bulks(parent->box_bulks),
+          parent(parent),
+          actions(joint_actions) {
         applyActions(joint_actions);
     }
 
@@ -185,6 +294,12 @@ class LowLevelState {
                 return false;
             }
         }
+
+        // Check if there's a box at this cell
+        if (getBoxAt(cell) != 0) {
+            return false;
+        }
+
         return true;
     }
 };

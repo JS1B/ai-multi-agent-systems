@@ -30,7 +30,8 @@ std::string StaticLevel::toString() const {
 // Take agents symbol return color of it
 Color StaticLevel::getAgentColor(const char &agent_symbol) const { return agent_colors_.at(agent_symbol); }
 
-Level::Level(StaticLevel static_level, std::vector<Agent> agents) : static_level(static_level), agents(agents) {}
+Level::Level(StaticLevel static_level, const std::vector<Agent> &agents, const std::vector<BoxBulk> &boxes)
+    : static_level(static_level), agents(agents), boxes(boxes) {}
 
 std::string Level::toString() const {
     std::stringstream ss;
@@ -122,10 +123,8 @@ Level loadLevel(std::istream &serverMessages) {
 
     std::map<char, Cell2D> agent_positions;
     std::map<char, std::vector<Cell2D>> agent_goals;
-    // std::unordered_map<Color, CharGrid> boxes_map;
-    // for (int i = FIRST_BOX; i <= LAST_BOX; i++) {
-    //     boxes_map.insert({Level::box_colors[i - FIRST_BOX], CharGrid(numRows, numCols)});
-    // }
+    std::map<char, std::vector<Cell2D>> box_positions;
+    std::map<char, std::vector<Cell2D>> box_goals;
 
     for (size_t row = 0; row < numRows; row++) {
         const std::string &line = levelLines[row];
@@ -136,7 +135,7 @@ Level loadLevel(std::istream &serverMessages) {
                 continue;
             }
             if (FIRST_BOX <= c && c <= LAST_BOX) {
-                // boxes_map[Level::box_colors[c - FIRST_BOX]](row, col) = c;
+                box_positions[c].push_back(Cell2D(row, col));
                 continue;
             }
             if (c == WALL) {
@@ -168,7 +167,7 @@ Level loadLevel(std::istream &serverMessages) {
                 continue;
             }
             if (FIRST_BOX <= c && c <= LAST_BOX) {
-                // Level::box_goals(row, col) = c;
+                box_goals[c].push_back(Cell2D(row, col));
                 continue;
             }
             if (c == WALL) {
@@ -186,5 +185,17 @@ Level loadLevel(std::istream &serverMessages) {
         agents.push_back(Agent(agent_positions[agent_char], agent_goals[agent_char], agent_char));
     }
 
-    return Level(StaticLevel(name, domain, walls, agent_colors, box_colors), agents);
+    // Create BoxBulk objects
+    std::vector<BoxBulk> boxes;
+    for (const auto &[box_char, box_color] : box_colors) {
+        if (box_positions.find(box_char) != box_positions.end()) {
+            std::vector<Cell2D> goals;
+            if (box_goals.find(box_char) != box_goals.end()) {
+                goals = box_goals[box_char];
+            }
+            boxes.push_back(BoxBulk(box_positions[box_char], goals, box_color, box_char));
+        }
+    }
+
+    return Level(StaticLevel(name, domain, walls, agent_colors, box_colors), agents, boxes);
 }
