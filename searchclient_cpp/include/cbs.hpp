@@ -86,11 +86,17 @@ class CBSFrontier {
 void printSearchStatus(const CBSFrontier &cbs_frontier, const size_t &generated_states_count);
 
 class CBS {
+   public:
+    const Level &initial_level;
+
    private:
-    const Level initial_level_;
     std::vector<LowLevelState *> initial_agents_states_;
     size_t agents_num_;
     std::set<std::set<OneSidedConflict>> visited_constraint_sets_;
+
+    // Mapping from agent symbol to their position in color groups (group_idx, agent_idx)
+    std::vector<std::pair<char, Cell2D>> agent_symbol_to_position_;
+    size_t total_agents_;
 
    public:
     CBS() = delete;

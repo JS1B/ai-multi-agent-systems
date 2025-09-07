@@ -116,26 +116,6 @@ class LowLevelState {
             return false;
         }
 
-        // Check if either state has constraints at current timestep
-        bool this_has_constraints = false;
-        bool other_has_constraints = false;
-
-        for (const auto &constraint : constraints) {
-            if (constraint.g == g_) {
-                this_has_constraints = true;
-            }
-            if (constraint.g == other.g_) {
-                other_has_constraints = true;
-            }
-        }
-
-        // If either has temporal constraints, they must be at same timestep
-        if (this_has_constraints || other_has_constraints) {
-            return g_ == other.g_;
-        }
-
-        // Even without constraints, we should prefer earlier states (shorter paths)
-        // Only consider equal if at same depth to maintain CBS correctness
         return g_ == other.g_;
     }
 
@@ -152,19 +132,19 @@ class LowLevelState {
     bool isApplicable(const std::vector<const Action *> &joint_actions) const {
         assert(joint_actions.size() == agents.size());
 
-        bool is_applicable = false;
         for (size_t i = 0; i < joint_actions.size(); i++) {
             const Action *action = joint_actions[i];
             Cell2D agent_pos = agents[i].getPosition();
 
+            bool action_applicable = true;
             switch (action->type) {
                 case ActionType::NoOp:
-                    is_applicable = true;
+                    // NoOp is always applicable
                     break;
 
                 case ActionType::Move: {
                     Cell2D destination = agent_pos + action->agent_delta;
-                    is_applicable = isCellFree(destination);
+                    action_applicable = isCellFree(destination);
                     break;
                 }
 
@@ -175,26 +155,25 @@ class LowLevelState {
                     // Check if there's a box at the expected position
                     char box_id = getBoxAt(box_position);
                     if (!box_id) {
-                        is_applicable = false;
+                        action_applicable = false;
                         break;
                     }
 
                     // Check if box destination is free
                     if (!isCellFree(box_destination)) {
-                        is_applicable = false;
+                        action_applicable = false;
                         break;
                     }
 
                     // Check color compatibility (agent can only push boxes of same color)
                     Color agent_color = static_level_.getAgentColor(agents[i].getSymbol());
-                    bool can_push = false;
+                    action_applicable = false;  // Assume not applicable until proven otherwise
                     for (const auto &bulk : box_bulks) {
                         if (bulk.getSymbol() == box_id && bulk.getColor() == agent_color) {
-                            can_push = true;
+                            action_applicable = true;
                             break;
                         }
                     }
-                    is_applicable = can_push;
                     break;
                 }
 
@@ -206,13 +185,13 @@ class LowLevelState {
                     // Check if there's a box at the expected position
                     char box_id = getBoxAt(box_position);
                     if (!box_id) {
-                        is_applicable = false;
+                        action_applicable = false;
                         break;
                     }
 
                     // Check if agent destination is free
                     if (!isCellFree(agent_destination)) {
-                        is_applicable = false;
+                        action_applicable = false;
                         break;
                     }
 
@@ -220,22 +199,25 @@ class LowLevelState {
 
                     // Check color compatibility
                     Color agent_color = static_level_.getAgentColor(agents[i].getSymbol());
-                    bool can_pull = false;
+                    action_applicable = false;  // Assume not applicable until proven otherwise
                     for (const auto &bulk : box_bulks) {
                         if (bulk.getSymbol() == box_id && bulk.getColor() == agent_color) {
-                            can_pull = true;
+                            action_applicable = true;
                             break;
                         }
                     }
-                    is_applicable = can_pull;
                     break;
                 }
 
                 default:
                     throw std::invalid_argument("Invalid action type");
             }
+
+            if (!action_applicable) {
+                return false;  // Early exit on first failure
+            }
         }
-        return is_applicable;
+        return true;  // All actions are applicable
     }
 
     void applyActions(const std::vector<const Action *> &joint_actions) {

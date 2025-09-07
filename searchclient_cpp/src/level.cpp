@@ -1,6 +1,7 @@
 #include "level.hpp"
 
 #include <iostream>
+#include <set>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -185,15 +186,30 @@ Level loadLevel(std::istream &serverMessages) {
         agents.push_back(Agent(agent_positions[agent_char], agent_goals[agent_char], agent_char));
     }
 
-    // Create BoxBulk objects
+    // Get set of agent colors
+    std::set<Color> agent_colors_set;
+    for (const auto &[agent_char, agent_color] : agent_colors) {
+        agent_colors_set.insert(agent_color);
+    }
+
+    // Create BoxBulk objects and mark orphaned boxes as walls
     std::vector<BoxBulk> boxes;
     for (const auto &[box_char, box_color] : box_colors) {
         if (box_positions.find(box_char) != box_positions.end()) {
-            std::vector<Cell2D> goals;
-            if (box_goals.find(box_char) != box_goals.end()) {
-                goals = box_goals[box_char];
+            // Check if there's an agent with the same color
+            if (agent_colors_set.find(box_color) != agent_colors_set.end()) {
+                // Box has corresponding agent - add to boxes
+                std::vector<Cell2D> goals;
+                if (box_goals.find(box_char) != box_goals.end()) {
+                    goals = box_goals[box_char];
+                }
+                boxes.push_back(BoxBulk(box_positions[box_char], goals, box_color, box_char));
+            } else {
+                // Box has no corresponding agent - add as walls
+                for (const auto &position : box_positions[box_char]) {
+                    walls(position.r, position.c) = WALL;
+                }
             }
-            boxes.push_back(BoxBulk(box_positions[box_char], goals, box_color, box_char));
         }
     }
 

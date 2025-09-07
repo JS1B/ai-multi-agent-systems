@@ -3,12 +3,12 @@ hospital
 #levelname
 cbs06
 #colors
-blue: 0, A
+blue: 0, 2, A
 red: 1
 #initial
 ++++++++++
 +0 A     +
-+1    ++++
++12   ++++
 +        +
 +     ++ +
 +      + +
