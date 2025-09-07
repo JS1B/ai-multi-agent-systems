@@ -5,6 +5,7 @@
 #include <limits>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "low_level_state.hpp"
 
@@ -122,19 +123,42 @@ class HeuristicAStar : public Heuristic {
             }
         }
 
-        // Box distances to their goals
+        // Box distances to their goals - only consider N best boxes where N = number of goals
         for (const auto& box_bulk : state.getBoxBulks()) {
-            if (box_bulk.getGoalsCount() > 0) {
-                for (size_t i = 0; i < box_bulk.size(); i++) {
-                    Cell2D box_pos = box_bulk.getPosition(i);
-                    size_t min_dist = SIZE_MAX;
-                    for (size_t j = 0; j < box_bulk.getGoalsCount(); j++) {
-                        min_dist = std::min(min_dist, manhattanDistance(box_pos, box_bulk.getGoal(j)));
-                    }
-                    if (min_dist != SIZE_MAX) {
-                        total_cost += min_dist;
-                    }
+            if (box_bulk.getGoalsCount() <= 0) {
+                continue;
+            }
+            // Collect all boxes with their distances to closest goals
+            std::vector<std::pair<size_t, size_t>> box_distances;  // pair<distance, box_index>
+
+            for (size_t i = 0; i < box_bulk.size(); i++) {
+                Cell2D box_pos = box_bulk.getPosition(i);
+                size_t min_dist = SIZE_MAX;
+                for (size_t j = 0; j < box_bulk.getGoalsCount(); j++) {
+                    min_dist = std::min(min_dist, manhattanDistance(box_pos, box_bulk.getGoal(j)));
                 }
+                if (min_dist != SIZE_MAX) {
+                    box_distances.push_back({min_dist, i});
+                }
+            }
+
+            // Sort by distance (shortest first)
+            std::sort(box_distances.begin(), box_distances.end());
+
+            std::vector<std::pair<size_t, size_t>> box_agents_distances;
+            for (size_t i = 0; i < box_distances.size(); i++) {
+                // Add box-to-goal distance plus agent-to-box distance
+                Cell2D box_pos = box_bulk.getPosition(box_distances[i].second);
+                Cell2D agent_pos = state.agents[0].getPosition();  // Use first agent for simplicity
+                size_t agent_to_box_dist = manhattanDistance(agent_pos, box_pos);
+                box_agents_distances.push_back({box_distances[i].first + agent_to_box_dist, i});
+            }
+
+            // Only consider the N closest boxes where N = number of goals
+            std::sort(box_agents_distances.begin(), box_agents_distances.end());
+
+            for (size_t i = 0; i < box_bulk.getGoalsCount(); i++) {
+                total_cost += box_agents_distances[i].first;
             }
         }
 
