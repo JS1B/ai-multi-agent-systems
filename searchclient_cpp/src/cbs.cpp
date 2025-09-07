@@ -218,31 +218,97 @@ std::vector<std::vector<const Action *>> CBS::mergePlans(std::vector<std::vector
     return merged_plans;
 }
 
+// Helper function to find which agent is responsible for moving a specific box
+size_t CBS::findAgentResponsibleForBox(size_t box_index, const std::vector<const Action *> &actions,
+                                       const std::vector<Cell2D> &previous_agent_positions,
+                                       const std::vector<Cell2D> &previous_box_positions) const {
+    Cell2D box_previous_pos = previous_box_positions[box_index];
+
+    for (size_t agent_idx = 0; agent_idx < actions.size(); ++agent_idx) {
+        const Action *action = actions[agent_idx];
+        Cell2D agent_pos = previous_agent_positions[agent_idx];
+
+        if (action->type == ActionType::Push) {
+            Cell2D expected_box_pos = agent_pos + action->agent_delta;
+            if (expected_box_pos == box_previous_pos) {
+                return agent_idx;
+            }
+        } else if (action->type == ActionType::Pull) {
+            Cell2D expected_box_pos = agent_pos - action->box_delta;
+            if (expected_box_pos == box_previous_pos) {
+                return agent_idx;
+            }
+        }
+    }
+
+    return SIZE_MAX;  // No agent responsible (box didn't move)
+}
+
 FullConflict CBS::findFirstConflict(const std::vector<std::vector<const Action *>> &solutions) const {
     // assert(solutions[0].size() == agents_num_);
 
     std::vector<Cell2D> current_agent_positions(solutions[0].size());
     std::vector<Cell2D> previous_agent_positions(solutions[0].size());
 
-    std::vector<std::vector<Cell2D>> current_boxes_positions(solutions[0].size());
-    std::vector<std::vector<Cell2D>> previous_boxes_positions(solutions[0].size());
+    // Track all box positions as a flat list of Cell2D
+    std::vector<Cell2D> current_box_positions;
+    std::vector<Cell2D> previous_box_positions;
 
-    // Initialize positions
+    // Initialize agent positions
     for (size_t i = 0; i < solutions[0].size(); i++) {
         current_agent_positions[i] = initial_level.agents[i].getPosition();
         previous_agent_positions[i] = initial_level.agents[i].getPosition();
     }
 
+    // Initialize box positions from all box bulks
+    for (const auto &box_bulk : initial_level.boxes) {
+        for (size_t i = 0; i < box_bulk.size(); i++) {
+            current_box_positions.push_back(box_bulk.getPosition(i));
+        }
+    }
+    previous_box_positions = current_box_positions;
+
     for (size_t depth = 0; depth < solutions.size(); depth++) {
         // Update position history
         previous_agent_positions = current_agent_positions;
+        previous_box_positions = current_box_positions;
 
-        // Apply actions
+        // Apply agent actions
         for (size_t j = 0; j < solutions[0].size(); ++j) {
             current_agent_positions[j] = previous_agent_positions[j] + solutions[depth][j]->agent_delta;
         }
 
-        // Vertex conflicts
+        // Apply box movements for push/pull actions
+        for (size_t j = 0; j < solutions[0].size(); ++j) {
+            const Action *action = solutions[depth][j];
+            Cell2D agent_pos = previous_agent_positions[j];
+
+            if (action->type == ActionType::Push) {
+                Cell2D box_initial_pos = agent_pos + action->agent_delta;
+                Cell2D box_final_pos = box_initial_pos + action->box_delta;
+
+                // Find and move the box
+                for (size_t box_idx = 0; box_idx < current_box_positions.size(); ++box_idx) {
+                    if (current_box_positions[box_idx] == box_initial_pos) {
+                        current_box_positions[box_idx] = box_final_pos;
+                        break;
+                    }
+                }
+            } else if (action->type == ActionType::Pull) {
+                Cell2D box_initial_pos = agent_pos - action->box_delta;
+                Cell2D box_final_pos = agent_pos;  // Box moves to agent's current position
+
+                // Find and move the box
+                for (size_t box_idx = 0; box_idx < current_box_positions.size(); ++box_idx) {
+                    if (current_box_positions[box_idx] == box_initial_pos) {
+                        current_box_positions[box_idx] = box_final_pos;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 1. Agent-Agent Vertex conflicts
         for (size_t j = 0; j < solutions[0].size(); ++j) {
             for (size_t k = j + 1; k < solutions[0].size(); ++k) {
                 if (current_agent_positions[j] == current_agent_positions[k]) {
@@ -251,7 +317,7 @@ FullConflict CBS::findFirstConflict(const std::vector<std::vector<const Action *
             }
         }
 
-        // Follow/trailing conflicts
+        // 2. Agent-Agent Follow/trailing conflicts
         for (size_t j = 0; j < solutions[0].size(); ++j) {
             for (size_t k = j + 1; k < solutions[0].size(); ++k) {
                 if (previous_agent_positions[k] == current_agent_positions[j]) {
@@ -259,6 +325,61 @@ FullConflict CBS::findFirstConflict(const std::vector<std::vector<const Action *
                 }
                 if (previous_agent_positions[j] == current_agent_positions[k]) {
                     return FullConflict(j + FIRST_AGENT, k + FIRST_AGENT, Constraint(current_agent_positions[k], depth + 1));
+                }
+            }
+        }
+
+        // 3. Box-Box Vertex conflicts
+        for (size_t j = 0; j < current_box_positions.size(); ++j) {
+            for (size_t k = j + 1; k < current_box_positions.size(); ++k) {
+                if (current_box_positions[j] == current_box_positions[k]) {
+                    // Return conflict between the agents that moved these boxes
+                    // Note: We need to find which agents are responsible for these box movements
+                    size_t agent_j = findAgentResponsibleForBox(j, solutions[depth], previous_agent_positions, previous_box_positions);
+                    size_t agent_k = findAgentResponsibleForBox(k, solutions[depth], previous_agent_positions, previous_box_positions);
+                    if (agent_j != SIZE_MAX && agent_k != SIZE_MAX && agent_j != agent_k) {
+                        return FullConflict(agent_j + FIRST_AGENT, agent_k + FIRST_AGENT, Constraint(current_box_positions[j], depth + 1));
+                    }
+                }
+            }
+        }
+
+        // 4. Box-Box Follow conflicts
+        for (size_t j = 0; j < current_box_positions.size(); ++j) {
+            for (size_t k = 0; k < current_box_positions.size(); ++k) {
+                if (j != k && previous_box_positions[k] == current_box_positions[j] &&
+                    previous_box_positions[j] == current_box_positions[k]) {
+                    // Box swap conflict
+                    size_t agent_j = findAgentResponsibleForBox(j, solutions[depth], previous_agent_positions, previous_box_positions);
+                    size_t agent_k = findAgentResponsibleForBox(k, solutions[depth], previous_agent_positions, previous_box_positions);
+                    if (agent_j != SIZE_MAX && agent_k != SIZE_MAX && agent_j != agent_k) {
+                        return FullConflict(agent_j + FIRST_AGENT, agent_k + FIRST_AGENT, Constraint(current_box_positions[j], depth + 1));
+                    }
+                }
+            }
+        }
+
+        // 5. Agent-Box Vertex conflicts
+        for (size_t j = 0; j < solutions[0].size(); ++j) {
+            for (size_t k = 0; k < current_box_positions.size(); ++k) {
+                if (current_agent_positions[j] == current_box_positions[k]) {
+                    size_t agent_k = findAgentResponsibleForBox(k, solutions[depth], previous_agent_positions, previous_box_positions);
+                    if (agent_k != SIZE_MAX && j != agent_k) {
+                        return FullConflict(j + FIRST_AGENT, agent_k + FIRST_AGENT, Constraint(current_agent_positions[j], depth + 1));
+                    }
+                }
+            }
+        }
+
+        // 6. Agent-Box Follow conflicts
+        for (size_t j = 0; j < solutions[0].size(); ++j) {
+            for (size_t k = 0; k < current_box_positions.size(); ++k) {
+                // Agent moving to where box was, box moving to where agent was
+                if (previous_box_positions[k] == current_agent_positions[j] && previous_agent_positions[j] == current_box_positions[k]) {
+                    size_t agent_k = findAgentResponsibleForBox(k, solutions[depth], previous_agent_positions, previous_box_positions);
+                    if (agent_k != SIZE_MAX && j != agent_k) {
+                        return FullConflict(j + FIRST_AGENT, agent_k + FIRST_AGENT, Constraint(current_agent_positions[j], depth + 1));
+                    }
                 }
             }
         }
