@@ -57,6 +57,7 @@ int main(int argc, char *argv[]) {
         std::string response;
         getline(std::cin, response);
     }
+    fprintf(stderr, "--------------------------------\n");
 #endif
     return 0;
 }

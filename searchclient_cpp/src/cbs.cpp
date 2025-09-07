@@ -7,16 +7,6 @@
 
 #include "memory.hpp"
 
-struct PairHash {
-    template <class T1, class T2>
-    std::size_t operator()(const std::pair<T1, T2> &p) const {
-        auto h1 = std::hash<T1>{}(p.first);
-        auto h2 = std::hash<T2>{}(p.second);
-        // Simple hash combining. boost::hash_combine is more robust.
-        return h1 ^ (h2 << 1);
-    }
-};
-
 void printSearchStatus(const CBSFrontier &cbs_frontier, const size_t &generated_states_count) {
     static bool first_time = true;
 
@@ -85,7 +75,7 @@ std::vector<std::vector<const Action *>> CBS::solve() {
     std::vector<Graphsearch *> agent_searches;
     agent_searches.reserve(initial_agents_states_.size());
     for (auto agent_state : initial_agents_states_) {
-        agent_searches.push_back(new Graphsearch(agent_state, new FrontierBestFirst(new HeuristicAStar())));
+        agent_searches.push_back(new Graphsearch(agent_state, new FrontierBestFirst(new HeuristicAStar(agent_state))));
     }
 
     // Find a solution for each agent bulk

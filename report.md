@@ -7,6 +7,19 @@ Throughout the course I was a part of a 3 person team, but we parted ways before
 - some of the assumptions and analysis
 - c++ codebase that we built on top of individually
 
+What I learned:
+
+- breadth first search algorithm
+- depth first search algorithm
+- a* search algorithm
+- graph searches
+- dijkstra algorithm
+- cbs algorithm
+- c++
+- custom memory allocators
+- various performance optimizations
+- tools like valgrind, gdb, linux piping, perf, flamegraphs, gcc optimizations, clang optimizations
+
 Introduction and Problem Context
 --------------------------------
 
