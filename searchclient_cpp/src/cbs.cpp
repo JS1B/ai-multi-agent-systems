@@ -29,12 +29,50 @@ void printSearchStatus(const CBSFrontier &cbs_frontier, const size_t &generated_
     fflush(stdout);
 }
 
-CBS::CBS(const Level &loaded_level) : initial_level_(loaded_level) {
+CBS::CBS(const Level &loaded_level) : initial_level(loaded_level) {
+    // Group agents by color
+    std::map<Color, std::vector<Agent>> agents_by_color;
+    std::map<Color, std::vector<BoxBulk>> boxes_by_color;
+
+    // Group agents by their color
     for (const auto &agent : loaded_level.agents) {
-        initial_agents_states_.push_back(new LowLevelState(initial_level_.static_level, {agent}, loaded_level.boxes));
+        Color agent_color = initial_level.static_level.getAgentColor(agent.getSymbol());
+        agents_by_color[agent_color].push_back(agent);
+    }
+
+    // Group boxes by their color
+    for (const auto &box : loaded_level.boxes) {
+        boxes_by_color[box.getColor()].push_back(box);
+    }
+
+    // Create LowLevelState for each color group that has agents
+    for (const auto &[color, agents] : agents_by_color) {
+        std::vector<BoxBulk> matching_boxes;
+        if (boxes_by_color.find(color) != boxes_by_color.end()) {
+            // Copy BoxBulk objects individually since assignment operator is deleted
+            for (const auto &box : boxes_by_color[color]) {
+                matching_boxes.push_back(BoxBulk(box.getPositions(), box.getGoals(), box.getColor(), box.getSymbol()));
+            }
+        }
+
+        initial_agents_states_.push_back(new LowLevelState(initial_level.static_level, agents, matching_boxes));
     }
 
     agents_num_ = initial_agents_states_.size();
+
+    // Build mapping from agent symbol to their position in color groups
+    total_agents_ = 0;
+    for (uint_fast8_t group_idx = 0; group_idx < initial_agents_states_.size(); group_idx++) {
+        const auto &agents = initial_agents_states_[group_idx]->agents;
+        for (uint_fast8_t agent_idx = 0; agent_idx < agents.size(); agent_idx++) {
+            char symbol = agents[agent_idx].getSymbol();
+            agent_symbol_to_position_.push_back({symbol, {group_idx, agent_idx}});
+            total_agents_++;
+        }
+    }
+
+    // Sort by agent symbol to get the correct order ('0', '1', '2', etc.)
+    std::sort(agent_symbol_to_position_.begin(), agent_symbol_to_position_.end());
 }
 
 CBS::~CBS() {
@@ -108,7 +146,19 @@ std::vector<std::vector<const Action *>> CBS::solve() {
         // fflush(stderr);
 
         for (auto agent_symbol : {conflict.a1_symbol, conflict.a2_symbol}) {
-            size_t agent_idx = agent_symbol - FIRST_AGENT;
+            // Find the group index for this agent symbol
+            size_t group_idx = SIZE_MAX;
+            for (const auto &[symbol, position] : agent_symbol_to_position_) {
+                if (symbol == agent_symbol) {
+                    group_idx = position.r;
+                    break;
+                }
+            }
+
+            if (group_idx == SIZE_MAX) {
+                fprintf(stderr, "Error: Could not find group for agent symbol %c\n", agent_symbol);
+                continue;
+            }
 
             CTNode *child = new CTNode(*node);
 
@@ -129,10 +179,10 @@ std::vector<std::vector<const Action *>> CBS::solve() {
                 }
             }
 
-            Graphsearch *agent_search = agent_searches[agent_idx];
+            Graphsearch *agent_search = agent_searches[group_idx];
             auto plan = agent_search->solve(constraints);
             generated_states_count += agent_search->getGeneratedStatesCount();
-            child->solutions[agent_idx] = plan;
+            child->solutions[group_idx] = plan;
             if (!agent_search->wasSolutionFound()) {
                 child->cost = SIZE_MAX;
                 delete child;
@@ -151,43 +201,51 @@ std::vector<std::vector<const Action *>> CBS::solve() {
 std::vector<std::vector<const Action *>> CBS::mergePlans(std::vector<std::vector<std::vector<const Action *>>> &plans) {
     auto plans_copy = plans;
 
+    // Use the class member mapping that was already created in constructor
+
     // Make all plans the same length
     size_t longest_plan_length = 0;
     for (size_t i = 0; i < plans_copy.size(); i++) {
         longest_plan_length = std::max(longest_plan_length, plans_copy[i].size());
     }
 
-    // Merge
+    // Extend plans to same length with NoOp
     for (size_t i = 0; i < plans_copy.size(); i++) {
         plans_copy[i].resize(longest_plan_length, std::vector<const Action *>(plans_copy[i][0].size(), (const Action *)&Action::NoOp));
     }
 
     std::vector<const Action *> row;
-    row.reserve(agents_num_);
+    row.reserve(total_agents_);
     std::vector<std::vector<const Action *>> merged_plans;
     merged_plans.reserve(longest_plan_length);
 
+    // Merge plans in correct agent symbol order
     for (size_t depth = 0; depth < longest_plan_length; depth++) {
-        for (size_t i = 0; i < plans_copy.size(); i++) {
-            row.insert(row.end(), plans_copy[i][depth].begin(), plans_copy[i][depth].end());
+        row.clear();
+        for (const auto &[symbol, position] : agent_symbol_to_position_) {
+            size_t group_idx = position.r;
+            size_t agent_idx = position.c;
+            row.push_back(plans_copy[group_idx][depth][agent_idx]);
         }
         merged_plans.push_back(row);
-        row.clear();
     }
 
     return merged_plans;
 }
 
 FullConflict CBS::findFirstConflict(const std::vector<std::vector<const Action *>> &solutions) const {
-    assert(solutions[0].size() == initial_level_.agents.size());
+    // assert(solutions[0].size() == agents_num_);
 
     std::vector<Cell2D> current_agent_positions(solutions[0].size());
     std::vector<Cell2D> previous_agent_positions(solutions[0].size());
 
+    std::vector<std::vector<Cell2D>> current_boxes_positions(solutions[0].size());
+    std::vector<std::vector<Cell2D>> previous_boxes_positions(solutions[0].size());
+
     // Initialize positions
     for (size_t i = 0; i < solutions[0].size(); i++) {
-        current_agent_positions[i] = initial_level_.agents[i].getPosition();
-        previous_agent_positions[i] = initial_level_.agents[i].getPosition();
+        current_agent_positions[i] = initial_level.agents[i].getPosition();
+        previous_agent_positions[i] = initial_level.agents[i].getPosition();
     }
 
     for (size_t depth = 0; depth < solutions.size(); depth++) {
