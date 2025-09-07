@@ -15,7 +15,7 @@ void printSearchStatus(const CBSFrontier &cbs_frontier, const size_t &generated_
         first_time = false;
     }
 
-    fprintf(stdout, "#%11zu, %13d, %13zu\n", cbs_frontier.size(), Memory::getUsage(), generated_states_count);
+    fprintf(stdout, "#%11zu, %13d, %16zu\n", cbs_frontier.size(), Memory::getUsage(), generated_states_count);
     fflush(stdout);
 }
 

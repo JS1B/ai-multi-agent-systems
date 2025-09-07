@@ -1,6 +1,5 @@
 RELEASE ?= false
 
-# @todo: figure out where we compile 64bit
 DEBUG_FLAGS = -O0 -g
 RELEASE_FLAGS = -O3 -ffast-math -march=native -flto -DNDEBUG
 
