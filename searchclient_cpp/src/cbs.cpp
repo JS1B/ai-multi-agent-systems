@@ -60,19 +60,10 @@ CBS::CBS(const Level &loaded_level) : initial_level(loaded_level) {
 
     agents_num_ = initial_agents_states_.size();
 
-    // Build mapping from agent symbol to their position in color groups
-    total_agents_ = 0;
-    for (uint_fast8_t group_idx = 0; group_idx < initial_agents_states_.size(); group_idx++) {
-        const auto &agents = initial_agents_states_[group_idx]->agents;
-        for (uint_fast8_t agent_idx = 0; agent_idx < agents.size(); agent_idx++) {
-            char symbol = agents[agent_idx].getSymbol();
-            agent_symbol_to_position_.push_back({symbol, {group_idx, agent_idx}});
-            total_agents_++;
-        }
-    }
-
-    // Sort by agent symbol to get the correct order ('0', '1', '2', etc.)
-    std::sort(agent_symbol_to_position_.begin(), agent_symbol_to_position_.end());
+    // Build agent symbol mapping using helper function
+    auto mapping_result = buildAgentMapping(initial_agents_states_);
+    agent_symbol_to_group_info_ = std::move(mapping_result.first);
+    total_agents_ = mapping_result.second;
 }
 
 CBS::~CBS() {
@@ -146,19 +137,13 @@ std::vector<std::vector<const Action *>> CBS::solve() {
         // fflush(stderr);
 
         for (auto agent_symbol : {conflict.a1_symbol, conflict.a2_symbol}) {
-            // Find the group index for this agent symbol
-            size_t group_idx = SIZE_MAX;
-            for (const auto &[symbol, position] : agent_symbol_to_position_) {
-                if (symbol == agent_symbol) {
-                    group_idx = position.r;
-                    break;
-                }
-            }
-
-            if (group_idx == SIZE_MAX) {
+            // Fast lookup of group index for this agent symbol
+            auto it = agent_symbol_to_group_info_.find(agent_symbol);
+            if (it == agent_symbol_to_group_info_.end()) {
                 fprintf(stderr, "Error: Could not find group for agent symbol %c\n", agent_symbol);
                 continue;
             }
+            uint_fast8_t group_idx = it->second.first;
 
             CTNode *child = new CTNode(*node);
 
@@ -201,7 +186,7 @@ std::vector<std::vector<const Action *>> CBS::solve() {
 std::vector<std::vector<const Action *>> CBS::mergePlans(std::vector<std::vector<std::vector<const Action *>>> &plans) {
     auto plans_copy = plans;
 
-    // Use the class member mapping that was already created in constructor
+    // Use the class member mapping (std::map keeps keys sorted by symbol)
 
     // Make all plans the same length
     size_t longest_plan_length = 0;
@@ -219,12 +204,12 @@ std::vector<std::vector<const Action *>> CBS::mergePlans(std::vector<std::vector
     std::vector<std::vector<const Action *>> merged_plans;
     merged_plans.reserve(longest_plan_length);
 
-    // Merge plans in correct agent symbol order
+    // Merge plans in correct agent symbol order (map iteration is sorted by key)
     for (size_t depth = 0; depth < longest_plan_length; depth++) {
         row.clear();
-        for (const auto &[symbol, position] : agent_symbol_to_position_) {
-            size_t group_idx = position.r;
-            size_t agent_idx = position.c;
+        for (const auto &[symbol, group_info] : agent_symbol_to_group_info_) {
+            uint_fast8_t group_idx = group_info.first;
+            uint_fast8_t agent_idx = group_info.second;
             row.push_back(plans_copy[group_idx][depth][agent_idx]);
         }
         merged_plans.push_back(row);
@@ -280,4 +265,21 @@ FullConflict CBS::findFirstConflict(const std::vector<std::vector<const Action *
     }
 
     return FullConflict(0, 0, Constraint(Cell2D(0, 0), 0));
+}
+
+std::pair<std::map<char, std::pair<uint_fast8_t, uint_fast8_t>>, size_t> CBS::buildAgentMapping(
+    const std::vector<LowLevelState *> &agent_states) {
+    std::map<char, std::pair<uint_fast8_t, uint_fast8_t>> mapping;
+    size_t total_agents = 0;
+
+    for (uint_fast8_t group_idx = 0; group_idx < agent_states.size(); group_idx++) {
+        const auto &agents = agent_states[group_idx]->agents;
+        for (uint_fast8_t agent_idx = 0; agent_idx < agents.size(); agent_idx++) {
+            char symbol = agents[agent_idx].getSymbol();
+            mapping[symbol] = {group_idx, agent_idx};
+            total_agents++;
+        }
+    }
+
+    return {std::move(mapping), total_agents};
 }
