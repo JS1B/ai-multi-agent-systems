@@ -109,6 +109,9 @@ class CBS {
     std::vector<std::vector<const Action *>> mergePlans(std::vector<std::vector<std::vector<const Action *>>> &plans);
 
     FullConflict findFirstConflict(const std::vector<std::vector<const Action *>> &solutions) const;
+    size_t findAgentResponsibleForBox(size_t box_index, const std::vector<const Action *> &actions,
+                                      const std::vector<Cell2D> &previous_agent_positions,
+                                      const std::vector<Cell2D> &previous_box_positions) const;
 
     // Helper function to build agent symbol mapping
     static std::pair<std::map<char, std::pair<uint_fast8_t, uint_fast8_t>>, size_t> buildAgentMapping(
