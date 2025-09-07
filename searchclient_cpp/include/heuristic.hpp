@@ -28,42 +28,45 @@ class Heuristic {
 
 class HeuristicAStar : public Heuristic {
    private:
-    // mutable std::unordered_map<size_t, int> heuristic_cache_;
+    // Store initial agent positions for movement penalty calculation
+    std::vector<Cell2D> initial_agent_positions_;
 
     static constexpr int MOVE_COST = 2;
-    static constexpr int PUSH_PULL_COST = 3;    // Push/Pull actions are more expensive
-    static constexpr int DEADLOCK_PENALTY = 0;  // Disabled completely for testing
+    static constexpr int PUSH_PULL_COST = 3;              // Push/Pull actions are more expensive
+    static constexpr int DEADLOCK_PENALTY = 0;            // Disabled completely for testing
+    static constexpr int GOALLESS_MOVEMENT_PENALTY = 10;  // Heavy penalty for goalless agents moving
 
     size_t manhattanDistance(const Cell2D& from, const Cell2D& to) const { return std::abs(from.r - to.r) + std::abs(from.c - to.c); }
 
     // Detect simple deadlock patterns (box in corner with no goal)
-    bool isDeadlock(const Cell2D& box_pos, const LowLevelState& state) const {
-        // Check if box is in a corner with no escape
-        // This is a simplified deadlock detection
-        int_fast8_t blocked_directions = 0;
+    // bool isDeadlock(const Cell2D& box_pos, const LowLevelState& state) const {
+    //     // Check if box is in a corner with no escape
+    //     // This is a simplified deadlock detection
+    //     int_fast8_t blocked_directions = 0;
 
-        Cell2D neighbors[] = {
-            {box_pos.r - 1, box_pos.c}, {box_pos.r + 1, box_pos.c}, {box_pos.r, box_pos.c - 1}, {box_pos.r, box_pos.c + 1}};
+    //     Cell2D neighbors[] = {
+    //         {box_pos.r - 1, box_pos.c}, {box_pos.r + 1, box_pos.c}, {box_pos.r, box_pos.c - 1}, {box_pos.r, box_pos.c + 1}};
 
-        for (const auto& neighbor : neighbors) {
-            if (!state.getStaticLevel().isCellFree(neighbor) || state.getBoxAt(neighbor)) {
-                blocked_directions++;
-            }
-        }
+    //     for (const auto& neighbor : neighbors) {
+    //         if (!state.getStaticLevel().isCellFree(neighbor) || state.getBoxAt(neighbor)) {
+    //             blocked_directions++;
+    //         }
+    //     }
 
-        // Only consider true corner deadlocks (all 4 directions blocked)
-        return blocked_directions >= 4;
-    }
+    //     // Only consider true corner deadlocks (all 4 directions blocked)
+    //     return blocked_directions >= 4;
+    // }
 
     // Calculate cost for agent to manipulate a specific box to goal
     size_t boxManipulationCost(const Cell2D& agent_pos, const Cell2D& box_pos, const Cell2D& goal_pos, const LowLevelState& state) const {
+        (void)state;
         // Cost = Agent reaching box + Box manipulation to goal
         size_t agent_to_box = manhattanDistance(agent_pos, box_pos);
         size_t box_to_goal = manhattanDistance(box_pos, goal_pos) * PUSH_PULL_COST;
 
-        size_t deadlock_penalty = isDeadlock(box_pos, state) * DEADLOCK_PENALTY;
+        // size_t deadlock_penalty = isDeadlock(box_pos, state) * DEADLOCK_PENALTY;
 
-        return agent_to_box + box_to_goal + deadlock_penalty;
+        return agent_to_box + box_to_goal;  // + deadlock_penalty;
     }
 
     // Efficient box-goal assignment with complexity control
@@ -72,21 +75,21 @@ class HeuristicAStar : public Heuristic {
         if (boxes.empty() || goals.empty()) return 0;
 
         // For very complex cases, use simplified heuristic
-        if (boxes.size() > 3 || goals.size() > 3) {
-            size_t total_cost = 0;
-            for (size_t i = 0; i < boxes.size() && i < goals.size(); i++) {
-                // Just use closest goal for each box (much faster)
-                size_t min_cost = SIZE_MAX;
-                for (const auto& goal : goals) {
-                    size_t cost = manhattanDistance(boxes[i], goal) * PUSH_PULL_COST;
-                    min_cost = std::min(min_cost, cost);
-                }
-                total_cost += min_cost;
-            }
-            return total_cost;
-        }
+        // if (boxes.size() > 3 || goals.size() > 3) {
+        //     size_t total_cost = 0;
+        //     for (size_t i = 0; i < boxes.size() && i < goals.size(); i++) {
+        //         // Just use closest goal for each box (much faster)
+        //         size_t min_cost = SIZE_MAX;
+        //         for (const auto& goal : goals) {
+        //             size_t cost = manhattanDistance(boxes[i], goal) * PUSH_PULL_COST;
+        //             min_cost = std::min(min_cost, cost);
+        //         }
+        //         total_cost += min_cost;
+        //     }
+        //     return total_cost;
+        // }
 
-        // For small cases, use optimal assignment
+        // For small cases, use a decent assignment
         size_t min_cost = SIZE_MAX;
         std::vector<size_t> goal_indices(goals.size());
         std::iota(goal_indices.begin(), goal_indices.end(), 0);
@@ -103,7 +106,17 @@ class HeuristicAStar : public Heuristic {
     }
 
    public:
-    HeuristicAStar() {}
+    HeuristicAStar() = delete;
+
+    // Constructor that accepts initial state for movement penalty calculation
+    HeuristicAStar(const LowLevelState* initial_state) {
+        if (initial_state) {
+            initial_agent_positions_.reserve(initial_state->agents.size());
+            for (const auto& agent : initial_state->agents) {
+                initial_agent_positions_.push_back(agent.getPosition());
+            }
+        }
+    }
 
     size_t f(const LowLevelState& state) const override { return state.getG() + h(state); }
 
@@ -112,14 +125,21 @@ class HeuristicAStar : public Heuristic {
         size_t total_cost = 0;
 
         // Agent distances to their goals
-        for (const auto& agent : state.agents) {
+        for (size_t i = 0; i < state.agents.size(); i++) {
+            const auto& agent = state.agents[i];
             const auto& agent_goals = agent.getGoalPositions();
+
             if (!agent_goals.empty()) {
+                // Agent has goals - calculate distance to closest goal
                 size_t min_dist = SIZE_MAX;
                 for (const auto& goal : agent_goals) {
                     min_dist = std::min(min_dist, manhattanDistance(agent.getPosition(), goal));
                 }
                 total_cost += min_dist;
+            } else if (i < initial_agent_positions_.size()) {
+                // Agent has no goals - add heavy penalty for moving from initial position
+                size_t movement_penalty = manhattanDistance(agent.getPosition(), initial_agent_positions_[i]) * GOALLESS_MOVEMENT_PENALTY;
+                total_cost += movement_penalty;
             }
         }
 

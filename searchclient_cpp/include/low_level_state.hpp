@@ -112,6 +112,7 @@ class LowLevelState {
 
     // Special equality method for constraint-aware comparison
     bool temporalEquals(const LowLevelState &other, const std::vector<Constraint> &constraints) const {
+        (void)constraints;
         if (agents != other.agents || box_bulks != other.box_bulks) {
             return false;
         }
