@@ -75,7 +75,7 @@ std::vector<std::vector<const Action *>> CBS::solve() {
     std::vector<Graphsearch *> agent_searches;
     agent_searches.reserve(initial_agents_states_.size());
     for (auto agent_state : initial_agents_states_) {
-        agent_searches.push_back(new Graphsearch(agent_state, new FrontierBestFirst(new HeuristicAStar(agent_state))));
+        agent_searches.push_back(new Graphsearch(agent_state, new FrontierBestFirst(new HeuristicAStar())));
     }
 
     // Find a solution for each agent bulk

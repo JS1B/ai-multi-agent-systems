@@ -51,6 +51,7 @@
     - [Improved High-Level Cost Functions](#improved-high-level-cost-functions)
     - [Alternative Domain Exploration](#alternative-domain-exploration)
     - [Parallelization Implementation](#parallelization-implementation)
+    - [Bugs](#bugs)
 - [6. Appendices](#6-appendices)
   - [Code Architecture Overview](#code-architecture-overview)
 
@@ -412,17 +413,31 @@ size_t makespan(const std::vector<std::vector<std::vector<const Action *>>> &sol
     }
     return makespan;
 }
+
+size_t fuel_used(const std::vector<std::vector<std::vector<const Action *>>> &solutions) {
+    size_t fuel_used = 0;
+    for (const auto &agent_plans : solutions) {
+        for (const auto &plan : agent_plans) {
+            for (const auto &action : plan) {
+                if (action->type != ActionType::NoOp) {
+                    fuel_used += 1;
+                }
+            }
+        }
+    }
+    return fuel_used;
+}
 ```
 
 The final cost combines these two values:
 
 ```cpp
-size_t CBS_cost(const std::vector<std::vector<std::vector<const Action*>>>& solutions) {
-    return 10 * makespan(solutions) + SIC(solutions);
+size_t CBS_cost(const std::vector<std::vector<std::vector<const Action *>>> &solutions) {
+    return 10 * makespan(solutions) + SIC(solutions) + 3 * fuel_used(solutions);
 }
 ```
 
-This function prioritizes minimizing makespan (total time steps) while using sum-of-individual-costs (SIC) as a tie-breaker, encouraging solutions that minimize both time and total actions. An earlier consideration of 'fuel' was removed, as its contribution to solution quality was not evident during testing.
+This function prioritizes minimizing makespan (total time steps) and sum-of-individual-costs (SIC) for tie-breaking, encouraging solutions that minimize both time and total actions. The `fuel_used` component was added to slightly penalize non-`NoOp` actions, encouraging agents to wait when it is efficient to do so.
 
 #### CBS Node Duplication Detection
 
@@ -530,17 +545,13 @@ public:
 
 #### Custom Heuristic Implementation
 
-The A* heuristic incorporates domain-specific knowledge, such as penalizing goalless agents for unnecessary movement. The full implementation from `heuristic.hpp` is shown below:
+The A* heuristic has been simplified to focus purely on Manhattan distances for agents to their goals and boxes to theirs. The previous implementation that penalized goalless agents for moving was removed, as it did not consistently lead to better performance and added complexity.
 
 ```cpp
 class HeuristicAStar : public Heuristic {
    private:
-    // Store initial agent positions for movement penalty calculation
-    std::vector<Cell2D> initial_agent_positions_;
-
     static constexpr int MOVE_COST = 2;
-    static constexpr int PUSH_PULL_COST = 3;              // Push/Pull actions are more expensive
-    static constexpr int GOALLESS_MOVEMENT_PENALTY = 10;  // Heavy penalty for goalless agents moving
+    static constexpr int PUSH_PULL_COST = 3;  // Push/Pull actions are more expensive
 
     size_t manhattanDistance(const Cell2D& from, const Cell2D& to) const { return std::abs(from.r - to.r) + std::abs(from.c - to.c); }
 
@@ -554,54 +565,8 @@ class HeuristicAStar : public Heuristic {
         return agent_to_box + box_to_goal;
     }
 
-    // Efficient box-goal assignment with complexity control
-    size_t optimizeBoxGoalAssignment(const std::vector<Cell2D>& boxes, const std::vector<Cell2D>& goals, const Cell2D& agent_pos,
-                                     const LowLevelState& state) const {
-        if (boxes.empty() || goals.empty()) return 0;
-
-        // For very complex cases, use simplified heuristic
-        if (boxes.size() > 3 || goals.size() > 3) {
-            size_t total_cost = 0;
-            for (size_t i = 0; i < boxes.size() && i < goals.size(); i++) {
-                // Just use closest goal for each box (much faster)
-                size_t min_cost = SIZE_MAX;
-                for (const auto& goal : goals) {
-                    size_t cost = manhattanDistance(boxes[i], goal) * PUSH_PULL_COST;
-                    min_cost = std::min(min_cost, cost);
-                }
-                total_cost += min_cost;
-            }
-            return total_cost;
-        }
-
-        // For small cases, use a decent assignment
-        size_t min_cost = SIZE_MAX;
-        std::vector<size_t> goal_indices(goals.size());
-        std::iota(goal_indices.begin(), goal_indices.end(), 0);
-
-        do {
-            size_t total_cost = 0;
-            for (size_t i = 0; i < boxes.size() && i < goals.size(); i++) {
-                total_cost += boxManipulationCost(agent_pos, boxes[i], goals[goal_indices[i]], state);
-            }
-            min_cost = std::min(min_cost, total_cost);
-        } while (std::next_permutation(goal_indices.begin(), goal_indices.end()));
-
-        return min_cost;
-    }
-
    public:
-    HeuristicAStar() = delete;
-
-    // Constructor that accepts initial state for movement penalty calculation
-    HeuristicAStar(const LowLevelState* initial_state) {
-        if (initial_state) {
-            initial_agent_positions_.reserve(initial_state->agents.size());
-            for (const auto& agent : initial_state->agents) {
-                initial_agent_positions_.push_back(agent.getPosition());
-            }
-        }
-    }
+    HeuristicAStar() {}
 
     size_t f(const LowLevelState& state) const override { return state.getG() + h(state); }
 
@@ -610,21 +575,14 @@ class HeuristicAStar : public Heuristic {
         size_t total_cost = 0;
 
         // Agent distances to their goals
-        for (size_t i = 0; i < state.agents.size(); i++) {
-            const auto& agent = state.agents[i];
+        for (const auto& agent : state.agents) {
             const auto& agent_goals = agent.getGoalPositions();
-
             if (!agent_goals.empty()) {
-                // Agent has goals - calculate distance to closest goal
                 size_t min_dist = SIZE_MAX;
                 for (const auto& goal : agent_goals) {
                     min_dist = std::min(min_dist, manhattanDistance(agent.getPosition(), goal));
                 }
                 total_cost += min_dist;
-            } else if (i < initial_agent_positions_.size()) {
-                // Agent has no goals - add heavy penalty for moving from initial position
-                size_t movement_penalty = manhattanDistance(agent.getPosition(), initial_agent_positions_[i]) * GOALLESS_MOVEMENT_PENALTY;
-                total_cost += movement_penalty;
             }
         }
 
@@ -717,7 +675,7 @@ CXXFLAGS = -std=c++17 -Wall -Wextra -Weffc++ $(OPT_FLAGS) -MMD -MP
 
 ### Levels Performance Overview
 
-My CBS implementation was not submitted to the final tournament; therefore, this analysis is based on performance on warmup and custom test levels.
+As mentioned above, not every necessary optimization was implemented. Therefore, this analysis is based on performance on warmup and custom test levels as comp levels, for the most part, do not complete.
 
 Example usage and comparison of the performance:
 
@@ -792,6 +750,10 @@ The concepts and architecture from this project could be applied to other comple
 
 If a level can be effectively preprocessed and split into independent subproblems, each subproblem could be assigned to a separate CBS instance. These instances could then be solved in parallel on a multi-core processor, with a final step to merge the resulting plans. This would be a natural extension of the preprocessing idea mentioned earlier.
 
+#### Bugs
+
+There is a bug in the client where the memory usage rises to the maximum available memory - it has to be due to how level is being parsed. Later it would kill itself when reaching the limit. There is also a bug that rarely happens where the cbs cannot detect a box-agent conflict.
+
 ## 6. Appendices
 
 ### Code Architecture Overview
@@ -850,3 +812,5 @@ graph TD
 ```
 
 Code is appended to the report.
+
+I was unable to run the java server on the whole directory - the memory usage would skyrocket after like 4 levels.
