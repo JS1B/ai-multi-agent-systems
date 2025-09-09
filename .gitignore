@@ -2,6 +2,7 @@
 
 # Benchmarks
 benchmarks/output/
+benchmarks/benchmarks.json
 
 # Python
 __pycache__/

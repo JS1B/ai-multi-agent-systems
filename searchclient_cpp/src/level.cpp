@@ -183,7 +183,9 @@ Level loadLevel(std::istream &serverMessages) {
     }
 
     for (const auto &[agent_char, agent_color] : agent_colors) {
-        agents.push_back(Agent(agent_positions[agent_char], agent_goals[agent_char], agent_char));
+        if (agent_positions.find(agent_char) != agent_positions.end()) {
+            agents.push_back(Agent(agent_positions[agent_char], agent_goals[agent_char], agent_char));
+        }
     }
 
     // Get set of agent colors

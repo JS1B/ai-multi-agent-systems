@@ -85,6 +85,7 @@ size_t fuel_used(const std::vector<std::vector<std::vector<const Action *>>> &so
 
 size_t CBS_cost(const std::vector<std::vector<std::vector<const Action *>>> &solutions) {
     return 10 * makespan(solutions) + SIC(solutions) + 3 * fuel_used(solutions);
+    // return SIC(solutions);
 }
 
 }  // namespace utils

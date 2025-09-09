@@ -11,7 +11,7 @@ void printSearchStatus(const CBSFrontier &cbs_frontier, const size_t &generated_
     static bool first_time = true;
 
     if (first_time) {
-        fprintf(stdout, "#CBS fr size, Mem usage[MB], Generated states\n");
+        fprintf(stdout, "#frontier, alloc[mb], generated\n");
         first_time = false;
     }
 
@@ -175,8 +175,6 @@ std::vector<std::vector<const Action *>> CBS::solve() {
 
 std::vector<std::vector<const Action *>> CBS::mergePlans(std::vector<std::vector<std::vector<const Action *>>> &plans) {
     auto plans_copy = plans;
-
-    // Use the class member mapping (std::map keeps keys sorted by symbol)
 
     // Make all plans the same length
     size_t longest_plan_length = 0;

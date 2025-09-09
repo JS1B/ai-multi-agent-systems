@@ -2,9 +2,9 @@
     "levels_dir": "../levels",
     "output_dir": "output",
     "strategies": [
-        "astar"
+        "cbs+meta"
     ],
-    "run_full_benchmark": false,
+    "run_full_benchmark": true,
     "skip_best_found_strategy": false,
     "cases": [
         {
@@ -19,7 +19,7 @@
         },
         {
             "input": "warmup/MAPF01.lvl",
-            "timeout_s": 1,
+            "timeout_s": 3,
             "best_found_solution_metrics": {
                 "strategy": "wastar 400",
                 "length": 14,
@@ -29,7 +29,7 @@
         },
         {
             "input": "warmup/MAPF02.lvl",
-            "timeout_s": 1,
+            "timeout_s": 3,
             "best_found_solution_metrics": {
                 "strategy": "wastar 160",
                 "length": 14,
@@ -39,7 +39,7 @@
         },
         {
             "input": "warmup/MAPF02C.lvl",
-            "timeout_s": 1,
+            "timeout_s": 3,
             "best_found_solution_metrics": {
                 "strategy": "wastar 200",
                 "length": 14,
@@ -49,7 +49,7 @@
         },
         {
             "input": "warmup/MAPF03.lvl",
-            "timeout_s": 1,
+            "timeout_s": 3,
             "best_found_solution_metrics": {
                 "strategy": "wastar 400",
                 "length": 14,
@@ -59,7 +59,7 @@
         },
         {
             "input": "warmup/MAPF03C.lvl",
-            "timeout_s": 1,
+            "timeout_s": 3,
             "best_found_solution_metrics": {
                 "strategy": "astar",
                 "length": 14,
@@ -69,7 +69,7 @@
         },
         {
             "input": "warmup/MAPFslidingpuzzle.lvl",
-            "timeout_s": 1,
+            "timeout_s": 3,
             "best_found_solution_metrics": {
                 "strategy": "astar",
                 "length": 28,
@@ -89,7 +89,7 @@
         },
         {
             "input": "warmup/SAsoko1_64.lvl",
-            "timeout_s": 1,
+            "timeout_s": 3,
             "best_found_solution_metrics": {
                 "strategy": "bfs",
                 "length": 62,
@@ -99,7 +99,7 @@
         },
         {
             "input": "warmup/SAsoko1_32.lvl",
-            "timeout_s": 1,
+            "timeout_s": 3,
             "best_found_solution_metrics": {
                 "strategy": "bfs",
                 "length": 30,
@@ -109,7 +109,7 @@
         },
         {
             "input": "warmup/SAsoko1_16.lvl",
-            "timeout_s": 1,
+            "timeout_s": 3,
             "best_found_solution_metrics": {
                 "strategy": "bfs",
                 "length": 14,
@@ -119,7 +119,7 @@
         },
         {
             "input": "warmup/SAsoko1_08.lvl",
-            "timeout_s": 1,
+            "timeout_s": 3,
             "best_found_solution_metrics": {
                 "strategy": "bfs",
                 "length": 6,
@@ -129,7 +129,7 @@
         },
         {
             "input": "warmup/SAsoko1_04.lvl",
-            "timeout_s": 1,
+            "timeout_s": 3,
             "best_found_solution_metrics": {
                 "strategy": "bfs",
                 "length": 2,
@@ -139,7 +139,7 @@
         },
         {
             "input": "warmup/SAsimple4.lvl",
-            "timeout_s": 1,
+            "timeout_s": 3,
             "best_found_solution_metrics": {
                 "strategy": "bfs",
                 "length": 30,
@@ -149,7 +149,7 @@
         },
         {
             "input": "warmup/SAsimple3.lvl",
-            "timeout_s": 1,
+            "timeout_s": 3,
             "best_found_solution_metrics": {
                 "strategy": "bfs",
                 "length": 32,
@@ -159,7 +159,7 @@
         },
         {
             "input": "warmup/SAsimple2.lvl",
-            "timeout_s": 1,
+            "timeout_s": 3,
             "best_found_solution_metrics": {
                 "strategy": "bfs",
                 "length": 30,
@@ -169,7 +169,7 @@
         },
         {
             "input": "warmup/SAsimple1.lvl",
-            "timeout_s": 1,
+            "timeout_s": 3,
             "best_found_solution_metrics": {
                 "strategy": "bfs",
                 "length": 6,
@@ -179,7 +179,7 @@
         },
         {
             "input": "warmup/SAsimple0.lvl",
-            "timeout_s": 1,
+            "timeout_s": 3,
             "best_found_solution_metrics": {
                 "strategy": "bfs",
                 "length": 5,
@@ -189,7 +189,7 @@
         },
         {
             "input": "warmup/SApushing.lvl",
-            "timeout_s": 1,
+            "timeout_s": 3,
             "best_found_solution_metrics": {
                 "strategy": "bfs",
                 "length": 20,
@@ -199,7 +199,7 @@
         },
         {
             "input": "warmup/SAWatsOn.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -209,7 +209,7 @@
         },
         {
             "input": "warmup/SAtowersOfSaigon26.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -219,7 +219,7 @@
         },
         {
             "input": "warmup/SAtowersOfSaigon10.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -229,7 +229,7 @@
         },
         {
             "input": "warmup/SAtowersOfSaigon5.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -239,7 +239,7 @@
         },
         {
             "input": "warmup/SAtowersOfSaigon05.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -249,7 +249,7 @@
         },
         {
             "input": "warmup/SAtowersOfSaigon04.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -259,7 +259,7 @@
         },
         {
             "input": "warmup/SAtowersOfSaigon03.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -269,7 +269,7 @@
         },
         {
             "input": "warmup/SAtowersOfHoChiMinh26.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -279,7 +279,7 @@
         },
         {
             "input": "warmup/SAtowersOfHoChiMinh10.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -289,7 +289,7 @@
         },
         {
             "input": "warmup/SAtowersOfHoChiMinh05.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -299,7 +299,7 @@
         },
         {
             "input": "warmup/SAtowersOfHoChiMinh04.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "bfs",
                 "length": 92,
@@ -309,7 +309,7 @@
         },
         {
             "input": "warmup/SAtowersOfHoChiMinh03.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "bfs",
                 "length": 56,
@@ -539,7 +539,7 @@
         },
         {
             "input": "warmup/SApacman.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -549,7 +549,7 @@
         },
         {
             "input": "warmup/SAOptimal.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -559,7 +559,7 @@
         },
         {
             "input": "warmup/SAmicromouseContest2011.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -569,7 +569,7 @@
         },
         {
             "input": "warmup/SALazarus.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -579,7 +579,7 @@
         },
         {
             "input": "warmup/SAlabyrinthOfStBertin.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -589,7 +589,7 @@
         },
         {
             "input": "warmup/SAlabyrinth.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -599,7 +599,7 @@
         },
         {
             "input": "warmup/SAfriendofDFS.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -609,7 +609,7 @@
         },
         {
             "input": "warmup/SAFirefly.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -619,7 +619,7 @@
         },
         {
             "input": "warmup/SADangerBot.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -629,7 +629,7 @@
         },
         {
             "input": "warmup/SAD3.lvl",
-            "timeout_s": 1,
+            "timeout_s": 3,
             "best_found_solution_metrics": {
                 "strategy": "dfs",
                 "length": 27,
@@ -639,7 +639,7 @@
         },
         {
             "input": "warmup/SAD2.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "dfs",
                 "length": 13150,
@@ -649,7 +649,7 @@
         },
         {
             "input": "warmup/SAD1.lvl",
-            "timeout_s": 1,
+            "timeout_s": 3,
             "best_found_solution_metrics": {
                 "strategy": "bfs",
                 "length": 19,
@@ -659,7 +659,7 @@
         },
         {
             "input": "warmup/SACrunch.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -669,7 +669,7 @@
         },
         {
             "input": "warmup/SAchoice.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -679,7 +679,7 @@
         },
         {
             "input": "warmup/SAboXboXboX.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -689,7 +689,7 @@
         },
         {
             "input": "warmup/SAbotbot.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -699,7 +699,7 @@
         },
         {
             "input": "warmup/SAbispebjergHospital.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -709,7 +709,7 @@
         },
         {
             "input": "warmup/SAanagram.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -719,7 +719,7 @@
         },
         {
             "input": "warmup/MAthomasAppartment_redpurple.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -729,7 +729,7 @@
         },
         {
             "input": "warmup/MAthomasAppartment_redcyanpurple.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -739,7 +739,7 @@
         },
         {
             "input": "warmup/MAthomasAppartment_redcyan.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -749,7 +749,7 @@
         },
         {
             "input": "warmup/MAthomasAppartment_redbluepurple.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -759,7 +759,7 @@
         },
         {
             "input": "warmup/MAthomasAppartment_redbluecyan.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -769,7 +769,7 @@
         },
         {
             "input": "warmup/MAthomasAppartment_redblue.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -779,7 +779,7 @@
         },
         {
             "input": "warmup/MAthomasAppartment_red.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -789,7 +789,7 @@
         },
         {
             "input": "warmup/MAthomasAppartment_purple.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -799,7 +799,7 @@
         },
         {
             "input": "warmup/MAthomasAppartment_cyanpurple.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -809,7 +809,7 @@
         },
         {
             "input": "warmup/MAthomasAppartment_cyan.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -819,7 +819,7 @@
         },
         {
             "input": "warmup/MAthomasAppartment_bluepurple.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -829,7 +829,7 @@
         },
         {
             "input": "warmup/MAthomasAppartment_bluecyanpurple.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -839,7 +839,7 @@
         },
         {
             "input": "warmup/MAthomasAppartment_bluecyan.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -849,7 +849,7 @@
         },
         {
             "input": "warmup/MAthomasAppartment_blue.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -859,7 +859,7 @@
         },
         {
             "input": "warmup/MAthomasAppartment.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -869,7 +869,7 @@
         },
         {
             "input": "warmup/MAsimple5.lvl",
-            "timeout_s": 1,
+            "timeout_s": 3,
             "best_found_solution_metrics": {
                 "strategy": "bfs",
                 "length": 6,
@@ -879,7 +879,7 @@
         },
         {
             "input": "warmup/MAsimple4.lvl",
-            "timeout_s": 1,
+            "timeout_s": 3,
             "best_found_solution_metrics": {
                 "strategy": "bfs",
                 "length": 6,
@@ -889,7 +889,7 @@
         },
         {
             "input": "warmup/MAsimple3.lvl",
-            "timeout_s": 1,
+            "timeout_s": 3,
             "best_found_solution_metrics": {
                 "strategy": "bfs",
                 "length": 38,
@@ -899,7 +899,7 @@
         },
         {
             "input": "warmup/MAsimple2.lvl",
-            "timeout_s": 1,
+            "timeout_s": 3,
             "best_found_solution_metrics": {
                 "strategy": "bfs",
                 "length": 30,
@@ -929,7 +929,7 @@
         },
         {
             "input": "warmup/MAPFreorder3.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -939,7 +939,7 @@
         },
         {
             "input": "warmup/MAPFreorder2.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -949,7 +949,7 @@
         },
         {
             "input": "warmup/MAPFreorder.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -959,7 +959,7 @@
         },
         {
             "input": "warmup/MAPF03B.lvl",
-            "timeout_s": 1,
+            "timeout_s": 3,
             "best_found_solution_metrics": {
                 "strategy": "bfs",
                 "length": 14,
@@ -969,7 +969,7 @@
         },
         {
             "input": "warmup/MAPF02B.lvl",
-            "timeout_s": 1,
+            "timeout_s": 3,
             "best_found_solution_metrics": {
                 "strategy": "bfs",
                 "length": 14,
@@ -979,7 +979,7 @@
         },
         {
             "input": "warmup/MApacman.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -989,7 +989,7 @@
         },
         {
             "input": "warmup/MAmultiagentSort.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -999,7 +999,7 @@
         },
         {
             "input": "warmup/MAExample.lvl",
-            "timeout_s": 1,
+            "timeout_s": 3,
             "best_found_solution_metrics": {
                 "strategy": "bfs",
                 "length": 30,
@@ -1009,7 +1009,7 @@
         },
         {
             "input": "warmup/MAcustom03.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -1019,7 +1019,7 @@
         },
         {
             "input": "warmup/MAcustom01.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "bfs",
                 "length": 20,
@@ -1029,7 +1029,7 @@
         },
         {
             "input": "warmup/MAchallenge.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -1039,7 +1039,7 @@
         },
         {
             "input": "warmup/MAbispebjergHospital.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,
@@ -1049,7 +1049,7 @@
         },
         {
             "input": "warmup/MAbispebjerg.lvl",
-            "timeout_s": 5,
+            "timeout_s": 60,
             "best_found_solution_metrics": {
                 "strategy": "",
                 "length": 999,

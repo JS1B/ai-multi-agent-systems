@@ -15,6 +15,7 @@ except ImportError:
     WORKERS_COUNT = max(os.cpu_count() - 1, 1)
     print("Warning: psutil is not installed. Using os.cpu_count() instead (threads, not cores).", file=sys.stderr)
 
+
 SHORT_BENCHMARK_CASES_COUNT = 10
 
 JAVA = "java"
@@ -86,6 +87,12 @@ def parse_server_output(output_str: str) -> tuple[dict, int]:
         solution_length = int(output_str.split("Actions used: ")[1].split(".")[0].replace(",", ""))
     except (ValueError, IndexError) as e:
         raise ValueError(f"Failed to parse solution length from output: {e}") from e
+
+    try:
+        metrics["time[s]"] = float(output_str.split("Time to solve: ")[1].split("seconds.")[0])
+    except (ValueError, IndexError) as e:
+        raise ValueError(f"Failed to parse time to solve from output: {e}") from e
+
 
     return metrics, solution_length
 
