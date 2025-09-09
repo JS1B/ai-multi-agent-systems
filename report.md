@@ -812,5 +812,3 @@ graph TD
 ```
 
 Code is appended to the report.
-
-I was unable to run the java server on the whole directory - the memory usage would skyrocket after like 4 levels.
