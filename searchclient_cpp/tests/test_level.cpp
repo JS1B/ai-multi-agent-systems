@@ -1,13 +1,11 @@
-// tests/test_level.cpp
+#include <cassert>
 #include <iostream>
 #include <sstream>
-#include <cassert>
 
-#include "level.hpp"   // brings in CharGrid, Cell2D, WALL, loadLevel
+#include "level.hpp"
 
-void test_loadLevel() {
-    // Prepare a fake .lvl file in a string
-    const std::string lvl = 
+void testLoadLevelCurrentModel() {
+    const std::string lvl =
         "#domain\n"
         "hospital\n"
         "#levelname\n"
@@ -32,71 +30,83 @@ void test_loadLevel() {
     std::istringstream in(lvl);
     Level level = loadLevel(in);
 
-    // Domain & name (static members)
-    assert(Level::domain == "hospital");
-    assert(Level::name   == "MAExample");
+    assert(level.static_level.getDomain() == "hospital");
+    assert(level.static_level.getName() == "MAExample");
+    assert(level.static_level.getSize() == Cell2D(5, 7));
 
-    // Dimensions should be 5×7
-    assert(Level::walls.size_rows() == 5);
-    assert(Level::walls.size_cols() == 7);
-    assert(level.boxes.size_rows() == 5);
-    assert(level.boxes.size_cols() == 7);
-
-    // Walls: border must be '+', interior must be untouched (0)
-    for(int r = 0; r < 5; ++r) {
-        for(int c = 0; c < 7; ++c) {
-            if(r==0||r==4||c==0||c==6)
-                assert(Level::walls(r,c) == WALL);
-            else
-                assert(Level::walls(r,c) == 0);
+    for (int row = 0; row < 5; ++row) {
+        for (int col = 0; col < 7; ++col) {
+            const bool isBorder = row == 0 || row == 4 || col == 0 || col == 6;
+            assert(level.static_level.isCellFree(Cell2D(row, col)) == !isBorder);
         }
     }
 
-    // Agents: there should be exactly two, at (1,1) for '0' and (3,1) for '1'
     assert(level.agents.size() == 2);
-    assert(level.agents[0] == Cell2D(1,1));
-    assert(level.agents[1] == Cell2D(3,1));
+    assert(level.agents[0].getSymbol() == '0');
+    assert(level.agents[0].getPosition() == Cell2D(1, 1));
+    assert(level.agents[0].getGoalPositions().size() == 1);
+    assert(level.agents[0].getGoalPositions()[0] == Cell2D(3, 1));
+    assert(level.static_level.getAgentColor('0') == Color::Red);
 
-    // Agent colors:
-    assert(Level::agent_colors[0] == Color::Red);
-    assert(Level::agent_colors[1] == Color::Green);
+    assert(level.agents[1].getSymbol() == '1');
+    assert(level.agents[1].getPosition() == Cell2D(3, 1));
+    assert(level.agents[1].getGoalPositions().size() == 1);
+    assert(level.agents[1].getGoalPositions()[0] == Cell2D(1, 1));
+    assert(level.static_level.getAgentColor('1') == Color::Green);
 
-    // Box colors:
-    assert(Level::box_colors[0] == Color::Red);
-    assert(Level::box_colors[1] == Color::Green);
+    assert(level.boxes.size() == 2);
+    assert(level.boxes[0].getSymbol() == 'A');
+    assert(level.boxes[0].getColor() == Color::Red);
+    assert(level.boxes[0].size() == 2);
+    assert(level.boxes[0].getPosition(0) == Cell2D(3, 2));
+    assert(level.boxes[0].getPosition(1) == Cell2D(3, 3));
+    assert(level.boxes[0].getGoalsCount() == 2);
+    assert(level.boxes[0].getGoal(0) == Cell2D(1, 4));
+    assert(level.boxes[0].getGoal(1) == Cell2D(1, 5));
 
-    // Boxes in initial state: B at (1,2),(1,3); A at (3,2),(3,3)
-    assert(level.boxes(1,2) == 'B');
-    assert(level.boxes(1,3) == 'B');
-    assert(level.boxes(3,2) == 'A');
-    assert(level.boxes(3,3) == 'A');
-    // Check some empty cell
-    assert(level.boxes(2,2) == 0);
-    assert(level.boxes(2,3) == 0);
-    assert(level.boxes(4,2) == 0);
-    assert(level.boxes(4,3) == 0);
-    assert(level.boxes(3,4) == 0);
-    assert(level.boxes(3,5) == 0);
+    assert(level.boxes[1].getSymbol() == 'B');
+    assert(level.boxes[1].getColor() == Color::Green);
+    assert(level.boxes[1].size() == 2);
+    assert(level.boxes[1].getPosition(0) == Cell2D(1, 2));
+    assert(level.boxes[1].getPosition(1) == Cell2D(1, 3));
+    assert(level.boxes[1].getGoalsCount() == 2);
+    assert(level.boxes[1].getGoal(0) == Cell2D(3, 4));
+    assert(level.boxes[1].getGoal(1) == Cell2D(3, 5));
 
-    // Goals: static Level::goals must have '1' at (1,1), 'A' at (1,4),(1,5);
-    //                     '0' at (3,1), 'B' at (3,4),(3,5)
-    assert(Level::agent_goals[1] == Cell2D(1,1));
-    assert(Level::box_goals(1,4) == 'A');
-    assert(Level::box_goals(1,5) == 'A');
-    assert(Level::agent_goals[0] == Cell2D(3,1));
-    assert(Level::box_goals(3,4) == 'B');
-    assert(Level::box_goals(3,5) == 'B');
-    // And interior zeros
-    assert(Level::box_goals(2,2) == 0);
-    assert(Level::box_goals(1,2) == 0);
-    assert(Level::box_goals(1,3) == 0);
-    assert(Level::box_goals(3,2) == 0);
-    assert(Level::box_goals(3,3) == 0);
+    std::cout << "testLoadLevelCurrentModel passed!" << std::endl;
+}
 
-    std::cout << "test_loadLevel passed!" << std::endl;
+void testOrphanBoxesBecomeStaticWalls() {
+    const std::string lvl =
+        "#domain\n"
+        "hospital\n"
+        "#levelname\n"
+        "OrphanBox\n"
+        "#colors\n"
+        "blue: 0\n"
+        "red: A\n"
+        "#initial\n"
+        "+++++\n"
+        "+0A +\n"
+        "+++++\n"
+        "#goal\n"
+        "+++++\n"
+        "+  A+\n"
+        "+++++\n"
+        "#end\n";
+
+    std::istringstream in(lvl);
+    Level level = loadLevel(in);
+
+    assert(level.agents.size() == 1);
+    assert(level.boxes.empty());
+    assert(!level.static_level.isCellFree(Cell2D(1, 2)));
+
+    std::cout << "testOrphanBoxesBecomeStaticWalls passed!" << std::endl;
 }
 
 int main() {
-    test_loadLevel();
+    testLoadLevelCurrentModel();
+    testOrphanBoxesBecomeStaticWalls();
     return 0;
 }

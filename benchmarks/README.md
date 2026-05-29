@@ -9,6 +9,7 @@ From the repository root:
 ```bash
 cd searchclient_cpp
 make RELEASE=true -j
+make smoke
 cd ../benchmarks
 python3 run_benchmarks.py --suite warmup_smoke --jobs 1
 ```

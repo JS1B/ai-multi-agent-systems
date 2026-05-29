@@ -55,6 +55,8 @@ Building
 # build
 cd searchclient_cpp
 make -j # for debug
+make test # run unit tests
+make smoke # run server.jar against a small warmup level
 make flamegraph # for flamegraph generation - change the level file in the Makefile
 ```
 

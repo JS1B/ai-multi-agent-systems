@@ -24,6 +24,9 @@ EXECUTABLE = searchclient
 
 # Benchmark
 BENCHMARK_DIR = ../benchmarks
+SMOKE_LEVEL ?= ../levels/warmup/MAPF00.lvl
+SMOKE_TIMEOUT ?= 5
+SMOKE_OUTPUT ?= $(OBJ_DIR)/smoke.log
 
 # Flamegraph
 FLAMEGRAPH_DIR = ../lib/FlameGraph
@@ -93,13 +96,21 @@ LIB_OBJECTS := $(filter-out $(OBJ_DIR)/searchclient.o,$(OBJECTS))
 
 .PHONY: test
 test: $(LIB_OBJECTS) $(TEST_EXES)
-	@for t in $(TEST_EXES); do \
+	@set -e; for t in $(TEST_EXES); do \
 	  echo "-> running $$t"; \
 	  ./$$t; \
 	done
+
+.PHONY: smoke
+smoke: $(EXECUTABLE)
+	@java -jar ../server.jar -c ./$(EXECUTABLE) -l $(SMOKE_LEVEL) -t $(SMOKE_TIMEOUT) > $(SMOKE_OUTPUT) 2>&1; \
+	status=$$?; \
+	cat $(SMOKE_OUTPUT); \
+	if [ $$status -ne 0 ]; then exit $$status; fi; \
+	grep -q "Level solved: Yes" $(SMOKE_OUTPUT)
 
 # Compile each tests/*.cpp into build_tests/<name>, linking only library .o files
 $(TEST_BUILD_DIR)/%: tests/%.cpp $(HPP_HEADERS) $(LIB_OBJECTS)
 	$(CXX) $(CXXFLAGS) $(TEST_INCLUDES) $< $(LIB_OBJECTS) -o $@
 
-.PHONY: all clean run 
+.PHONY: all clean run test smoke
