@@ -17,10 +17,16 @@ Do not require all `comp` levels to solve at first. A failed level is still usef
 | --- | --- |
 | solved | Primary objective. |
 | timeout | Distinguishes hard failures from planner bugs. |
-| wall_time_ms | User-visible throughput. |
+| wall_time_ms | User-visible total harness time. |
+| search_wall_time_ms | Server-reported solve time. |
+| harness_overhead_ms | Java process, protocol, and runner overhead outside reported solve time. |
 | generated_states | Measures branching pressure. |
 | expanded_states | Measures real search work. |
+| max_frontier | Captures peak search queue pressure. |
 | peak_rss_mb | Captures state explosion and ownership problems. |
+| generated_per_second | Normalizes branching throughput by wall time. |
+| expanded_per_second | Normalizes search work throughput by wall time. |
+| generated_per_expanded | Rough branching factor proxy. |
 | actions_used | Useful quality signal, but secondary to solved/time. |
 | failure_reason | Separates timeout, memory cap, empty frontier, parser error, and invalid action. |
 
@@ -42,17 +48,22 @@ Build mode stays outside the runner for now: build `searchclient_cpp/searchclien
 
 Each row should be one `(level, planner, run)` result:
 
-| level | planner | solved | timeout | wall_time_ms | generated | expanded | peak_rss_mb | actions | failure_reason |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| level | planner | solved | timeout | wall_time_ms | search_wall_time_ms | overhead_ms | generated | expanded | max_frontier | peak_rss_mb | generated_per_second | generated_per_expanded | actions | failure_reason |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 
 The summary should include:
 
 - solved count by suite
 - median wall time on solved levels
+- median server search time on solved levels
+- median harness overhead on solved levels
 - timeout count
 - memory-cap count
 - top 10 levels by generated states
+- top 10 levels by expanded states
+- top 10 levels by max frontier
 - top 10 levels by peak RSS
+- top throughput and branching-ratio outliers
 
 ## Implementation notes
 

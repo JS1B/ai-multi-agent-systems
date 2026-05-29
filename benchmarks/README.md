@@ -27,7 +27,7 @@ Many `comp_probe` cases may timeout or fail today. That is expected; the failure
 Each JSON report includes:
 
 - metadata: suite, client path, server path, runs, jobs, planner label
-- summary: solved count, timeout count, median solved wall time, top generated states, top peak RSS, failure reasons
-- cases: one row per `(level, run)` with solved status, timeout status, wall time, generated states, expanded states, peak RSS, action count, and failure reason
+- summary: solved count, timeout count, median solved wall time, median server search time, median harness overhead, top generated/expanded states, top max frontier, top peak RSS, throughput outliers, and failure reasons
+- cases: one row per `(level, run)` with solved status, timeout status, total wall time, server search time, harness overhead, generated states, expanded states, final/max frontier, final/max peak RSS, status sample count, generated/sec, expanded/sec, generated/expanded, actions/sec, action count, and failure reason
 
 The `--planner` value is currently only a label. Use `--pass-planner-arg` only after the client actually implements planner selection.

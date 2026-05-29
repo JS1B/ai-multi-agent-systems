@@ -44,10 +44,19 @@ class CaseResult:
     solved: bool
     timeout: bool
     wall_time_ms: int
+    search_wall_time_ms: int | None
+    harness_overhead_ms: int | None
     generated_states: int | None
     expanded_states: int | None
     frontier: int | None
+    max_frontier: int | None
     peak_rss_mb: int | None
+    max_peak_rss_mb: int | None
+    status_samples: int
+    generated_per_second: float | None
+    expanded_per_second: float | None
+    generated_per_expanded: float | None
+    actions_per_second: float | None
     actions_used: int | None
     server_solve_time_s: float | None
     failure_reason: str
@@ -63,8 +72,14 @@ class BenchmarkSummary:
     solved_runs: int
     timeout_runs: int
     median_wall_time_ms_solved: int | None
+    median_search_wall_time_ms_solved: int | None
+    median_harness_overhead_ms_solved: int | None
     top_generated_states: list[dict[str, Any]]
+    top_expanded_states: list[dict[str, Any]]
+    top_max_frontier: list[dict[str, Any]]
     top_peak_rss_mb: list[dict[str, Any]]
+    top_generated_per_second: list[dict[str, Any]]
+    top_generated_per_expanded: list[dict[str, Any]]
     failure_reasons: dict[str, int]
 
 
@@ -172,17 +187,43 @@ def parse_client_metrics(stdout: str) -> dict[str, int]:
         return {}
 
     header = [normalize_metric_name(part) for part in metric_lines[0].split(",")]
-    values = [part.strip() for part in metric_lines[-1].split(",")]
-    if len(header) != len(values):
+    rows = []
+    for metric_line in metric_lines[1:]:
+        values = [part.strip() for part in metric_line.split(",")]
+        if len(header) != len(values):
+            continue
+        row = {}
+        for key, value in zip(header, values):
+            try:
+                row[key] = int(float(value.replace(",", "")))
+            except ValueError:
+                continue
+        if row:
+            rows.append(row)
+
+    if not rows:
         return {}
 
-    metrics = {}
-    for key, value in zip(header, values):
-        try:
-            metrics[key] = int(float(value.replace(",", "")))
-        except ValueError:
-            continue
+    final_row = rows[-1]
+    metrics = dict(final_row)
+    metrics["status_samples"] = len(rows)
+    if any("frontier" in row for row in rows):
+        metrics["max_frontier"] = max(row.get("frontier", 0) for row in rows)
+    if any("peak_rss_mb" in row for row in rows):
+        metrics["max_peak_rss_mb"] = max(row.get("peak_rss_mb", 0) for row in rows)
     return metrics
+
+
+def per_second(value: int | None, wall_time_ms: int) -> float | None:
+    if value is None or wall_time_ms <= 0:
+        return None
+    return round(value / (wall_time_ms / 1000.0), 2)
+
+
+def ratio(numerator: int | None, denominator: int | None) -> float | None:
+    if numerator is None or denominator in (None, 0):
+        return None
+    return round(numerator / denominator, 2)
 
 
 def failure_reason(returncode: int | None, timed_out: bool, solved: bool, stdout: str, stderr: str) -> str:
@@ -240,6 +281,10 @@ def run_case(task: dict[str, Any]) -> CaseResult:
     solved = "Level solved: Yes" in stdout
     server_timed_out = "Client timed out" in stdout
     metrics = parse_client_metrics(stdout)
+    actions_used = parse_int_after(r"Actions used: ([\d,]+)\.", stdout)
+    server_solve_time_s = parse_float_after(r"Time to solve: ([\d.]+) seconds\.", stdout)
+    search_wall_time_ms = int(server_solve_time_s * 1000) if server_solve_time_s is not None else None
+    harness_overhead_ms = wall_time_ms - search_wall_time_ms if search_wall_time_ms is not None else None
     reason = failure_reason(returncode, timed_out or server_timed_out, solved, stdout, stderr)
 
     return CaseResult(
@@ -250,12 +295,21 @@ def run_case(task: dict[str, Any]) -> CaseResult:
         solved=solved,
         timeout=timed_out or server_timed_out,
         wall_time_ms=wall_time_ms,
+        search_wall_time_ms=search_wall_time_ms,
+        harness_overhead_ms=harness_overhead_ms,
         generated_states=metrics.get("generated_states"),
         expanded_states=metrics.get("expanded_states"),
         frontier=metrics.get("frontier"),
+        max_frontier=metrics.get("max_frontier"),
         peak_rss_mb=metrics.get("peak_rss_mb"),
-        actions_used=parse_int_after(r"Actions used: ([\d,]+)\.", stdout),
-        server_solve_time_s=parse_float_after(r"Time to solve: ([\d.]+) seconds\.", stdout),
+        max_peak_rss_mb=metrics.get("max_peak_rss_mb"),
+        status_samples=metrics.get("status_samples", 0),
+        generated_per_second=per_second(metrics.get("generated_states"), wall_time_ms),
+        expanded_per_second=per_second(metrics.get("expanded_states"), wall_time_ms),
+        generated_per_expanded=ratio(metrics.get("generated_states"), metrics.get("expanded_states")),
+        actions_per_second=per_second(actions_used, wall_time_ms),
+        actions_used=actions_used,
+        server_solve_time_s=server_solve_time_s,
         failure_reason=reason,
         returncode=returncode,
         command=command,
@@ -302,6 +356,8 @@ def top_metric(results: list[CaseResult], metric: str) -> list[dict[str, Any]]:
 
 def summarize(suite_name: str, planner: str, results: list[CaseResult]) -> BenchmarkSummary:
     solved_wall_times = [result.wall_time_ms for result in results if result.solved]
+    solved_search_wall_times = [result.search_wall_time_ms for result in results if result.solved and result.search_wall_time_ms is not None]
+    solved_overheads = [result.harness_overhead_ms for result in results if result.solved and result.harness_overhead_ms is not None]
     failure_counts: dict[str, int] = {}
     for result in results:
         if result.failure_reason:
@@ -314,8 +370,14 @@ def summarize(suite_name: str, planner: str, results: list[CaseResult]) -> Bench
         solved_runs=sum(1 for result in results if result.solved),
         timeout_runs=sum(1 for result in results if result.timeout),
         median_wall_time_ms_solved=int(statistics.median(solved_wall_times)) if solved_wall_times else None,
+        median_search_wall_time_ms_solved=int(statistics.median(solved_search_wall_times)) if solved_search_wall_times else None,
+        median_harness_overhead_ms_solved=int(statistics.median(solved_overheads)) if solved_overheads else None,
         top_generated_states=top_metric(results, "generated_states"),
+        top_expanded_states=top_metric(results, "expanded_states"),
+        top_max_frontier=top_metric(results, "max_frontier"),
         top_peak_rss_mb=top_metric(results, "peak_rss_mb"),
+        top_generated_per_second=top_metric(results, "generated_per_second"),
+        top_generated_per_expanded=top_metric(results, "generated_per_expanded"),
         failure_reasons=failure_counts,
     )
 
@@ -366,6 +428,8 @@ def print_summary(summary: BenchmarkSummary, output_path: Path) -> None:
     print(f"solved: {summary.solved_runs}/{summary.total_runs}")
     print(f"timeouts: {summary.timeout_runs}")
     print(f"median wall time solved: {summary.median_wall_time_ms_solved} ms")
+    print(f"median server search time solved: {summary.median_search_wall_time_ms_solved} ms")
+    print(f"median harness overhead solved: {summary.median_harness_overhead_ms_solved} ms")
     print(f"failure reasons: {summary.failure_reasons or {}}")
     print(f"output: {output_path}")
 
