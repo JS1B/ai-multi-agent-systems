@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "constraint.hpp"
@@ -18,6 +19,8 @@ class Graphsearch {
     size_t expanded_states_count_;
     bool solution_found_;
 
+    using ConstraintsByTime = std::unordered_map<size_t, std::vector<Constraint>>;
+
    public:
     Graphsearch() = delete;
     Graphsearch(LowLevelState *initial_state, Frontier *frontier)
@@ -28,12 +31,14 @@ class Graphsearch {
     Graphsearch &operator=(const Graphsearch &) = delete;
     ~Graphsearch() { delete frontier_; }
 
-    bool areConstraintsSatisfied(const LowLevelState *state, const std::vector<Constraint> &constraints) const {
-        for (const auto &constraint : constraints) {
-            if (constraint.g != state->getG()) {
-                continue;
-            }
+    bool areConstraintsSatisfied(const LowLevelState *state, const ConstraintsByTime &constraints_by_time) const {
+        auto constraints_at_time = constraints_by_time.find(state->getG());
+        if (constraints_at_time == constraints_by_time.end()) {
+            return true;
+        }
 
+        const std::vector<Constraint> &constraints = constraints_at_time->second;
+        for (const auto &constraint : constraints) {
             for (size_t i = 0; i < state->agents.size(); ++i) {
                 if (constraint.vertex == state->agents[i].getPosition()) {
                     return false;
@@ -43,15 +48,19 @@ class Graphsearch {
         return true;
     }
 
-    bool isTemporallyExplored(const LowLevelState *state, const std::vector<Constraint> &constraints) const {
+    ConstraintsByTime indexConstraintsByTime(const std::vector<Constraint> &constraints) const {
+        ConstraintsByTime constraints_by_time;
+        constraints_by_time.reserve(constraints.size());
+        for (const Constraint &constraint : constraints) {
+            constraints_by_time[constraint.g].push_back(constraint);
+        }
+        return constraints_by_time;
+    }
+
+    bool isTemporallyExplored(LowLevelState *state, const std::vector<Constraint> &constraints) const {
         // If no constraints at all, use standard duplicate detection
         if (constraints.empty()) {
-            for (const auto *explored_state : explored_) {
-                if (*state == *explored_state) {
-                    return true;
-                }
-            }
-            return false;
+            return explored_.count(state) > 0;
         }
 
         // Check if any state in explored set is temporally equivalent to this state
@@ -82,6 +91,7 @@ class Graphsearch {
         // Clear frontier and explored set for new search
         frontier_->clear();
         explored_.clear();
+        const ConstraintsByTime constraints_by_time = indexConstraintsByTime(constraints);
 
         frontier_->add(initial_state_->clone());
 
@@ -99,7 +109,7 @@ class Graphsearch {
             LowLevelState *state = frontier_->pop();
             expanded_states_count_++;
 
-            if (state->isGoalState() && areConstraintsSatisfied(state, constraints)) {
+            if (state->isGoalState() && areConstraintsSatisfied(state, constraints_by_time)) {
                 solution_found_ = true;
                 return state->extractPlan();
             }
@@ -110,7 +120,7 @@ class Graphsearch {
             for (auto child : expanded_states) {
                 bool explored = isTemporallyExplored(child, constraints);
                 bool in_frontier = frontier_->contains(child);
-                bool constraints_satisfied = areConstraintsSatisfied(child, constraints);
+                bool constraints_satisfied = areConstraintsSatisfied(child, constraints_by_time);
                 if (!explored && !in_frontier && constraints_satisfied) {
                     frontier_->add(child);
                     continue;
