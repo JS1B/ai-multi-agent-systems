@@ -1,0 +1,16 @@
+{
+  "name": "warmup_smoke",
+  "description": "Small warmup suite for fast redesign regression checks.",
+  "levels_dir": "../levels",
+  "default_timeout_s": 5,
+  "cases": [
+    {"level": "warmup/MAPF00.lvl"},
+    {"level": "warmup/MAPF01.lvl"},
+    {"level": "warmup/MAPF02.lvl"},
+    {"level": "warmup/MAPF03.lvl"},
+    {"level": "warmup/SAsimple0.lvl"},
+    {"level": "warmup/SAsoko1_04.lvl"},
+    {"level": "warmup/MAsimple4.lvl"},
+    {"level": "warmup/MAsimple5.lvl"}
+  ]
+}

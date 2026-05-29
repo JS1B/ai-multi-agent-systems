@@ -7,15 +7,15 @@
 
 #include "memory.hpp"
 
-void printSearchStatus(const CBSFrontier &cbs_frontier, const size_t &generated_states_count) {
+void printSearchStatus(const CBSFrontier &cbs_frontier, const size_t &generated_states_count, const size_t &expanded_states_count) {
     static bool first_time = true;
 
     if (first_time) {
-        fprintf(stdout, "#frontier, alloc[mb], generated\n");
+        fprintf(stdout, "#frontier, peak_rss[mb], generated, expanded\n");
         first_time = false;
     }
 
-    fprintf(stdout, "#%11zu, %13d, %16zu\n", cbs_frontier.size(), Memory::getUsage(), generated_states_count);
+    fprintf(stdout, "#%11zu, %13d, %16zu, %16zu\n", cbs_frontier.size(), Memory::getUsage(), generated_states_count, expanded_states_count);
     fflush(stdout);
 }
 
@@ -64,6 +64,7 @@ CBS::~CBS() {
 
 std::vector<std::vector<const Action *>> CBS::solve() {
     size_t generated_states_count = 0;
+    size_t expanded_states_count = 0;
     CTNode root;
 
     CBSFrontier cbs_frontier;
@@ -82,8 +83,9 @@ std::vector<std::vector<const Action *>> CBS::solve() {
     for (size_t i = 0; i < agent_searches.size(); i++) {
         auto bulk_plan = agent_searches[i]->solve({});
         generated_states_count += agent_searches[i]->getGeneratedStatesCount();
+        expanded_states_count += agent_searches[i]->getExpandedStatesCount();
         if (!agent_searches[i]->wasSolutionFound()) {
-            printSearchStatus(cbs_frontier, generated_states_count);
+            printSearchStatus(cbs_frontier, generated_states_count, expanded_states_count);
             return {};
         }
         root.solutions.push_back(bulk_plan);
@@ -96,7 +98,7 @@ std::vector<std::vector<const Action *>> CBS::solve() {
     size_t iterations = 0;
     while (!cbs_frontier.isEmpty()) {
         if (iterations < 5 || iterations % 20 == 0) {  // 10000
-            printSearchStatus(cbs_frontier, generated_states_count);
+            printSearchStatus(cbs_frontier, generated_states_count, expanded_states_count);
         }
 
         CTNode *node = cbs_frontier.pop();
@@ -110,14 +112,14 @@ std::vector<std::vector<const Action *>> CBS::solve() {
 
         if (Memory::getUsage() > Memory::maxUsage) {
             fprintf(stderr, "Maximum memory usage exceeded.\n");
-            printSearchStatus(cbs_frontier, generated_states_count);
+            printSearchStatus(cbs_frontier, generated_states_count, expanded_states_count);
             return {};
         }
 
         std::vector<std::vector<const Action *>> merged_plans = mergePlans(node->solutions);
         FullConflict conflict = findFirstConflict(merged_plans);
         if (conflict.a1_symbol == 0 && conflict.a2_symbol == 0) {
-            printSearchStatus(cbs_frontier, generated_states_count);
+            printSearchStatus(cbs_frontier, generated_states_count, expanded_states_count);
             return merged_plans;
         }
 
@@ -157,6 +159,7 @@ std::vector<std::vector<const Action *>> CBS::solve() {
             Graphsearch *agent_search = agent_searches[group_idx];
             auto plan = agent_search->solve(constraints);
             generated_states_count += agent_search->getGeneratedStatesCount();
+            expanded_states_count += agent_search->getExpandedStatesCount();
             child->solutions[group_idx] = plan;
             if (!agent_search->wasSolutionFound()) {
                 child->cost = SIZE_MAX;
@@ -169,7 +172,7 @@ std::vector<std::vector<const Action *>> CBS::solve() {
 
         iterations++;
     }
-    printSearchStatus(cbs_frontier, generated_states_count);
+    printSearchStatus(cbs_frontier, generated_states_count, expanded_states_count);
     return {};
 }
 

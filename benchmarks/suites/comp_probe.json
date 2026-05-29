@@ -1,0 +1,14 @@
+{
+  "name": "comp_probe",
+  "description": "Competition-level probe suite. Many cases may timeout; failure reasons are part of the signal.",
+  "levels_dir": "../levels",
+  "default_timeout_s": 10,
+  "cases": [
+    {"level": "comp/CompCheck.lvl"},
+    {"level": "comp/AAAFUN.lvl"},
+    {"level": "comp/Raffaello.lvl"},
+    {"level": "comp/BfsFreaks.lvl"},
+    {"level": "comp/PIAF.lvl"},
+    {"level": "comp/Marathon.lvl"}
+  ]
+}

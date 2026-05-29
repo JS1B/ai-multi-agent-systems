@@ -26,18 +26,17 @@ Do not require all `comp` levels to solve at first. A failed level is still usef
 
 ## Benchmark command shape
 
-The benchmark runner should eventually support:
+The Phase 0 benchmark runner supports:
 
 - `--suite warmup_smoke`
 - `--suite comp_probe`
 - `--timeout-s N`
 - `--runs N`
 - `--jobs N`
-- `--release`
 - `--planner NAME`
-- `--output FILE`
+- `--output-dir DIR`
 
-The current runner can stay as the starting point, but the first redesign task should make its strategy/planner parameter real or remove that dimension until it is implemented.
+Build mode stays outside the runner for now: build `searchclient_cpp/searchclient` with `make` or `make RELEASE=true` before running the suite. The `--planner` argument is a report label unless `--pass-planner-arg` is explicitly enabled.
 
 ## Baseline table format
 

@@ -15,12 +15,13 @@ class Graphsearch {
     Frontier *frontier_;
     std::unordered_set<LowLevelState *, LowLevelStatePtrHash, LowLevelStatePtrEqual> explored_;
     size_t generated_states_count_;
+    size_t expanded_states_count_;
     bool solution_found_;
 
    public:
     Graphsearch() = delete;
     Graphsearch(LowLevelState *initial_state, Frontier *frontier)
-        : initial_state_(initial_state), frontier_(frontier), generated_states_count_(0), solution_found_(false) {
+        : initial_state_(initial_state), frontier_(frontier), generated_states_count_(0), expanded_states_count_(0), solution_found_(false) {
         explored_.reserve(1'000);
     }
     Graphsearch(const Graphsearch &) = delete;
@@ -75,6 +76,7 @@ class Graphsearch {
 
         // Reset tracking variables for new search
         generated_states_count_ = 0;
+        expanded_states_count_ = 0;
         solution_found_ = false;
 
         // Clear frontier and explored set for new search
@@ -95,6 +97,7 @@ class Graphsearch {
             }
 
             LowLevelState *state = frontier_->pop();
+            expanded_states_count_++;
 
             if (state->isGoalState() && areConstraintsSatisfied(state, constraints)) {
                 solution_found_ = true;
@@ -122,5 +125,6 @@ class Graphsearch {
 
     // Getter methods for tracking information
     size_t getGeneratedStatesCount() const { return generated_states_count_; }
+    size_t getExpandedStatesCount() const { return expanded_states_count_; }
     bool wasSolutionFound() const { return solution_found_; }
 };

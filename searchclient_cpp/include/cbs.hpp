@@ -83,7 +83,7 @@ class CBSFrontier {
     size_t size() const { return queue_.size(); }
 };
 
-void printSearchStatus(const CBSFrontier &cbs_frontier, const size_t &generated_states_count);
+void printSearchStatus(const CBSFrontier &cbs_frontier, const size_t &generated_states_count, const size_t &expanded_states_count);
 
 class CBS {
    public:

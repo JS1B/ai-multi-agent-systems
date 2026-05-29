@@ -1,443 +1,414 @@
+import argparse
+import datetime as dt
 import json
 import os
-import sys
-import datetime
+import re
+import statistics
 import subprocess
+import sys
+import time
 from concurrent.futures import ProcessPoolExecutor
-from dataclasses import dataclass
-from enum import Enum
+from dataclasses import asdict, dataclass
+from pathlib import Path
+from typing import Any
+
 from tqdm import tqdm
 
 try:
     from psutil import cpu_count
-    WORKERS_COUNT = max(cpu_count(logical=False) - 1, 1)
 except ImportError:
-    WORKERS_COUNT = max(os.cpu_count() - 1, 1)
-    print("Warning: psutil is not installed. Using os.cpu_count() instead (threads, not cores).", file=sys.stderr)
+    cpu_count = None
 
 
-SHORT_BENCHMARK_CASES_COUNT = 10
+SCRIPT_DIR = Path(__file__).resolve().parent
+WORKSPACE_DIR = SCRIPT_DIR.parent
+DEFAULT_CLIENT = WORKSPACE_DIR / "searchclient_cpp" / "searchclient"
+DEFAULT_SERVER = WORKSPACE_DIR / "server.jar"
+DEFAULT_OUTPUT_DIR = SCRIPT_DIR / "output"
+DEFAULT_SUITE_DIR = SCRIPT_DIR / "suites"
+DEFAULT_PLANNER = "current-cbs"
 
-JAVA = "java"
-SERVER_JAR = "../server.jar"
-CLIENT_EXECUTABLE_PATH = "../searchclient_cpp/searchclient" 
 
-BENCHMARK_CONFIG_FILE = "benchmarks.json"
-BENCHMARK_CONFIG_REQUIRED_KEYS = ["levels_dir", "output_dir", "cases", "strategies", "run_full_benchmark", "skip_best_found_strategy"]
+@dataclass
+class Case:
+    level: str
+    timeout_s: int
 
-class bcolors(Enum):
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-
-    @staticmethod
-    def colorize(text: str, color: 'bcolors') -> str:
-        return f"{color.value}{text}{bcolors.ENDC.value}"
 
 @dataclass
 class CaseResult:
+    suite: str
     level: str
-    strategy: str
-    solution_length: int
-    metrics: dict[str, float]
-    
+    planner: str
+    run: int
+    solved: bool
+    timeout: bool
+    wall_time_ms: int
+    generated_states: int | None
+    expanded_states: int | None
+    frontier: int | None
+    peak_rss_mb: int | None
+    actions_used: int | None
+    server_solve_time_s: float | None
+    failure_reason: str
+    returncode: int | None
+    command: list[str]
+
+
 @dataclass
-class BenchmarkResult:
-    timestamp: str
+class BenchmarkSummary:
+    suite: str
+    planner: str
+    total_runs: int
+    solved_runs: int
+    timeout_runs: int
+    median_wall_time_ms_solved: int | None
+    top_generated_states: list[dict[str, Any]]
+    top_peak_rss_mb: list[dict[str, Any]]
+    failure_reasons: dict[str, int]
+
+
+@dataclass
+class BenchmarkReport:
+    metadata: dict[str, Any]
+    summary: BenchmarkSummary
     cases: list[CaseResult]
-    
-    def to_json(self) -> str:
-        return json.dumps(self, default=lambda o: o.__dict__, indent=4)
 
 
-def parse_server_output(output_str: str) -> tuple[dict, int]:
-    lines = output_str.strip().split('\n')
-    if len(lines) < 2:
-        raise ValueError("Output must contain at least a header and a data line.")
-    
-    COMMENTS_PREFIX = "[client][message]"
-    benchmarks_lines = [line[len(COMMENTS_PREFIX):] for line in lines if line.strip().startswith(COMMENTS_PREFIX)]
-    if len(benchmarks_lines) < 2:
-        raise ValueError("Output must contain at least two benchmark lines.")
+def default_jobs_count() -> int:
+    if cpu_count is not None:
+        physical_cores = cpu_count(logical=False)
+        if physical_cores:
+            return max(physical_cores - 1, 1)
+    return max((os.cpu_count() or 2) - 1, 1)
 
-    header_line = benchmarks_lines[0]
-    data_line = benchmarks_lines[-1]
 
-    header_parts = [h.strip().lower() for h in header_line.split(',')]
-    data_parts = [d.strip() for d in data_line.split(',')]
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run repeatable MAvis redesign baselines.")
+    parser.add_argument("--suite", default="warmup_smoke", help="Suite name under benchmarks/suites, or a JSON path.")
+    parser.add_argument("--client", default=str(DEFAULT_CLIENT), help="Path to the searchclient executable.")
+    parser.add_argument("--server", default=str(DEFAULT_SERVER), help="Path to server.jar.")
+    parser.add_argument("--java", default="java", help="Java executable.")
+    parser.add_argument("--planner", default=DEFAULT_PLANNER, help="Planner label stored in output metadata.")
+    parser.add_argument(
+        "--pass-planner-arg",
+        action="store_true",
+        help="Pass --planner to the client. Disabled by default because current client ignores argv.",
+    )
+    parser.add_argument("--runs", type=int, default=1, help="Number of runs per case.")
+    parser.add_argument("--jobs", type=int, default=default_jobs_count(), help="Parallel worker count.")
+    parser.add_argument("--timeout-s", type=int, help="Override timeout for every case.")
+    parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR), help="Directory for JSON results.")
+    parser.add_argument("--no-progress", action="store_true", help="Disable tqdm progress output.")
+    return parser.parse_args()
 
-    if len(header_parts) != len(data_parts):
-         raise ValueError(f"Mismatched number of header ({len(header_parts)}) and data ({len(data_parts)}) fields.")
+
+def resolve_suite_path(suite: str) -> Path:
+    candidate = Path(suite)
+    if candidate.suffix == ".json" or candidate.exists():
+        return candidate if candidate.is_absolute() else (Path.cwd() / candidate).resolve()
+    return DEFAULT_SUITE_DIR / f"{suite}.json"
+
+
+def load_suite(path: Path, timeout_override: int | None) -> tuple[dict[str, Any], list[Case]]:
+    with path.open() as handle:
+        suite = json.load(handle)
+
+    levels_dir = Path(suite.get("levels_dir", "../levels"))
+    if not levels_dir.is_absolute():
+        levels_dir = (SCRIPT_DIR / levels_dir).resolve()
+    suite["levels_dir_resolved"] = str(levels_dir)
+
+    default_timeout = int(suite.get("default_timeout_s", 10))
+    cases = []
+    for raw_case in suite.get("cases", []):
+        level = raw_case.get("level") or raw_case.get("input")
+        if not level:
+            raise ValueError(f"Suite case is missing a level path: {raw_case}")
+        timeout_s = int(timeout_override or raw_case.get("timeout_s", default_timeout))
+        level_path = levels_dir / level
+        if not level_path.is_file():
+            raise FileNotFoundError(f"Level not found: {level_path}")
+        cases.append(Case(level=level, timeout_s=timeout_s))
+
+    if not cases:
+        raise ValueError(f"Suite {path} has no cases.")
+    return suite, cases
+
+
+def parse_int_after(pattern: str, text: str) -> int | None:
+    match = re.search(pattern, text)
+    if not match:
+        return None
+    return int(match.group(1).replace(",", ""))
+
+
+def parse_float_after(pattern: str, text: str) -> float | None:
+    match = re.search(pattern, text)
+    if not match:
+        return None
+    return float(match.group(1))
+
+
+def normalize_metric_name(name: str) -> str:
+    normalized = name.strip().lower().replace(" ", "_")
+    return {
+        "generated": "generated_states",
+        "expanded": "expanded_states",
+        "alloc[mb]": "peak_rss_mb",
+        "peak_rss[mb]": "peak_rss_mb",
+        "peak_rss_mb": "peak_rss_mb",
+    }.get(normalized, normalized)
+
+
+def parse_client_metrics(stdout: str) -> dict[str, int]:
+    metric_lines = []
+    prefix = "[client][message]"
+    for raw_line in stdout.splitlines():
+        line = raw_line.strip()
+        if line.startswith(prefix):
+            metric_lines.append(line[len(prefix) :].strip())
+    if len(metric_lines) < 2:
+        return {}
+
+    header = [normalize_metric_name(part) for part in metric_lines[0].split(",")]
+    values = [part.strip() for part in metric_lines[-1].split(",")]
+    if len(header) != len(values):
+        return {}
 
     metrics = {}
+    for key, value in zip(header, values):
+        try:
+            metrics[key] = int(float(value.replace(",", "")))
+        except ValueError:
+            continue
+    return metrics
+
+
+def failure_reason(returncode: int | None, timed_out: bool, solved: bool, stdout: str, stderr: str) -> str:
+    combined = f"{stdout}\n{stderr}"
+    if timed_out:
+        return "timeout"
+    if returncode not in (0, None):
+        return f"process_exit_{returncode}"
+    if solved:
+        return ""
+    if "Maximum memory usage exceeded" in combined:
+        return "memory_cap"
+    if "Unable to solve level" in combined:
+        return "unsolved"
+    if "Level solved: No" in combined:
+        return "invalid_or_unsolved"
+    return "unknown"
+
+
+def run_case(task: dict[str, Any]) -> CaseResult:
+    suite_name = task["suite_name"]
+    levels_dir = Path(task["levels_dir"])
+    level = task["level"]
+    timeout_s = task["timeout_s"]
+    planner = task["planner"]
+    run = task["run"]
+    command = [
+        task["java"],
+        "-jar",
+        task["server"],
+        "-c",
+        task["client_command"],
+        "-l",
+        str(levels_dir / level),
+        "-t",
+        str(timeout_s),
+    ]
+
+    stdout = ""
+    stderr = ""
+    timed_out = False
+    returncode = None
+    started_at = time.perf_counter()
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     try:
-        for i in range(len(header_parts)):
-            metrics[header_parts[i]] = float(data_parts[i])
-    except (ValueError, IndexError) as e:
-        # Catch potential errors during data conversion or indexing
-        raise ValueError(f"Failed to parse metrics from data line '{data_line}': {e}") from e
-
-    try:
-        solution_length = int(output_str.split("Actions used: ")[1].split(".")[0].replace(",", ""))
-    except (ValueError, IndexError) as e:
-        raise ValueError(f"Failed to parse solution length from output: {e}") from e
-
-    try:
-        metrics["time[s]"] = float(output_str.split("Time to solve: ")[1].split("seconds.")[0])
-    except (ValueError, IndexError) as e:
-        raise ValueError(f"Failed to parse time to solve from output: {e}") from e
-
-
-    return metrics, solution_length
-
-
-def load_benchmark_config()-> dict | None:
-    try:
-        with open(BENCHMARK_CONFIG_FILE, 'r') as f:
-            config = json.load(f)
-    except FileNotFoundError:
-        print(f"Error: Benchmark configuration file not found at {BENCHMARK_CONFIG_FILE}", file=sys.stderr)
-        return None
-    except json.JSONDecodeError:
-        print(f"Error: Could not parse JSON from {BENCHMARK_CONFIG_FILE}", file=sys.stderr)
-        return None
-    
-    if not all(key in config for key in BENCHMARK_CONFIG_REQUIRED_KEYS):
-        print(f"Error: Missing required keys in {BENCHMARK_CONFIG_FILE}", file=sys.stderr)
-        return None
-    
-    return config
-
-def ensure_output_directory(path: str) -> bool:
-    try:
-        os.makedirs(path, exist_ok=True)
-        return True
-    except OSError as e:
-        print(f"Error: Could not create output directory {path}: {e}", file=sys.stderr)
-        return False
-    
-def check_executable_exists(path: str) -> bool:
-    if not os.path.exists(path):
-        print(f"Error: Executable not found at {path}", file=sys.stderr)
-        return False
-    return True
-
-def run_single_benchmark_case(commands: dict) -> CaseResult:
-    command_list = commands["command_list"]
-    level_name = commands["level_name"]
-    strategy = commands["strategy"]
-    timeout_s = commands["timeout_s"]
-    
-    case_result = CaseResult(
-        level=level_name,
-        solution_length=0,
-        strategy=strategy,
-        metrics={}
-    )
-
-    try:
-        process = subprocess.Popen(
-            command_list, 
-            stdout=subprocess.PIPE, 
-            stderr=subprocess.PIPE, 
-            text=True,
-        )
-        stdout, stderr = process.communicate(timeout=timeout_s + 1)
+        stdout, stderr = process.communicate(timeout=timeout_s + 2)
+        returncode = process.returncode
     except subprocess.TimeoutExpired:
-        process.kill()  # Shouldnt be needed
+        timed_out = True
+        process.kill()
         stdout, stderr = process.communicate()
-    
-    returncode = process.returncode
-    
-    if returncode != 0:
-        case_result.metrics = {
-            "error": f"Process returned non-zero code {returncode}"
-        }
-        return case_result
-    
-    try:
-        metrics, solution_length = parse_server_output(stdout)
-        case_result.metrics = metrics
-        case_result.solution_length = solution_length
-    except Exception as e:
-        case_result.metrics = {
-            "error": f"Failed to parse server output: {e}"
-        }
-    
-    return case_result
+        returncode = process.returncode
+    wall_time_ms = int((time.perf_counter() - started_at) * 1000)
 
-def save_benchmark_results(results: BenchmarkResult, output_dir: str) -> bool:
-    now_time = datetime.datetime.now()
-    timestamp_str = now_time.strftime("%Y%m%d_%H%M%S")
-    output_filename = f"run_{timestamp_str}.json"
-    output_filepath = os.path.join(output_dir, output_filename)
+    solved = "Level solved: Yes" in stdout
+    server_timed_out = "Client timed out" in stdout
+    metrics = parse_client_metrics(stdout)
+    reason = failure_reason(returncode, timed_out or server_timed_out, solved, stdout, stderr)
 
-    try:
-        with open(output_filepath, 'w') as f:
-            f.write(results.to_json())
-        print(f"Benchmark results saved to: {output_filepath}")
-        return True
-    except IOError as e:
-        print(f"Error: Could not write results to {output_filepath}: {e}", file=sys.stderr)
-        return False
-
-
-
-def print_comparative_benchmark_results(cases: list[dict], results: BenchmarkResult):
-    def _format_new_metric_with_change(
-        prev_val,
-        new_val,
-        str_width: int,
-        unit: str = "",
-        precision: int = 0,
-        gray_area_percentage: float = 5.0
-    ):
-        new_val_str = f"{new_val:.{precision}f}{unit}" if isinstance(new_val, (int, float)) else "N/A"
-        perc_change_str_colored = ""
-
-        if not isinstance(prev_val, (int, float)) or not isinstance(new_val, (int, float)):
-            return new_val_str
-        
-        abs_change = new_val - prev_val
-        perc_change = 0.0
-        color_to_use = bcolors.OKCYAN
-
-        if prev_val != 0:
-            perc_change = (abs_change / abs(prev_val)) * 100
-        elif new_val != 0:
-            perc_change = float('inf') if new_val > 0 else float('-inf')
-
-        perc_sign = "+" if perc_change > 0 else ""
-        if perc_change == 0: perc_sign = ""
-        perc_change_display_str = f"{perc_sign}{perc_change:.1f}%"
-
-        # Determine color (lower is better)
-        if abs_change == 0:
-            color_to_use = bcolors.OKCYAN # Same
-        elif abs(perc_change) <= gray_area_percentage and prev_val != 0:
-            color_to_use = bcolors.WARNING # Neutral (gray area)
-        elif abs_change < 0: # Better
-            color_to_use = bcolors.OKGREEN
-        else: # Worse
-            color_to_use = bcolors.FAIL
-        
-        perc_change_str_colored = f" ({bcolors.colorize(perc_change_display_str, color_to_use)})".ljust(20)
-        return f"{new_val_str:<{str_width}}{perc_change_str_colored}"
-
-    HEADER_SEPARATOR = "=" * 152
-    
-    print(bcolors.colorize("\nComparative Benchmark Summary:", bcolors.HEADER))
-    print(bcolors.colorize(HEADER_SEPARATOR, bcolors.HEADER))
-
-    GRAY_AREA_PERCENTAGE = 5.0
-
-    for case_config in cases:
-        level_name = case_config.get("input")
-        level_name_str = level_name[:-4].split("/")[-1][:15]
-        if not level_name:
-            print(bcolors.colorize("Warning: Skipping config case (missing 'input').", bcolors.WARNING), file=sys.stderr)
-            continue
-
-        previous_best_data = case_config.get("best_found_solution_metrics")
-        if not previous_best_data:
-            print(f"{level_name_str:<15} | {bcolors.colorize('Prev:', bcolors.BOLD)} No previous best data to compare.", file=sys.stderr)
-            continue
-
-        prev_strategy = previous_best_data.get("strategy", "N/A")[:11]
-        prev_length = previous_best_data.get("length")
-        prev_time_s = previous_best_data.get("time_s")
-        prev_memory_mb = previous_best_data.get("memory_mb")
-
-        valid_new_results_for_level = [
-            res for res in results.cases
-            if res.level == level_name and
-               res.solution_length > 0 and
-               not res.metrics.get("error")
-        ]
-
-        if not valid_new_results_for_level:
-            prev_part = f"{bcolors.colorize('Prev:', bcolors.BOLD)} S:{prev_strategy:<11} L:{prev_length:<3} T:{prev_time_s:<8} M:{prev_memory_mb:<7}"
-            print(f"{level_name_str:<15} | {prev_part} | {bcolors.colorize('New:', bcolors.BOLD)} No successful new results.")
-            continue
-
-        new_best_run_result = min(
-            valid_new_results_for_level,
-            key=lambda r: (
-                r.solution_length,
-                r.metrics.get("time[s]", float('inf')),
-                r.metrics.get("alloc[mb]", float('inf'))
-            )
-        )
-
-        new_strategy = new_best_run_result.strategy[:10]
-        new_length = new_best_run_result.solution_length
-        new_time_s = new_best_run_result.metrics.get("time[s]")
-        new_memory_mb = new_best_run_result.metrics.get("alloc[mb]")
-
-        # Format previous values
-        prev_len_str = f"{prev_length}"
-        prev_time_str = f"{prev_time_s:.3f}"
-        prev_mem_str = f"{prev_memory_mb:.1f}"
-
-        # Format new values with percentage changes
-        new_len_fmt = _format_new_metric_with_change(prev_length, new_length, 4, precision=0, gray_area_percentage=GRAY_AREA_PERCENTAGE)
-        new_time_fmt = _format_new_metric_with_change(prev_time_s, new_time_s, 7, precision=3, gray_area_percentage=GRAY_AREA_PERCENTAGE)
-        new_mem_fmt = _format_new_metric_with_change(prev_memory_mb, new_memory_mb, 5, precision=1, gray_area_percentage=GRAY_AREA_PERCENTAGE)
-
-        # Determine Overall Status
-        overall_status_text = "N/A"
-        overall_color = bcolors.OKBLUE
-
-        if isinstance(prev_length, int) and isinstance(new_length, int):
-            if new_length < prev_length:
-                overall_status_text = "BETTER"
-                overall_color = bcolors.OKGREEN
-            elif new_length > prev_length:
-                overall_status_text = "WORSE"
-                overall_color = bcolors.FAIL
-            else: # Lengths are the same, check time
-                if isinstance(prev_time_s, float) and isinstance(new_time_s, float):
-                    time_abs_change = new_time_s - prev_time_s
-                    time_perc_change = 0.0
-                    if prev_time_s != 0:
-                        time_perc_change = (time_abs_change / abs(prev_time_s)) * 100
-                    elif new_time_s != 0:
-                        time_perc_change = float('inf') if new_time_s > 0 else float('-inf')
-                    
-                    if abs(time_perc_change) <= GRAY_AREA_PERCENTAGE and prev_time_s != 0:
-                        overall_status_text = "NEUTRAL" # (time in gray area)
-                        overall_color = bcolors.WARNING
-                    elif time_abs_change == 0:
-                        overall_status_text = "SAME" # (time identical)
-                        overall_color = bcolors.OKCYAN
-                    elif time_abs_change < 0:
-                        overall_status_text = "BETTER" # (time improved)
-                        overall_color = bcolors.OKGREEN
-                    else:
-                        overall_status_text = "WORSE" # (time worsened)
-                        overall_color = bcolors.FAIL
-                else: # Lengths same, but time data missing for comparison
-                    overall_status_text = "SAME (L)" # Length same, time N/A
-                    overall_color = bcolors.OKCYAN
-        else: # Length data missing for comparison
-            overall_status_text = "INCONCLUSIVE"
-            overall_color = bcolors.OKBLUE
-        
-        overall_status_display = bcolors.colorize(f"[{overall_status_text}]", overall_color)
-
-        prev_part = f"{bcolors.colorize('Prev:', bcolors.BOLD)} S:{prev_strategy:<11} L:{prev_len_str:<3} T:{prev_time_str:<8} M:{prev_mem_str:<7}"
-        new_part = f"{bcolors.colorize('New:', bcolors.BOLD)} S:{new_strategy:<10} L:{new_len_fmt} T:{new_time_fmt:<17} M:{new_mem_fmt:<15} {overall_status_display}"  
-
-        print(f"{level_name_str:<15} | {prev_part} | {new_part}")
-
-    print(bcolors.colorize(HEADER_SEPARATOR, bcolors.HEADER))
-
-def main():
-    config = load_benchmark_config()
-    if config is None:
-        return
-
-    levels_dir = config["levels_dir"]
-    output_dir = config["output_dir"]
-    cases = config["cases"]
-
-    if not ensure_output_directory(output_dir):
-        return
-
-    if not check_executable_exists(SERVER_JAR):
-        return
-
-    if not check_executable_exists(CLIENT_EXECUTABLE_PATH):
-        return
-
-    now_time = datetime.datetime.now()
-    all_results = BenchmarkResult(
-        timestamp=now_time.isoformat(),
-        cases=[]
+    return CaseResult(
+        suite=suite_name,
+        level=level,
+        planner=planner,
+        run=run,
+        solved=solved,
+        timeout=timed_out or server_timed_out,
+        wall_time_ms=wall_time_ms,
+        generated_states=metrics.get("generated_states"),
+        expanded_states=metrics.get("expanded_states"),
+        frontier=metrics.get("frontier"),
+        peak_rss_mb=metrics.get("peak_rss_mb"),
+        actions_used=parse_int_after(r"Actions used: ([\d,]+)\.", stdout),
+        server_solve_time_s=parse_float_after(r"Time to solve: ([\d.]+) seconds\.", stdout),
+        failure_reason=reason,
+        returncode=returncode,
+        command=command,
     )
-    
-    strategies = config["strategies"]
-    run_full_benchmark = config["run_full_benchmark"]
-    skip_best_found_strategy = config["skip_best_found_strategy"]
 
-    running_cases_count = len(cases) if run_full_benchmark else SHORT_BENCHMARK_CASES_COUNT
-    
-    print(f"Starting benchmarks with {WORKERS_COUNT} workers, {running_cases_count} cases and {len(strategies)} strategies...")
-    print(f"Enabled: {skip_best_found_strategy=} {run_full_benchmark=}")
-    
-    tasks_to_run_commands = []
-    for case_idx, case in enumerate(cases):
-        if not run_full_benchmark and case_idx >= SHORT_BENCHMARK_CASES_COUNT:
-            break
-        
-        level_relative_path = case.get("input")
-        timeout_s = case.get("timeout_s")
 
-        if not level_relative_path:
-            print(f"Warning: Skipping case due to missing 'input' level path in config.", file=sys.stderr)
-            continue
+def build_tasks(args: argparse.Namespace, suite: dict[str, Any], cases: list[Case]) -> list[dict[str, Any]]:
+    client_command = args.client
+    if args.pass_planner_arg:
+        client_command = f"{args.client} {args.planner}"
 
-        level_full_path = os.path.join(levels_dir, level_relative_path)
-
-        if not os.path.isfile(level_full_path):
-            print(f"Warning: Skipping level '{level_relative_path}' as it does not exist.", file=sys.stderr)
-            continue
-
-        if not strategies:
-             print(f"Warning: Skipping level '{level_relative_path}' as no strategies are specified.", file=sys.stderr)
-             continue
-
-        for strategy in strategies:
-            if skip_best_found_strategy and strategy == case.get("best_found_solution_metrics", {}).get("strategy"):
-                continue
-            
-            client_command_str = f"{CLIENT_EXECUTABLE_PATH} {strategy}"
-            command = [JAVA, "-jar", SERVER_JAR, 
-                       "-c", client_command_str, 
-                       "-l", level_full_path,
-                       "-t", str(timeout_s)
-                       ]
-            tasks_to_run_commands.append(
+    tasks = []
+    for case in cases:
+        for run in range(1, args.runs + 1):
+            tasks.append(
                 {
-                    "command_list": command,
-                    "level_name": level_relative_path,
-                    "strategy": strategy,
-                    "timeout_s": timeout_s
+                    "suite_name": suite["name"],
+                    "levels_dir": suite["levels_dir_resolved"],
+                    "level": case.level,
+                    "timeout_s": case.timeout_s,
+                    "planner": args.planner,
+                    "run": run,
+                    "java": args.java,
+                    "server": args.server,
+                    "client_command": client_command,
                 }
             )
-            
-    if not tasks_to_run_commands:
-        print("No tasks to run.", file=sys.stderr)
-        return
-    
-    with ProcessPoolExecutor(max_workers=WORKERS_COUNT) as executor:
-        case_results = list(tqdm(
-            executor.map(run_single_benchmark_case, tasks_to_run_commands), 
-            total=len(tasks_to_run_commands), 
-            desc="Running benchmarks", 
-            unit="case",
-            miniters=1,
-            dynamic_ncols=True,
-            maxinterval=2.0,
-            mininterval=0.5
-        ))
-    
-    all_results.cases.extend(case_results)
-    
-    if not all_results.cases: # Only save if there are results
-        print("No benchmark results were collected.", file=sys.stderr)
-    
-    save_benchmark_results(all_results, output_dir)
-    print_comparative_benchmark_results(cases, all_results)
+    return tasks
 
+
+def top_metric(results: list[CaseResult], metric: str) -> list[dict[str, Any]]:
+    ranked = [
+        {
+            "level": result.level,
+            "run": result.run,
+            metric: getattr(result, metric),
+        }
+        for result in results
+        if getattr(result, metric) is not None
+    ]
+    ranked.sort(key=lambda item: item[metric], reverse=True)
+    return ranked[:10]
+
+
+def summarize(suite_name: str, planner: str, results: list[CaseResult]) -> BenchmarkSummary:
+    solved_wall_times = [result.wall_time_ms for result in results if result.solved]
+    failure_counts: dict[str, int] = {}
+    for result in results:
+        if result.failure_reason:
+            failure_counts[result.failure_reason] = failure_counts.get(result.failure_reason, 0) + 1
+
+    return BenchmarkSummary(
+        suite=suite_name,
+        planner=planner,
+        total_runs=len(results),
+        solved_runs=sum(1 for result in results if result.solved),
+        timeout_runs=sum(1 for result in results if result.timeout),
+        median_wall_time_ms_solved=int(statistics.median(solved_wall_times)) if solved_wall_times else None,
+        top_generated_states=top_metric(results, "generated_states"),
+        top_peak_rss_mb=top_metric(results, "peak_rss_mb"),
+        failure_reasons=failure_counts,
+    )
+
+
+def write_report(args: argparse.Namespace, suite: dict[str, Any], results: list[CaseResult]) -> Path:
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    timestamp_value = dt.datetime.now(dt.UTC).replace(microsecond=0)
+    timestamp = timestamp_value.isoformat()
+    safe_timestamp = timestamp_value.strftime("%Y%m%dT%H%M%SZ")
+    output_path = output_dir / f"{suite['name']}_{args.planner}_{safe_timestamp}.json"
+    summary = summarize(suite["name"], args.planner, results)
+    report = BenchmarkReport(
+        metadata={
+            "timestamp": timestamp,
+            "suite_description": suite.get("description", ""),
+            "levels_dir": suite["levels_dir_resolved"],
+            "client": args.client,
+            "server": args.server,
+            "java": args.java,
+            "runs": args.runs,
+            "jobs": args.jobs,
+            "pass_planner_arg": args.pass_planner_arg,
+        },
+        summary=summary,
+        cases=results,
+    )
+    with output_path.open("w") as handle:
+        json.dump(
+            {
+                "metadata": report.metadata,
+                "summary": asdict(report.summary),
+                "cases": [asdict(result) for result in report.cases],
+            },
+            handle,
+            indent=2,
+        )
+        handle.write("\n")
+    return output_path
+
+
+def print_summary(summary: BenchmarkSummary, output_path: Path) -> None:
+    print("\nBenchmark summary")
+    print("=================")
+    print(f"suite: {summary.suite}")
+    print(f"planner: {summary.planner}")
+    print(f"runs: {summary.total_runs}")
+    print(f"solved: {summary.solved_runs}/{summary.total_runs}")
+    print(f"timeouts: {summary.timeout_runs}")
+    print(f"median wall time solved: {summary.median_wall_time_ms_solved} ms")
+    print(f"failure reasons: {summary.failure_reasons or {}}")
+    print(f"output: {output_path}")
+
+
+def main() -> int:
+    args = parse_args()
+    suite_path = resolve_suite_path(args.suite)
+    client = Path(args.client)
+    server = Path(args.server)
+    if not suite_path.is_file():
+        print(f"Suite not found: {suite_path}", file=sys.stderr)
+        return 2
+    if not client.is_file():
+        print(f"Client executable not found: {client}", file=sys.stderr)
+        return 2
+    if not server.is_file():
+        print(f"Server jar not found: {server}", file=sys.stderr)
+        return 2
+    if args.runs < 1:
+        print("--runs must be at least 1", file=sys.stderr)
+        return 2
+    if args.jobs < 1:
+        print("--jobs must be at least 1", file=sys.stderr)
+        return 2
+
+    suite, cases = load_suite(suite_path, args.timeout_s)
+    tasks = build_tasks(args, suite, cases)
+    print(
+        f"Running suite '{suite['name']}' with {len(cases)} cases, {args.runs} run(s), "
+        f"{args.jobs} worker(s), planner '{args.planner}'."
+    )
+
+    if args.jobs == 1:
+        iterator = map(run_case, tasks)
+        results = list(tqdm(iterator, total=len(tasks), disable=args.no_progress, unit="case"))
+    else:
+        with ProcessPoolExecutor(max_workers=args.jobs) as executor:
+            results = list(tqdm(executor.map(run_case, tasks), total=len(tasks), disable=args.no_progress, unit="case"))
+
+    output_path = write_report(args, suite, results)
+    print_summary(summarize(suite["name"], args.planner, results), output_path)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
-
+    raise SystemExit(main())

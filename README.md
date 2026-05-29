@@ -38,7 +38,7 @@ cd benchmarks
 
 pip install -r requirements.txt
 
-python run_benchmarks.py
+python run_benchmarks.py --suite warmup_smoke --jobs 1
 ```
 
 ## Development
